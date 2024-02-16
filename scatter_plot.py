@@ -109,7 +109,7 @@ if __name__ == '__main__':
     demo_data = []
     for i in range(0, 1000):
         demo_data.append({
-            'x': i*2 * math.cos(i / 25),
+            'x': i**2 * math.cos(i / 25),
             'y': i**0.5 * math.sin(i / 25),
             'text': f'{i}\n{i**0.5:.0f}',
             'color': (1.0 * i / 1000, abs(math.cos(i / 25)), 1.0 - i / 1000)
@@ -125,4 +125,5 @@ if __name__ == '__main__':
         xlabel='X LABEL', ylabel='Y LABEL',
         title='Demo',
         circles=demo_data,
-        color_legend=RGB_COLOR_MAP)
+        color_legend=RGB_COLOR_MAP,
+        filename='plot_demo.svg')
