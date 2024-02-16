@@ -72,7 +72,7 @@ def main(argv):
         plot_data,
         xlabel='Variance',
         ylabel='CAGR %',
-        title='CAGR / Variance',
+        title='CAGR % / Variance',
         filename='cagr_variance.svg',
         color_legend=RGB_COLOR_MAP)
     t5 = time.time()
@@ -97,6 +97,47 @@ def main(argv):
         color_legend=RGB_COLOR_MAP)
     t7 = time.time()
     print(f'--- Graph ready: sharpe_variance.svg --- {t7-t6:.2f}s')
+
+    t8 = time.time()
+    plot_data = []
+    for portfolio in portfolios_simulated:
+        plot_data.append({
+            'x': portfolio.stat_stdev,
+            'y': portfolio.stat_cagr * 100,
+            'text': portfolio.plot_tooltip(),
+            'color': portfolio.plot_color(RGB_COLOR_MAP),
+            'size': 50 / portfolio.number_of_assets(),
+        })
+    draw_circles_with_tooltips(
+        plot_data,
+        xlabel='Stddev',
+        ylabel='CAGR %',
+        title='CAGR % / Stddev',
+        filename='cagr_stdev.svg',
+        color_legend=RGB_COLOR_MAP)
+    t9 = time.time()
+    print(f'--- Graph ready: cagr_stdev.svg --- {t9-t8:.2f}s')
+
+    t10 = time.time()
+    plot_data = []
+    for portfolio in portfolios_simulated:
+        plot_data.append({
+            'x': portfolio.stat_sharpe,
+            'y': portfolio.stat_gain,
+            'text': portfolio.plot_tooltip(),
+            'color': portfolio.plot_color(RGB_COLOR_MAP),
+            'size': 50 / portfolio.number_of_assets(),
+        })
+    draw_circles_with_tooltips(
+        plot_data,
+        xlabel='Sharpe',
+        ylabel='Gain (x)',
+        title='Gain (x) / Sharpe',
+        filename='gain_sharpe.svg',
+        color_legend=RGB_COLOR_MAP)
+    t11 = time.time()
+    print(f'--- Graph ready: gain_sharpe.svg --- {t11-t10:.2f}s')
+
 
 
 if __name__ == '__main__':
