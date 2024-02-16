@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
 
+import os
 import math
 import matplotlib.pyplot as plt
 import matplotlib.lines as pltlines
 import xml.etree.ElementTree as ET
 from io import StringIO
 
-def draw_circles_with_tooltips(circles = [], xlabel = None, ylabel = None, title = None, filename = 'plot.svg', color_legend = {}):
+def draw_circles_with_tooltips(circles = [], xlabel = None, ylabel = None, title = None, directory = '.', filename = 'plot.svg', color_legend = {}):
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
     ET.register_namespace("","http://www.w3.org/2000/svg")
     plt.rcParams["font.family"] = "monospace"
@@ -58,6 +62,9 @@ def draw_circles_with_tooltips(circles = [], xlabel = None, ylabel = None, title
             linewidth=circle['size']/50,
             gid=f'patch_{index:08d}'
         )
+    plt.savefig(os.path.join(directory, filename + '.png'), format="png", dpi=300)
+
+    for index, circle in enumerate(circles):
         a = ax.annotate(
             gid=f'tooltip_{index:08d}',
             text=circle['text'],
@@ -70,22 +77,18 @@ def draw_circles_with_tooltips(circles = [], xlabel = None, ylabel = None, title
             fontsize=8,
             bbox=dict(boxstyle='round,pad=0.5', facecolor=(1.0,1.0,1.0,0.9), linewidth=0.5, zorder=2),
          )
-
     f = StringIO()
     plt.savefig(f, format="svg")
 
     # XML trickery for interactive tooltips
 
-    # Create XML tree from the SVG file.
     tree, xmlid = ET.XMLID(f.getvalue())
     tree.set('onload', 'init(evt)')
 
-    # Hide the tooltips
     for index, circle in enumerate(circles):
         el = xmlid[f'tooltip_{index:08d}']
         el.set('visibility', 'hidden')
 
-    # Assign onmouseover and onmouseout callbacks to patches.
     for index, circle in enumerate(circles):
         el = xmlid[f'patch_{index:08d}']
         el.set('onmouseover', f"ShowTooltip('tooltip_{index:08d}')")
@@ -107,9 +110,8 @@ def draw_circles_with_tooltips(circles = [], xlabel = None, ylabel = None, title
         </script>
         """
 
-    # Insert the script at the top of the file and save it.
     tree.insert(0, ET.XML(script))
-    ET.ElementTree(tree).write(filename)
+    ET.ElementTree(tree).write(os.path.join(directory, filename + '.svg'))
 
 if __name__ == '__main__':
     demo_data = []
@@ -133,4 +135,6 @@ if __name__ == '__main__':
         title='Demo',
         circles=demo_data,
         color_legend=RGB_COLOR_MAP,
-        filename='plot_demo.svg')
+        directory='result',
+        filename='plot_demo.svg'
+    )

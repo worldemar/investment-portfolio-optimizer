@@ -11,7 +11,7 @@ This simple script will simulate rebalancing portfolios with given set of assets
 
 Results of edge case portfolios will be displayed in terminal.
 
-Check SVG graphs for all portfolios performances.
+Check SVG graphs in `result` folder for all portfolios performances.
 
 Note that ALL portfolios will be drawn on SVG. Your browser might not be able to display it.
 
