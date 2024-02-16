@@ -7,6 +7,9 @@ class Portfolio:
     def __score(self):
         return (self.stat_gain) * (0.5 - self.stat_stdev)
 
+    def number_of_assets(self):
+        return len([weight for weight, value in self.weights if value != 0])
+
     def __init__(self, weights):
         self.weights = weights
         self.annual_gains = []

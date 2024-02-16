@@ -2,7 +2,7 @@
 
 import math
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
+import matplotlib.lines as pltlines
 import xml.etree.ElementTree as ET
 from io import StringIO
 
@@ -32,8 +32,14 @@ def draw_circles_with_tooltips(circles = [], xlabel = None, ylabel = None, title
     plt.ylabel(ylabel)
 
     handles = [
-        patches.Patch(facecolor=color, label=label, linewidth=0.5, edgecolor='black') \
-            for label, color in color_legend.items()
+        pltlines.Line2D(
+            [0], [0],
+            marker='o',
+            label=label,
+            linewidth=0,
+            markerfacecolor=color,
+            markeredgecolor='black'
+            ) for label, color in color_legend.items()
         ]
     ax.legend(
         handles=handles,
@@ -46,10 +52,10 @@ def draw_circles_with_tooltips(circles = [], xlabel = None, ylabel = None, title
         s = ax.scatter(
             x=circle['x'],
             y=circle['y'],
-            s = 10,
+            s = circle['size'],
             facecolor=circle['color'],
             edgecolor='black',
-            linewidth=0.5,
+            linewidth=circle['size']/50,
             gid=f'patch_{index:08d}'
         )
         a = ax.annotate(
@@ -58,11 +64,11 @@ def draw_circles_with_tooltips(circles = [], xlabel = None, ylabel = None, title
             xy=(circle['x'], circle['y']),
             xytext=(16, 0),
             textcoords='offset pixels',
-            color='white',
+            color='black',
             horizontalalignment='left',
             verticalalignment='center',
             fontsize=8,
-            bbox=dict(boxstyle='round,pad=0.5', facecolor=(0.0,0.0,0.0,0.85), linewidth=0, zorder=2),
+            bbox=dict(boxstyle='round,pad=0.5', facecolor=(1.0,1.0,1.0,0.9), linewidth=0.5, zorder=2),
          )
 
     f = StringIO()
@@ -107,12 +113,13 @@ def draw_circles_with_tooltips(circles = [], xlabel = None, ylabel = None, title
 
 if __name__ == '__main__':
     demo_data = []
-    for i in range(0, 1000):
+    for i in range(0, 1000, 2):
         demo_data.append({
-            'x': i**2 * math.cos(i / 25),
+            'x': (i/1000)**2 * math.cos(i / 25),
             'y': i**0.5 * math.sin(i / 25),
             'text': f'{i}\n{i**0.5:.0f}',
-            'color': (1.0 * i / 1000, abs(math.cos(i / 25)), 1.0 - i / 1000)
+            'color': (1.0 * i / 1000, abs(math.cos(i / 25)), 1.0 - i / 1000),
+            'size': i / 20,
         })
     RGB_COLOR_MAP = {
         'red': (1, 0, 0),

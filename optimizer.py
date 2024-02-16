@@ -66,6 +66,7 @@ def main(argv):
             'y': portfolio.stat_cagr * 100,
             'text': portfolio.plot_tooltip(),
             'color': portfolio.plot_color(RGB_COLOR_MAP),
+            'size': 50 / portfolio.number_of_assets(),
         })
     draw_circles_with_tooltips(
         plot_data,
@@ -85,6 +86,7 @@ def main(argv):
             'y': portfolio.stat_sharpe,
             'text': portfolio.plot_tooltip(),
             'color': portfolio.plot_color(RGB_COLOR_MAP),
+            'size': 50 / portfolio.number_of_assets(),
         })
     draw_circles_with_tooltips(
         plot_data,
