@@ -31,3 +31,16 @@ Then every portfolio is simulated through market history, rebalancing at every s
 |  15%    |  -5%    | 0.236 + 15% = 0.2714   | 0.944 - 5% = 0.8968    | 0.2714 + 0.8968 = 1.1682   |
 |         |         | 1.1682 * 20% = 0.23364 | 1.1682 * 80% = 0.93456 | 1.1682 = 0.23364 + 0.93456 |
 
+### Demo SVGs
+
+![CAGR % / Variance](./image-demos/cagr_variance.svg)
+<img src="./image-demos/cagr_variance.svg" width="40%">
+
+![CAGR % / Stddev](./image-demos/cagr_stdev.svg)
+<img src="./image-demos/cagr_stdev.svg" width="40%">
+
+![Gain / Sharpe](./image-demos/gain_sharpe.svg)
+<img src="./image-demos/gain_sharpe.svg" width="40%">
+
+![Sharpe / Variance](./image-demos/sharpe_variance.svg)
+<img src="./image-demos/sharpe_variance.svg" width="40%">
