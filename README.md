@@ -8,9 +8,13 @@ This simple script will simulate rebalancing portfolios with given set of assets
 - Open [Portfolio.py](Portfolio.py) and edit `__score` function to your taste.
 - Open [color_map.py](color_map.py) and edit asset colors to your taste.
 - Run `optimizer.py` with `--precision=10` and take a look at output. Precision is specified in percent.
+
 Results of edge case portfolios will be displayed in terminal.
+
 Check SVG graphs for all portfolios performances.
+
 Note that ALL portfolios will be drawn on SVG. Your browser might not be able to display it.
+
 Limit number of assets and set precision higher to avoid this.
 
 ### What does it actually do?
