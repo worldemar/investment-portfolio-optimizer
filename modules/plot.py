@@ -1,11 +1,39 @@
 #!/usr/bin/env python3
 
 import os
+import time
 import math
 import matplotlib.pyplot as plt
 import matplotlib.lines as pltlines
 import xml.etree.ElementTree as ET
 from io import StringIO
+
+def draw_portfolios_statistics(
+        portfolios_list: list,
+        f_x: callable, f_y: callable,
+        xlabel: str, ylabel: str,
+        color_map: dict):
+    t0 = time.time()
+    plot_data = []
+    for portfolio in portfolios_list:
+        plot_data.append({
+            'x': f_x(portfolio),
+            'y': f_y(portfolio),
+            'text': portfolio.plot_tooltip(),
+            'color': portfolio.plot_color(color_map),
+            'size': 50 / portfolio.number_of_assets(),
+        })
+    draw_circles_with_tooltips(
+        circles = plot_data,
+        xlabel = xlabel,
+        ylabel = ylabel,
+        title = f'{ylabel} / {xlabel}',
+        directory = 'result',
+        filename = f'{ylabel} - {xlabel}',
+        color_legend = color_map)
+    t1 = time.time()
+    print(f'--- Graph ready: {ylabel} - {xlabel} --- {t1-t0:.2f}s')
+
 
 def draw_circles_with_tooltips(circles = [], xlabel = None, ylabel = None, title = None, directory = '.', filename = 'plot.svg', color_legend = {}):
 

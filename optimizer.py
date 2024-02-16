@@ -2,16 +2,13 @@
 
 import sys
 import argparse
-import itertools
 import multiprocessing
 import functools
 import time
-import math
-import statistics
-from Portfolio import Portfolio
-from csv_reader import read_capitalgain_csv_data
-from scatter_plot import draw_circles_with_tooltips
-from color_map import RGB_COLOR_MAP
+from modules.Portfolio import Portfolio
+from modules.capitalgain import read_capitalgain_csv_data
+from modules.plot import draw_portfolios_statistics
+from asset_colors import RGB_COLOR_MAP
 
 def gen_portfolios(stock_list, percentage_step, percentages_ret=[]):
     if len(percentages_ret) == len(stock_list) - 1:
@@ -30,30 +27,6 @@ def _parse_args(argv=None):
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--precision', type=int, default=10, help='simulation precision, values less than 5 require A LOT of ram!')
     return parser.parse_args()
-
-def _draw_statistics(portfolios_list,
-                     f_x: callable, f_y: callable,
-                     xlabel: str, ylabel: str):
-    t0 = time.time()
-    plot_data = []
-    for portfolio in portfolios_list:
-        plot_data.append({
-            'x': f_x(portfolio),
-            'y': f_y(portfolio),
-            'text': portfolio.plot_tooltip(),
-            'color': portfolio.plot_color(RGB_COLOR_MAP),
-            'size': 50 / portfolio.number_of_assets(),
-        })
-    draw_circles_with_tooltips(
-        circles = plot_data,
-        xlabel = xlabel,
-        ylabel = ylabel,
-        title = f'{ylabel} / {xlabel}',
-        directory = 'result',
-        filename = f'{ylabel} - {xlabel}',
-        color_legend = RGB_COLOR_MAP)
-    t1 = time.time()
-    print(f'--- Graph ready: {ylabel} - {xlabel} --- {t1-t0:.2f}s')
 
 def main(argv):
     cmdline_args = _parse_args(argv)
@@ -81,12 +54,16 @@ def main(argv):
     print(f'MAX SHARPE: {portfolios_simulated[-1]}')
     print(f'MIN SHARPE: {portfolios_simulated[0]}')
 
-    _draw_statistics(portfolios_simulated, lambda x: x.stat_var, lambda y: y.stat_cagr * 100, 'Variance', 'CAGR %')
-    _draw_statistics(portfolios_simulated, lambda x: x.stat_var, lambda y: y.stat_sharpe, 'Variance', 'Sharpe')
-    _draw_statistics(portfolios_simulated, lambda x: x.stat_stdev, lambda y: y.stat_cagr * 100, 'Stdev', 'CAGR %')
-    _draw_statistics(portfolios_simulated, lambda x: x.stat_stdev, lambda y: y.stat_sharpe, 'Stdev', 'Sharpe')
-    _draw_statistics(portfolios_simulated, lambda x: x.stat_sharpe, lambda y: y.stat_cagr * 100, 'Sharpe', 'CAGR %')
-    _draw_statistics(portfolios_simulated, lambda x: x.stat_sharpe, lambda y: y.stat_stdev, 'Sharpe', 'Stdev')
+    draw_portfolios_statistics(portfolios_simulated,
+        lambda x: x.stat_var, lambda y: y.stat_cagr * 100, 'Variance', 'CAGR %', RGB_COLOR_MAP)
+    draw_portfolios_statistics(portfolios_simulated,
+        lambda x: x.stat_var, lambda y: y.stat_sharpe, 'Variance', 'Sharpe', RGB_COLOR_MAP)
+    draw_portfolios_statistics(portfolios_simulated,
+        lambda x: x.stat_stdev, lambda y: y.stat_cagr * 100, 'Stdev', 'CAGR %', RGB_COLOR_MAP)
+    draw_portfolios_statistics(portfolios_simulated,
+        lambda x: x.stat_stdev, lambda y: y.stat_sharpe, 'Stdev', 'Sharpe', RGB_COLOR_MAP)
+    draw_portfolios_statistics(portfolios_simulated,
+        lambda x: x.stat_sharpe, lambda y: y.stat_cagr * 100, 'Sharpe', 'CAGR %', RGB_COLOR_MAP)
 
 if __name__ == '__main__':
     main(sys.argv)

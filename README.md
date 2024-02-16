@@ -4,10 +4,11 @@ This simple script will simulate rebalancing portfolios with given set of assets
 
 ### How to use
 
-- Save market data into `tickers.csv` file. Each row is one rebalancing period, each column is revenue from corresponding asset. Look at example file for details.
-- Open [Portfolio.py](Portfolio.py) and edit `__score` function to your taste.
-- Open [color_map.py](color_map.py) and edit asset colors to your taste.
-- Run `optimizer.py` with `--precision=10` and take a look at output. Precision is specified in percent.
+- Install requirements via `python3 -m pip install -r requirements.txt`
+
+- Save market data into [asset_returns.csv](asset_returns.csv) file. Each row is one rebalancing period, each column is revenue from corresponding asset. Look at example file for details.
+- Open [asset_colors.py](asset_colors.py) and edit asset colors to your taste.
+- Run `optimizer.py` with `--precision=10` and take a look at standard output. Precision is specified in percent.
 
 Results of edge case portfolios will be displayed in terminal.
 

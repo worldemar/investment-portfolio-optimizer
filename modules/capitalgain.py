@@ -6,7 +6,7 @@ def read_capitalgain_csv_data(filename):
     yearly_revenue_multiplier = {} # year, ticker = cash multiplier
     # read csv values from tickers.csv
     rows = []
-    with open("tickers.csv", "r", encoding="utf-8") as f:
+    with open("asset_returns.csv", "r", encoding="utf-8") as f:
         csv_reader = csv.reader(f)
         rows = list(csv_reader)
     tickers = rows[0][1:]
