@@ -8,7 +8,8 @@
             "name": "Python Debugger: Current File",
             "type": "debugpy",
             "request": "launch",
-            "program": "${file}",
+            "program": "optimizer.py",
+            // "program": "scatter_plot.py",
             "console": "integratedTerminal"
             "args": ["--precision=10"]
         }

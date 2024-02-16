@@ -10,6 +10,8 @@ import math
 import statistics
 from Portfolio import Portfolio
 from csv_reader import read_capitalgain_csv_data
+from scatter_plot import draw_circles_with_tooltips
+from color_map import RGB_COLOR_MAP
 
 def gen_portfolios(stock_list, percentage_step, percentages_ret=[]):
     if len(percentages_ret) == len(stock_list) - 1:
@@ -41,9 +43,7 @@ def main(argv):
     pool = multiprocessing.Pool(24)
     portfolios_simulated = list(pool.map(functools.partial(_simulate_portfolio, yearly_revenue_multiplier), portfolios))
     t3 = time.time()
-    portfolios_simulated.sort(key=lambda x: x.score)
-    for portfolio in portfolios_simulated[-100:]:
-        print(f'{portfolio}')
+
     print(f'DONE --- {len(portfolios_simulated)} portfolios tested ------- prepare = {t2-t1:.2f}s, simulate = {t3-t2:.2f}s')
     print(f' --- Edge Cases --- ')
     print(f' MAX SCORE: {portfolios_simulated[-1]}')
@@ -57,6 +57,44 @@ def main(argv):
     portfolios_simulated.sort(key=lambda x: x.stat_sharpe)
     print(f'MAX SHARPE: {portfolios_simulated[-1]}')
     print(f'MIN SHARPE: {portfolios_simulated[0]}')
+
+    t4 = time.time()
+    plot_data = []
+    for portfolio in portfolios_simulated:
+        plot_data.append({
+            'x': portfolio.stat_var,
+            'y': portfolio.stat_cagr * 100,
+            'text': portfolio.plot_tooltip(),
+            'color': portfolio.plot_color(RGB_COLOR_MAP),
+        })
+    draw_circles_with_tooltips(
+        plot_data,
+        xlabel='Variance',
+        ylabel='CAGR %',
+        title='CAGR / Variance',
+        filename='cagr_variance.svg',
+        color_legend=RGB_COLOR_MAP)
+    t5 = time.time()
+    print(f'--- Graph ready: cagr_variance.svg --- {t5-t4:.2f}s')
+
+    t6 = time.time()
+    plot_data = []
+    for portfolio in portfolios_simulated:
+        plot_data.append({
+            'x': portfolio.stat_var,
+            'y': portfolio.stat_sharpe,
+            'text': portfolio.plot_tooltip(),
+            'color': portfolio.plot_color(RGB_COLOR_MAP),
+        })
+    draw_circles_with_tooltips(
+        plot_data,
+        xlabel='Variance',
+        ylabel='Sharpe',
+        title='Sharpe / Variance',
+        filename='sharpe_variance.svg',
+        color_legend=RGB_COLOR_MAP)
+    t7 = time.time()
+    print(f'--- Graph ready: sharpe_variance.svg --- {t7-t6:.2f}s')
 
 
 if __name__ == '__main__':

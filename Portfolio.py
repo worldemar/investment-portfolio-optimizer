@@ -58,3 +58,30 @@ class Portfolio:
                 '::',
                 f'{str_weights}'
         ])
+    
+    def plot_tooltip(self):
+        weights_without_zeros = []
+        for ticker, weight in self.weights:
+            if weight == 0:
+                continue
+            weights_without_zeros.append(f'{ticker}: {weight}%')
+        str_weights = '\n'.join(weights_without_zeros)
+        return '\n'.join([
+                f'{str_weights}',
+                '--- stats ---',
+                f'SCORE: {self.score:.3f}',
+                f'GAIN : {self.stat_gain:.3f}',
+                f'CAGR : {self.stat_cagr*100:.2f}%',
+                f'VAR  : {self.stat_var:.3f}',
+                f'STDEV: {self.stat_stdev:.3f}',
+                f'SHARP: {self.stat_sharpe:.3f}'
+        ])
+    
+    def plot_color(self, color_map):
+        color = [0,0,0,1]
+        for ticker, weight in self.weights:
+            if ticker in color_map:
+                color[0] = color[0] + color_map[ticker][0] * weight
+                color[1] = color[1] + color_map[ticker][1] * weight
+                color[2] = color[2] + color_map[ticker][2] * weight
+        return (color[0] / max(color), color[1] / max(color), color[2] / max(color))
