@@ -31,6 +31,29 @@ def _parse_args(argv=None):
     parser.add_argument('--precision', type=int, default=10, help='simulation precision, values less than 5 require A LOT of ram!')
     return parser.parse_args()
 
+def _draw_statistics(portfolios_list,
+                     f_x: callable, f_y: callable,
+                     xlabel: str, ylabel: str):
+    t0 = time.time()
+    plot_data = []
+    for portfolio in portfolios_list:
+        plot_data.append({
+            'x': f_x(portfolio),
+            'y': f_y(portfolio),
+            'text': portfolio.plot_tooltip(),
+            'color': portfolio.plot_color(RGB_COLOR_MAP),
+            'size': 50 / portfolio.number_of_assets(),
+        })
+    draw_circles_with_tooltips(
+        circles = plot_data,
+        xlabel = xlabel,
+        ylabel = ylabel,
+        title = f'{ylabel} / {xlabel}',
+        directory = 'result',
+        filename = f'{ylabel} - {xlabel}',
+        color_legend = RGB_COLOR_MAP)
+    t1 = time.time()
+    print(f'--- Graph ready: {ylabel} - {xlabel} --- {t1-t0:.2f}s')
 
 def main(argv):
     cmdline_args = _parse_args(argv)
@@ -58,112 +81,12 @@ def main(argv):
     print(f'MAX SHARPE: {portfolios_simulated[-1]}')
     print(f'MIN SHARPE: {portfolios_simulated[0]}')
 
-    t4 = time.time()
-    plot_data = []
-    for portfolio in portfolios_simulated:
-        plot_data.append({
-            'x': portfolio.stat_var,
-            'y': portfolio.stat_cagr * 100,
-            'text': portfolio.plot_tooltip(),
-            'color': portfolio.plot_color(RGB_COLOR_MAP),
-            'size': 50 / portfolio.number_of_assets(),
-        })
-    draw_circles_with_tooltips(
-        plot_data,
-        xlabel='Variance',
-        ylabel='CAGR %',
-        title='CAGR % / Variance',
-        directory='result',
-        filename='cagr_variance',
-        color_legend=RGB_COLOR_MAP)
-    t5 = time.time()
-    print(f'--- Graph ready: cagr_variance --- {t5-t4:.2f}s')
-
-    t6 = time.time()
-    plot_data = []
-    for portfolio in portfolios_simulated:
-        plot_data.append({
-            'x': portfolio.stat_var,
-            'y': portfolio.stat_sharpe,
-            'text': portfolio.plot_tooltip(),
-            'color': portfolio.plot_color(RGB_COLOR_MAP),
-            'size': 50 / portfolio.number_of_assets(),
-        })
-    draw_circles_with_tooltips(
-        plot_data,
-        xlabel='Variance',
-        ylabel='Sharpe',
-        title='Sharpe / Variance',
-        directory='result',
-        filename='sharpe_variance',
-        color_legend=RGB_COLOR_MAP)
-    t7 = time.time()
-    print(f'--- Graph ready: sharpe_variance --- {t7-t6:.2f}s')
-
-    t8 = time.time()
-    plot_data = []
-    for portfolio in portfolios_simulated:
-        plot_data.append({
-            'x': portfolio.stat_stdev,
-            'y': portfolio.stat_cagr * 100,
-            'text': portfolio.plot_tooltip(),
-            'color': portfolio.plot_color(RGB_COLOR_MAP),
-            'size': 50 / portfolio.number_of_assets(),
-        })
-    draw_circles_with_tooltips(
-        plot_data,
-        xlabel='Stddev',
-        ylabel='CAGR %',
-        title='CAGR % / Stddev',
-        directory='result',
-        filename='cagr_stdev',
-        color_legend=RGB_COLOR_MAP)
-    t9 = time.time()
-    print(f'--- Graph ready: cagr_stdev --- {t9-t8:.2f}s')
-
-    t10 = time.time()
-    plot_data = []
-    for portfolio in portfolios_simulated:
-        plot_data.append({
-            'x': portfolio.stat_sharpe,
-            'y': portfolio.stat_cagr,
-            'text': portfolio.plot_tooltip(),
-            'color': portfolio.plot_color(RGB_COLOR_MAP),
-            'size': 50 / portfolio.number_of_assets(),
-        })
-    draw_circles_with_tooltips(
-        plot_data,
-        xlabel='Sharpe',
-        ylabel='CAGR %',
-        title='CAGR % / Sharpe',
-        directory='result',
-        filename='cagr_sharpe',
-        color_legend=RGB_COLOR_MAP)
-    t11 = time.time()
-    print(f'--- Graph ready: cagr_sharpe --- {t11-t10:.2f}s')
-
-    t12 = time.time()
-    plot_data = []
-    for portfolio in portfolios_simulated:
-        plot_data.append({
-            'x': portfolio.stat_stdev,
-            'y': portfolio.stat_sharpe,
-            'text': portfolio.plot_tooltip(),
-            'color': portfolio.plot_color(RGB_COLOR_MAP),
-            'size': 50 / portfolio.number_of_assets(),
-        })
-    draw_circles_with_tooltips(
-        plot_data,
-        xlabel='Variance',
-        ylabel='Sharpe',
-        title='Sharpe / Stddev',
-        directory='result',
-        filename='sharpe_stdev',
-        color_legend=RGB_COLOR_MAP)
-    t13 = time.time()
-    print(f'--- Graph ready: sharpe_stdev --- {t13-t12:.2f}s')
-
-
+    _draw_statistics(portfolios_simulated, lambda x: x.stat_var, lambda y: y.stat_cagr * 100, 'Variance', 'CAGR %')
+    _draw_statistics(portfolios_simulated, lambda x: x.stat_var, lambda y: y.stat_sharpe, 'Variance', 'Sharpe')
+    _draw_statistics(portfolios_simulated, lambda x: x.stat_stdev, lambda y: y.stat_cagr * 100, 'Stdev', 'CAGR %')
+    _draw_statistics(portfolios_simulated, lambda x: x.stat_stdev, lambda y: y.stat_sharpe, 'Stdev', 'Sharpe')
+    _draw_statistics(portfolios_simulated, lambda x: x.stat_sharpe, lambda y: y.stat_cagr * 100, 'Sharpe', 'CAGR %')
+    _draw_statistics(portfolios_simulated, lambda x: x.stat_sharpe, lambda y: y.stat_stdev, 'Sharpe', 'Stdev')
 
 if __name__ == '__main__':
     main(sys.argv)
