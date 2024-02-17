@@ -1,3 +1,5 @@
+![Prospector](https://github.com/worldemar/investment-portfolio-optimizer/workflows/Prospector/badge.svg)
+
 ### Investment portfolio optimizer
 
 This simple script will simulate rebalancing portfolios with given set of assets and display statistics.

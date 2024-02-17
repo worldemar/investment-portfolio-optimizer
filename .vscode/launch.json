@@ -9,7 +9,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "optimizer.py",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
             "args": ["--precision=10"]
         },
         {
@@ -17,7 +17,7 @@
             "type": "debugpy",
             "request": "launch",
             "program": "scatter_plot.py",
-            "console": "integratedTerminal"
+            "console": "integratedTerminal",
             "args": []
         }
     ]

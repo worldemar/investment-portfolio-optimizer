@@ -1,0 +1,11 @@
+autodetect: false
+strictness: veryhigh
+test-warnings: true
+pycodestyle:
+  disable:
+    - E128 # I like it my way
+  options:
+    max-line-length: 120
+pylint:
+  disable:
+    - line-too-long  # Already checked by pycodestyle
