@@ -1,4 +1,4 @@
-![Prospector](https://github.com/worldemar/investment-portfolio-optimizer/workflows/Prospector/badge.svg)
+[![Prospector](https://github.com/worldemar/investment-portfolio-optimizer/actions/workflows/python.yml/badge.svg)](https://github.com/worldemar/investment-portfolio-optimizer/actions/workflows/python.yml)
 
 ### Investment portfolio optimizer
 
