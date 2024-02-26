@@ -63,16 +63,27 @@ def main(argv):
     print(f'MAX SHARPE: {portfolios_simulated[-1]}')
     print(f'MIN SHARPE: {portfolios_simulated[0]}')
 
-    draw_portfolios_statistics(portfolios_simulated,
-        lambda x: x.stat_var, lambda y: y.stat_cagr * 100, 'Variance', 'CAGR %', RGB_COLOR_MAP)
-    draw_portfolios_statistics(portfolios_simulated,
-        lambda x: x.stat_var, lambda y: y.stat_sharpe, 'Variance', 'Sharpe', RGB_COLOR_MAP)
-    draw_portfolios_statistics(portfolios_simulated,
-        lambda x: x.stat_stdev, lambda y: y.stat_cagr * 100, 'Stdev', 'CAGR %', RGB_COLOR_MAP)
-    draw_portfolios_statistics(portfolios_simulated,
-        lambda x: x.stat_stdev, lambda y: y.stat_sharpe, 'Stdev', 'Sharpe', RGB_COLOR_MAP)
-    draw_portfolios_statistics(portfolios_simulated,
-        lambda x: x.stat_sharpe, lambda y: y.stat_cagr * 100, 'Sharpe', 'CAGR %', RGB_COLOR_MAP)
+    title = f'{min(yearly_revenue_multiplier.keys())}-{max(yearly_revenue_multiplier.keys())}, yearly rebalance, {cmdline_args.precision}% step'
+    draw_portfolios_statistics(
+        portfolios_list=portfolios_simulated,
+        f_x=lambda x: x.stat_var, f_y=lambda y: y.stat_cagr * 100,
+        title=title, xlabel='Variance', ylabel='CAGR %', color_map=RGB_COLOR_MAP)
+    draw_portfolios_statistics(
+        portfolios_list=portfolios_simulated,
+        f_x=lambda x: x.stat_var, f_y=lambda y: y.stat_sharpe,
+        title=title, xlabel='Variance', ylabel='Sharpe', color_map=RGB_COLOR_MAP)
+    draw_portfolios_statistics(
+        portfolios_list=portfolios_simulated,
+        f_x=lambda x: x.stat_stdev, f_y=lambda y: y.stat_cagr * 100,
+        title=title, xlabel='Stdev', ylabel='CAGR %', color_map=RGB_COLOR_MAP)
+    draw_portfolios_statistics(
+        portfolios_list=portfolios_simulated,
+        f_x=lambda x: x.stat_stdev, f_y=lambda y: y.stat_sharpe,
+        title=title, xlabel='Stdev', ylabel='Sharpe', color_map=RGB_COLOR_MAP)
+    draw_portfolios_statistics(
+        portfolios_list=portfolios_simulated,
+        f_x=lambda x: x.stat_sharpe, f_y=lambda y: y.stat_cagr * 100,
+        title=title, xlabel='Sharpe', ylabel='CAGR %', color_map=RGB_COLOR_MAP)
 
 
 if __name__ == '__main__':

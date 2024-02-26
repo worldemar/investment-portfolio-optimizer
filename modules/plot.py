@@ -15,7 +15,7 @@ import matplotlib.lines as pltlines
 def draw_portfolios_statistics(
         portfolios_list: list,
         f_x: callable, f_y: callable,
-        xlabel: str, ylabel: str,
+        title: str, xlabel: str, ylabel: str,
         color_map: dict):
     time_start = time.time()
     plot_data = []
@@ -31,7 +31,7 @@ def draw_portfolios_statistics(
         circles=plot_data,
         xlabel=xlabel,
         ylabel=ylabel,
-        title=f'{ylabel} / {xlabel}',
+        title=title,
         directory='result',
         filename=f'{ylabel} - {xlabel}',
         color_legend=color_map)
