@@ -16,7 +16,7 @@
             "name": "Python Debugger: Plot demo",
             "type": "debugpy",
             "request": "launch",
-            "program": "scatter_plot.py",
+            "program": "modules/plot.py",
             "console": "integratedTerminal",
             "args": []
         }

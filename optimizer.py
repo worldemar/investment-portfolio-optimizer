@@ -7,7 +7,7 @@ import functools
 import time
 from modules.portfolio import Portfolio
 from modules.capitalgain import read_capitalgain_csv_data
-from modules.plot import draw_portfolios_statistics
+from modules.plot import draw_portfolios_statistics, draw_portfolios_history
 from asset_colors import RGB_COLOR_MAP
 
 
@@ -51,23 +51,37 @@ def main(argv):
     print(f'DONE :: {len(portfolios_simulated)} portfolios tested')
     print(f'times: prepare = {time_prepare-time_start:.2f}s, simulate = {time_simulate-time_prepare:.2f}s')
     print(' --- Edge Cases --- ')
-    print(f' MAX SCORE: {portfolios_simulated[-1]}')
-    print(f' MIN SCORE: {portfolios_simulated[0]}')
+    portfolios_for_history = set()
     portfolios_simulated.sort(key=lambda x: x.stat_cagr)
-    print(f'PROFITABLE: {portfolios_simulated[-1]}')
-    print(f'     LOSSY: {portfolios_simulated[0]}')
+    portfolios_for_history.add(portfolios_simulated[0])
+    portfolios_for_history.add(portfolios_simulated[-1])
+    print(f'MAX PROFIT: {portfolios_simulated[-1]}')
+    print(f'MAX LOSS  : {portfolios_simulated[0]}')
     portfolios_simulated.sort(key=lambda x: x.stat_var)
+    portfolios_for_history.add(portfolios_simulated[0])
+    portfolios_for_history.add(portfolios_simulated[-1])
     print(f'  VOLATILE: {portfolios_simulated[-1]}')
     print(f'    STABLE: {portfolios_simulated[0]}')
     portfolios_simulated.sort(key=lambda x: x.stat_sharpe)
+    portfolios_for_history.add(portfolios_simulated[0])
+    portfolios_for_history.add(portfolios_simulated[-1])
     print(f'MAX SHARPE: {portfolios_simulated[-1]}')
     print(f'MIN SHARPE: {portfolios_simulated[0]}')
+
+    for portfolio in portfolios_simulated:
+        if portfolio.number_of_assets() == 1:
+            portfolios_for_history.add(portfolio)
+
+    draw_portfolios_history(
+        portfolios_for_history,
+        title='Capital gain history for edge cases portfolios',
+        xlabel='Year', ylabel='Total capital gain %', color_map=RGB_COLOR_MAP)
 
     title = ', '.join(
         [
             f'{min(yearly_revenue_multiplier.keys())}-{max(yearly_revenue_multiplier.keys())}',
-            'yearly rebalance',
-            '{cmdline_args.precision}% step',
+            'rebalance every row',
+            f'{cmdline_args.precision}% step',
         ]
     )
     draw_portfolios_statistics(

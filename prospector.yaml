@@ -9,3 +9,6 @@ pycodestyle:
 pylint:
   disable:
     - line-too-long  # Already checked by pycodestyle
+mccabe:
+    disable:
+        - MC0001 # A statement is too complex
