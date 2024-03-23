@@ -19,14 +19,18 @@ def draw_portfolios_history(
     plot_data = []
     for portfolio in portfolios_list:
         line_data = []
+        tooltip_line = '—' * max(
+            [len(portfolio.plot_title())] + [len(x) for x in portfolio.plot_tooltip_assets().split('\n')])
         for year in sorted(portfolio.annual_capital.keys()):
             line_data.append({
                 'x': year,
                 'y': portfolio.annual_capital[year] * 100 - 100,
                 'text': '\n'.join([
+                    portfolio.plot_title(),
+                    tooltip_line,
+                    portfolio.plot_tooltip_assets(),
+                    tooltip_line,
                     f'By {year}: {portfolio.annual_capital[year]*100-100:+.0f}%',
-                    '--------',
-                    f'{portfolio.plot_title()}'
                 ]),
                 'color': portfolio.plot_color(color_map),
                 'size': 50 / portfolio.number_of_assets(),
@@ -57,7 +61,11 @@ def draw_portfolios_statistics(
         plot_data.append([{
             'x': f_x(portfolio),
             'y': f_y(portfolio),
-            'text': portfolio.plot_tooltip(),
+            'text': '\n'.join([
+                portfolio.plot_tooltip_assets(),
+                '—' * max(len(x) for x in portfolio.plot_tooltip_assets().split('\n')),
+                portfolio.plot_tooltip_stats(),
+            ]),
             'color': portfolio.plot_color(color_map),
             'size': 50 / portfolio.number_of_assets(),
         }])
@@ -104,7 +112,7 @@ def draw_circles_with_tooltips(
     axes.tick_params(axis='y', which='minor', left=True)
     axes.set_axisbelow(True)
     plt.grid(visible=True, which='both', axis='both')
-    plt.title(title)
+    plt.title(title, zorder=0)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
 
@@ -181,11 +189,11 @@ def draw_circles_with_tooltips(
             gid=f'tooltip_{index:08d}',
             text=circle['text'],
             xy=(circle['x'], circle['y']),
-            xytext=(16, 0),
+            xytext=(0, 8),
             textcoords='offset pixels',
             color='black',
-            horizontalalignment='left',
-            verticalalignment='center',
+            horizontalalignment='center',
+            verticalalignment='bottom',
             fontsize=8,
             bbox={
                 'boxstyle': 'round,pad=0.5',
