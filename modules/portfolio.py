@@ -15,6 +15,7 @@ class Portfolio:
         self.stat_cagr = -1
         self.stat_var = -1
         self.stat_sharpe = -1
+        self.tags = []
 
     def number_of_assets(self):
         return len([weight for weight, value in self.weights if value != 0])
@@ -55,10 +56,16 @@ class Portfolio:
             f'{str_weights}'
         ])
 
-    def plot_tooltip(self):
+    def __weights_without_zeros(self):
+        weights_without_zeros = []
+        for ticker, weight in self.weights:
+            if weight == 0:
+                continue
+            weights_without_zeros.append(f'{ticker}: {weight}%')
+        return weights_without_zeros
+
+    def plot_tooltip_stats(self):
         return '\n'.join([
-            f'{self.plot_title()}',
-            '--- statistics ---',
             f'GAIN  : {self.stat_gain:.3f}',
             f'CAGR  : {self.stat_cagr*100:.2f}%',
             f'VAR   : {self.stat_var:.3f}',
@@ -66,13 +73,13 @@ class Portfolio:
             f'SHARP : {self.stat_sharpe:.3f}'
         ])
 
+    def plot_tooltip_assets(self):
+        return '\n'.join(self.__weights_without_zeros())
+
     def plot_title(self):
-        weights_without_zeros = []
-        for ticker, weight in self.weights:
-            if weight == 0:
-                continue
-            weights_without_zeros.append(f'{ticker}: {weight}%')
-        return '\n'.join(weights_without_zeros)
+        if self.tags:
+            return f'«{", ".join(self.tags)}»'
+        return f'«{", ".join(self.__weights_without_zeros())}»'
 
     def plot_color(self, color_map):
         color = [0, 0, 0, 1]
