@@ -85,9 +85,9 @@ class Portfolio:
         color = [0, 0, 0, 1]
         for ticker, weight in self.weights:
             if ticker in color_map:
-                color[0] = color[0] + color_map[ticker][0] * weight
-                color[1] = color[1] + color_map[ticker][1] * weight
-                color[2] = color[2] + color_map[ticker][2] * weight
+                color[0] = color[0] + color_map[ticker][0] * weight / 100
+                color[1] = color[1] + color_map[ticker][1] * weight / 100
+                color[2] = color[2] + color_map[ticker][2] * weight / 100
             else:
                 raise RuntimeError(f'color map does not contain asset "{ticker}", add it to asset_colors.py')
         return (color[0] / max(color), color[1] / max(color), color[2] / max(color))
