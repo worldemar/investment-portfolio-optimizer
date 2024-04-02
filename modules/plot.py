@@ -42,11 +42,11 @@ def draw_portfolios_history(
         ylabel=ylabel,
         title=title,
         directory='result',
-        filename=f'{ylabel} - {xlabel}',
+        filename=f'{title} - {ylabel} - {xlabel}',
         asset_color_map=color_map,
         portfolio_legend=portfolios_list)
     time_end = time.time()
-    print(f'--- Graph ready: history --- {time_end-time_start:.2f}s')
+    print(f'--- Graph ready: {title} - {ylabel} - {xlabel} --- {time_end-time_start:.2f}s')
 
 
 # pylint: disable=too-many-arguments
@@ -118,6 +118,7 @@ def draw_circles_with_tooltips(
 
     if asset_color_map:
         if portfolio_legend:
+            portfolio_legend_sorted = sorted(list(portfolio_legend), key=lambda x: x.plot_title())
             handles = [
                 pltlines.Line2D(
                     [0], [0],
@@ -126,7 +127,7 @@ def draw_circles_with_tooltips(
                     linewidth=0,
                     markerfacecolor=portfolio.plot_color(asset_color_map),
                     markeredgecolor='black'
-                ) for portfolio in portfolio_legend
+                ) for portfolio in portfolio_legend_sorted
             ]
             axes.legend(
                 handles=handles,
