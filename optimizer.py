@@ -34,7 +34,8 @@ def _parse_args(argv=None):
         help='simulation precision, values less than 5 require A LOT of ram!')
     return parser.parse_args()
 
-
+# pylint: disable=too-many-locals
+# pylint: disable=too-many-statements
 def main(argv):
     cmdline_args = _parse_args(argv)
     tickers_to_test, yearly_revenue_multiplier = read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
