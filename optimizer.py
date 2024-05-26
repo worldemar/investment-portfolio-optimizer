@@ -33,7 +33,7 @@ def _parse_args(argv=None):
         '--precision', type=int, default=10,
         help='simulation precision, values less than 5 require A LOT of ram unless --hull is used')
     parser.add_argument(
-        '--hull', type=int, default=3,
+        '--hull', type=int, default=0,
         help='use hull algorithm to draw only given layers'
              ' of edge portfolios, set to 0 to draw all portfolios')
     return parser.parse_args()
