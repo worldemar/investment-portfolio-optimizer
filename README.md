@@ -11,15 +11,15 @@ This simple script will simulate rebalancing portfolios with given set of assets
 
 - Save market data into [asset_returns.csv](asset_returns.csv) file. Each row is one rebalancing period, each column is revenue from corresponding asset. Look at example file for details.
 - Open [asset_colors.py](asset_colors.py) and edit asset colors to your taste.
-- Run `optimizer.py` with `--precision=10` and take a look at standard output. Precision is specified in percent.
+- Run `optimizer.py` with parameters:
+  - `--precision=10` - Precision is specified in percent. Asset allocation will be stepped according to this value.
+  - `--hull=3` - Use ConvexHull algorithm to select only edge-case portfolios. This considerably speeds up plotting.
+     In most cases these portfolios are most interesting anyway. This settings is 0 by default.
+     Note that in this case ALL portfolios will be drawn on SVG. Your browser might not be able to display it.
 
 Results of edge case portfolios will be displayed in terminal.
 
 Check SVG graphs in `result` folder for all portfolios performances.
-
-Note that ALL portfolios will be drawn on SVG. Your browser might not be able to display it.
-
-Limit number of assets and set precision higher to avoid this.
 
 ### What does it actually do?
 
@@ -34,6 +34,9 @@ Then every portfolio is simulated through market history, rebalancing at every s
 |         |         | 1.18 * 20% = 0.236     | 1.18 * 80% = 0.944     | 1.18 = 0.236 + 0.944       |
 |  15%    |  -5%    | 0.236 + 15% = 0.2714   | 0.944 - 5% = 0.8968    | 0.2714 + 0.8968 = 1.1682   |
 |         |         | 1.1682 * 20% = 0.23364 | 1.1682 * 80% = 0.93456 | 1.1682 = 0.23364 + 0.93456 |
+
+If `--hull` is specified and is not zero, script will use ConvexHull algorithm to select only edge-case portfolios for
+each plot. Edge cases are calculated separately for each plot.
 
 ### Demo SVGs
 (You need to download them to enable interactivity)
