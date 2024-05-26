@@ -10,13 +10,21 @@
             "request": "launch",
             "program": "optimizer.py",
             "console": "integratedTerminal",
-            "args": ["--precision=10"]
+            "args": ["--precision=10", "--hull=5"]
         },
         {
             "name": "Python Debugger: Plot demo",
             "type": "debugpy",
             "request": "launch",
             "program": "modules/plot.py",
+            "console": "integratedTerminal",
+            "args": []
+        },
+        {
+            "name": "Python Debugger: investfunds_converter",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "investfunds_converter.py",
             "console": "integratedTerminal",
             "args": []
         }
