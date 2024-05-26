@@ -31,7 +31,11 @@ def _parse_args(argv=None):
     parser.add_argument('--asset-returns-csv', default='asset_returns.csv', help='path to csv with asset returns')
     parser.add_argument(
         '--precision', type=int, default=10,
-        help='simulation precision, values less than 5 require A LOT of ram!')
+        help='simulation precision, values less than 5 require A LOT of ram unless --hull is used')
+    parser.add_argument(
+        '--hull', type=int, default=3,
+        help='use hull algorithm to draw only given layers'
+             ' of edge portfolios, set to 0 to draw all portfolios')
     return parser.parse_args()
 
 
@@ -120,23 +124,23 @@ def main(argv):
     draw_portfolios_statistics(
         portfolios_list=portfolios_simulated,
         f_x=lambda x: x.stat_var, f_y=lambda y: y.stat_cagr * 100,
-        title=title, xlabel='Variance', ylabel='CAGR %', color_map=used_colors)
+        title=title, xlabel='Variance', ylabel='CAGR %', color_map=used_colors, hull_layers=cmdline_args.hull)
     draw_portfolios_statistics(
         portfolios_list=portfolios_simulated,
         f_x=lambda x: x.stat_var, f_y=lambda y: y.stat_sharpe,
-        title=title, xlabel='Variance', ylabel='Sharpe', color_map=used_colors)
+        title=title, xlabel='Variance', ylabel='Sharpe', color_map=used_colors, hull_layers=cmdline_args.hull)
     draw_portfolios_statistics(
         portfolios_list=portfolios_simulated,
         f_x=lambda x: x.stat_stdev, f_y=lambda y: y.stat_cagr * 100,
-        title=title, xlabel='Stdev', ylabel='CAGR %', color_map=used_colors)
+        title=title, xlabel='Stdev', ylabel='CAGR %', color_map=used_colors, hull_layers=cmdline_args.hull)
     draw_portfolios_statistics(
         portfolios_list=portfolios_simulated,
         f_x=lambda x: x.stat_stdev, f_y=lambda y: y.stat_sharpe,
-        title=title, xlabel='Stdev', ylabel='Sharpe', color_map=used_colors)
+        title=title, xlabel='Stdev', ylabel='Sharpe', color_map=used_colors, hull_layers=cmdline_args.hull)
     draw_portfolios_statistics(
         portfolios_list=portfolios_simulated,
         f_x=lambda x: x.stat_sharpe, f_y=lambda y: y.stat_cagr * 100,
-        title=title, xlabel='Sharpe', ylabel='CAGR %', color_map=used_colors)
+        title=title, xlabel='Sharpe', ylabel='CAGR %', color_map=used_colors, hull_layers=cmdline_args.hull)
 
 
 if __name__ == '__main__':

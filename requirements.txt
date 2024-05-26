@@ -1,1 +1,2 @@
 matplotlib==3.9.0
+scipy==1.13.1

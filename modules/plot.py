@@ -9,6 +9,7 @@ from io import StringIO
 from xml.etree import ElementTree
 import matplotlib.pyplot as plt
 import matplotlib.lines as pltlines
+from scipy.spatial import ConvexHull
 
 
 def draw_portfolios_history(
@@ -50,14 +51,32 @@ def draw_portfolios_history(
 
 
 # pylint: disable=too-many-arguments
+# pylint: disable=too-many-locals
 def draw_portfolios_statistics(
         portfolios_list: list,
         f_x: callable, f_y: callable,
         title: str, xlabel: str, ylabel: str,
-        color_map: dict):
+        color_map: dict, hull_layers: int):
+    portfolios_to_draw = portfolios_list
+    if hull_layers != 0:
+        portfolios_to_draw = []
+        portfolios_for_hull = portfolios_list
+        for _ in range(hull_layers):
+            portfolio_coords = [[f_x(portfolio), f_y(portfolio)] for portfolio in portfolios_for_hull]
+            hull = ConvexHull(points=portfolio_coords, incremental=False)
+            for hull_vertex in hull.vertices:
+                portfolios_to_draw.append(portfolios_for_hull[hull_vertex])
+            portfolios_for_hull_new = []
+            for idx, portfolio in enumerate(portfolios_for_hull):
+                if idx not in hull.vertices:
+                    portfolios_for_hull_new.append(portfolio)
+            portfolios_for_hull = portfolios_for_hull_new
+        for portfolio in portfolios_list:
+            if portfolio.number_of_assets() == 1:
+                portfolios_to_draw.append(portfolio)
     time_start = time.time()
     plot_data = []
-    for portfolio in portfolios_list:
+    for portfolio in portfolios_to_draw:
         plot_data.append([{
             'x': f_x(portfolio),
             'y': f_y(portfolio),
