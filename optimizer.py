@@ -9,6 +9,7 @@ from modules.portfolio import Portfolio
 from modules.capitalgain import read_capitalgain_csv_data
 from modules.plot import draw_portfolios_statistics, draw_portfolios_history
 from asset_colors import RGB_COLOR_MAP
+from static_portfolios import STATIC_PORTFOLIOS
 
 
 def gen_portfolios(assets: list, percentage_step: int, percentages_ret: list):
@@ -45,9 +46,8 @@ def main(argv):
     cmdline_args = _parse_args(argv)
     tickers_to_test, yearly_revenue_multiplier = read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
     time_start = time.time()
-    portfolios = []
-    for portfolio in gen_portfolios(tickers_to_test, cmdline_args.precision, []):
-        portfolios.append(portfolio)
+    portfolios = STATIC_PORTFOLIOS + list(gen_portfolios(tickers_to_test, cmdline_args.precision, []))
+
     time_prepare = time.time()
     with multiprocessing.Pool() as pool:
         pool_func = functools.partial(_simulate_portfolio, yearly_revenue_multiplier)

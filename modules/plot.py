@@ -33,8 +33,10 @@ def draw_portfolios_history(
                     tooltip_line,
                     f'By {year}: {portfolio.annual_capital[year]*100-100:+.0f}%',
                 ]),
+                'marker': portfolio.plot_marker,
                 'color': portfolio.plot_color(color_map),
-                'size': 50 / portfolio.number_of_assets(),
+                'size': 50 if portfolio.plot_always else 50 / portfolio.number_of_assets(),
+                'linewidth': 1 if portfolio.plot_always else 1 / portfolio.number_of_assets(),
             })
         plot_data.append(line_data)
     draw_circles_with_tooltips(
@@ -72,7 +74,7 @@ def draw_portfolios_statistics(
                     portfolios_for_hull_new.append(portfolio)
             portfolios_for_hull = portfolios_for_hull_new
         for portfolio in portfolios_list:
-            if portfolio.number_of_assets() == 1:
+            if portfolio.number_of_assets() == 1 or portfolio.plot_always:
                 portfolios_to_draw.append(portfolio)
     time_start = time.time()
     plot_data = []
@@ -85,8 +87,10 @@ def draw_portfolios_statistics(
                 '—' * max(len(x) for x in portfolio.plot_tooltip_assets().split('\n')),
                 portfolio.plot_tooltip_stats(),
             ]),
+            'marker': portfolio.plot_marker,
             'color': portfolio.plot_color(color_map),
-            'size': 50 / portfolio.number_of_assets(),
+            'size': 100 if portfolio.plot_always else 50 / portfolio.number_of_assets(),
+            'linewidth': 0.5 if portfolio.plot_always else 1 / portfolio.number_of_assets(),
         }])
     draw_circles_with_tooltips(
         circle_lines=plot_data,
@@ -195,9 +199,10 @@ def draw_circles_with_tooltips(
             x=circle['x'],
             y=circle['y'],
             s=circle['size'],
+            marker=circle['marker'],
             facecolor=circle['color'],
             edgecolor='black',
-            linewidth=circle['size'] / 50,
+            linewidth=circle['linewidth'],
             gid=f'patch_{index:08d}',
             zorder=2
         )
