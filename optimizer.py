@@ -57,6 +57,36 @@ def main(argv):
     print(f'DONE :: {len(portfolios_simulated)} portfolios tested')
     print(f'times: prepare = {time_prepare-time_start:.2f}s, simulate = {time_simulate-time_prepare:.2f}s')
 
+    used_colors = {ticker: color for ticker, color in RGB_COLOR_MAP.items() if ticker in tickers_to_test}
+    title = ', '.join(
+        [
+            f'{min(yearly_revenue_multiplier.keys())}-{max(yearly_revenue_multiplier.keys())}',
+            'rebalance every row',
+            f'{cmdline_args.precision}% step',
+        ]
+    )
+
+    draw_portfolios_statistics(
+        portfolios_list=portfolios_simulated,
+        f_x=lambda x: x.stat_var, f_y=lambda y: y.stat_cagr * 100,
+        title=title, xlabel='Variance', ylabel='CAGR %', color_map=used_colors, hull_layers=cmdline_args.hull)
+    draw_portfolios_statistics(
+        portfolios_list=portfolios_simulated,
+        f_x=lambda x: x.stat_var, f_y=lambda y: y.stat_sharpe,
+        title=title, xlabel='Variance', ylabel='Sharpe', color_map=used_colors, hull_layers=cmdline_args.hull)
+    draw_portfolios_statistics(
+        portfolios_list=portfolios_simulated,
+        f_x=lambda x: x.stat_stdev, f_y=lambda y: y.stat_cagr * 100,
+        title=title, xlabel='Stdev', ylabel='CAGR %', color_map=used_colors, hull_layers=cmdline_args.hull)
+    draw_portfolios_statistics(
+        portfolios_list=portfolios_simulated,
+        f_x=lambda x: x.stat_stdev, f_y=lambda y: y.stat_sharpe,
+        title=title, xlabel='Stdev', ylabel='Sharpe', color_map=used_colors, hull_layers=cmdline_args.hull)
+    draw_portfolios_statistics(
+        portfolios_list=portfolios_simulated,
+        f_x=lambda x: x.stat_sharpe, f_y=lambda y: y.stat_cagr * 100,
+        title=title, xlabel='Sharpe', ylabel='CAGR %', color_map=used_colors, hull_layers=cmdline_args.hull)
+
     portfolios_for_history = set()
     portfolios_simulated.sort(key=lambda x: x.stat_cagr)
     portfolios_simulated[-1].tags.append('MAX CAGR')
@@ -110,37 +140,6 @@ def main(argv):
         portfolios_for_history,
         title='Max Sharp portfolios',
         xlabel='Year', ylabel='gain %', color_map=RGB_COLOR_MAP)
-
-    title = ', '.join(
-        [
-            f'{min(yearly_revenue_multiplier.keys())}-{max(yearly_revenue_multiplier.keys())}',
-            'rebalance every row',
-            f'{cmdline_args.precision}% step',
-        ]
-    )
-
-    used_colors = {ticker: color for ticker, color in RGB_COLOR_MAP.items() if ticker in tickers_to_test}
-
-    draw_portfolios_statistics(
-        portfolios_list=portfolios_simulated,
-        f_x=lambda x: x.stat_var, f_y=lambda y: y.stat_cagr * 100,
-        title=title, xlabel='Variance', ylabel='CAGR %', color_map=used_colors, hull_layers=cmdline_args.hull)
-    draw_portfolios_statistics(
-        portfolios_list=portfolios_simulated,
-        f_x=lambda x: x.stat_var, f_y=lambda y: y.stat_sharpe,
-        title=title, xlabel='Variance', ylabel='Sharpe', color_map=used_colors, hull_layers=cmdline_args.hull)
-    draw_portfolios_statistics(
-        portfolios_list=portfolios_simulated,
-        f_x=lambda x: x.stat_stdev, f_y=lambda y: y.stat_cagr * 100,
-        title=title, xlabel='Stdev', ylabel='CAGR %', color_map=used_colors, hull_layers=cmdline_args.hull)
-    draw_portfolios_statistics(
-        portfolios_list=portfolios_simulated,
-        f_x=lambda x: x.stat_stdev, f_y=lambda y: y.stat_sharpe,
-        title=title, xlabel='Stdev', ylabel='Sharpe', color_map=used_colors, hull_layers=cmdline_args.hull)
-    draw_portfolios_statistics(
-        portfolios_list=portfolios_simulated,
-        f_x=lambda x: x.stat_sharpe, f_y=lambda y: y.stat_cagr * 100,
-        title=title, xlabel='Sharpe', ylabel='CAGR %', color_map=used_colors, hull_layers=cmdline_args.hull)
 
 
 if __name__ == '__main__':
