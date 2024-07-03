@@ -6,7 +6,9 @@ import statistics
 
 # pylint: disable=too-many-instance-attributes
 class Portfolio:
-    def __init__(self, weights):
+    def __init__(self, weights: dict, plot_always=False, plot_marker='o'):
+        self.plot_marker = plot_marker
+        self.plot_always = plot_always
         self.weights = weights
         self.annual_gains = {}
         self.annual_capital = {}

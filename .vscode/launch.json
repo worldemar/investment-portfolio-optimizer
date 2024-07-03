@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "optimizer.py",
             "console": "integratedTerminal",
-            "args": ["--precision=10", "--hull=5"]
+            "args": ["--precision=5", "--hull=3"]
         },
         {
             "name": "Python Debugger: Plot demo",
