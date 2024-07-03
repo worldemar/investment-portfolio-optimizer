@@ -52,7 +52,9 @@ def main(argv):
         for ticker, weight in portfolio.weights:
             total_weight += weight
             if ticker not in tickers_to_test:
-                raise ValueError(f'Static portfolio {portfolio.weights} contain ticker "{ticker}" that is not in simulation data: {tickers_to_test}')
+                raise ValueError(
+                    f'Static portfolio {portfolio.weights} contain ticker "{ticker}",'
+                    f' that is not in simulation data: {tickers_to_test}')
         if total_weight != 100:
             raise ValueError(f'Weight of portfolio {portfolio.weights} is not 100: {total_weight}')
 
