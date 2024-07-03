@@ -45,9 +45,19 @@ def _parse_args(argv=None):
 def main(argv):
     cmdline_args = _parse_args(argv)
     tickers_to_test, yearly_revenue_multiplier = read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
+
+    # sanitize static portfolios
+    for portfolio in STATIC_PORTFOLIOS:
+        total_weight = 0
+        for ticker, weight in portfolio.weights:
+            total_weight += weight
+            if ticker not in tickers_to_test:
+                raise ValueError(f'Static portfolio {portfolio.weights} contain ticker "{ticker}" that is not in simulation data: {tickers_to_test}')
+        if total_weight != 100:
+            raise ValueError(f'Weight of portfolio {portfolio.weights} is not 100: {total_weight}')
+
     time_start = time.time()
     portfolios = STATIC_PORTFOLIOS + list(gen_portfolios(tickers_to_test, cmdline_args.precision, []))
-
     time_prepare = time.time()
     with multiprocessing.Pool() as pool:
         pool_func = functools.partial(_simulate_portfolio, yearly_revenue_multiplier)
