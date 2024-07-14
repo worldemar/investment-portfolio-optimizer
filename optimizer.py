@@ -153,6 +153,15 @@ def main(argv):
         title='Max Sharp portfolios',
         xlabel='Year', ylabel='gain %', color_map=RGB_COLOR_MAP)
 
-
 if __name__ == '__main__':
-    main(sys.argv)
+    def g(n :int):
+        for i in range(n):
+            yield i
+    def multiplex(gen):
+        return (gen(10), gen(10))
+    g1, g2 = multiplex(g)
+    for i in g1:
+        print(i)
+    for i in g2:
+        print(i)
+    # main(sys.argv)
