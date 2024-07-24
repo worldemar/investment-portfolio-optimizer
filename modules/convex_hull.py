@@ -17,7 +17,7 @@ class LazyMultilayerConvexHull:
         self._max_dirty_points = max_dirty_points
         self._hull_layers = [[] for _ in range(layers)]
 
-    def hull_points(self):
+    def hull_layers(self):
         if self._dirty_points > 0:
             self._reconvex_hull()
         return self._hull_layers
@@ -32,7 +32,8 @@ class LazyMultilayerConvexHull:
         self_hull_points = [point for layer in self._hull_layers for point in layer]
         for layer in range(self._layers):
             if len(self_hull_points) >= 3:
-                hull = ConvexHull([[point.x(), point.y()] for point in self_hull_points], incremental=False)
+                points_for_hull = [[point.x(), point.y()] for point in self_hull_points]
+                hull = ConvexHull(points_for_hull, incremental=False)
                 hull_points = [self_hull_points[hull_vertex] for hull_vertex in hull.vertices]
                 for hull_point in hull_points:
                     self_hull_points.remove(hull_point)

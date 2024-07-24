@@ -147,7 +147,7 @@ def test_IncrementalConvexHull_add_one_point(points, layers):
     for p in points:
         lmch.add_point(PointMock(p[0], p[1]))
     for l in range(len(layers)):
-        lmch_layers = sorted(lmch.hull_points()[l])
+        lmch_layers = sorted(lmch.hull_layers()[l])
         test_layers = sorted(layers[l])
         assert(str(lmch_layers) == str(test_layers))
 
