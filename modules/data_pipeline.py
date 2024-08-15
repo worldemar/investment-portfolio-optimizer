@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 
-import concurrent.futures
-from functools import partial
-
-def generator_multiplex(gen, funcs):
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        for item in gen:
-            item_results = []
-            for f in funcs:
-                item_results.append(executor.submit(f, item))
-            yield list(map(lambda r: r.result(), item_results))
+def chain_generators(executor, gens, funcs):
+    for layer in zip(*gens):
+        layer_values = [v for g in layer for v in g]
+        next_layer = []
+        for f in funcs:
+            next_layer.append(executor.submit(f, *layer_values))
+        next_layer_values = list(map(lambda r: r.result(), next_layer))
+        yield next_layer_values
