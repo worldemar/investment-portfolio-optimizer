@@ -97,6 +97,35 @@ def test_fork():
     for i in zip(result_list, expected_layers):
         assert i[0] == i[1]
 
+class CallTracker:
+    def __init__(self):
+        self.calls = 0
+    def __copy__(self):
+        assert False, "should not be called"
+    def __deepcopy__(self, memo):
+        assert False, "should not be called"
+    def call(self):
+        self.calls += 1
+        return self
+
+def _call_the_tracker(tracker: CallTracker, calls: int):
+    for _ in range(calls):
+        tracker.call()
+    return tracker
+
+def test_fork_copies():
+    the_tracker = CallTracker()
+    result = chain_generators(EXECUTOR, [[[the_tracker]]], [
+        partial(_call_the_tracker, calls=3),
+        partial(_call_the_tracker, calls=5),
+        partial(_call_the_tracker, calls=7),
+    ])
+    result_list = list(result)
+    assert len(result_list) == 1
+    assert result_list[0][0].calls == 3
+    assert result_list[0][1].calls == 5
+    assert result_list[0][2].calls == 7
+
 
 def test_join():
     """ multiple generators joined with single function """
