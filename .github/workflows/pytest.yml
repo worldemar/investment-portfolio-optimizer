@@ -26,4 +26,8 @@ jobs:
         pip install -r requirements.txt
     - name: Pytest
       run: |
-        pytest
+        pytest -vv --cov-config=.coveragerc --cov=./ --cov-report=xml
+    - name: Report code coverage
+      run: |
+        codecov
+  
