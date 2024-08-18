@@ -5,7 +5,8 @@ import concurrent.futures
 from functools import partial
 from modules.data_pipeline import chain_generators
 
-EXECUTOR = concurrent.futures.ProcessPoolExecutor(max_workers=4)
+PROCESS_EXECUTOR = concurrent.futures.ProcessPoolExecutor(max_workers=4)
+THREAD_EXECUTOR = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 
 def _generate_integers(a, b):  # pylint: disable=invalid-name
@@ -57,11 +58,11 @@ def _prod5(a, b, c, d, e):  # pylint: disable=invalid-name
 
 def test_linear_chain():
     """ chain of functions passing single value """
-    result1 = chain_generators(EXECUTOR, [_generate_integers(0, 10)], [partial(_power, y=3, t=.3)])
-    result2 = chain_generators(EXECUTOR, [result1], [partial(_plus, y=7, t=.1)])
-    result3 = chain_generators(EXECUTOR, [result2], [partial(_minus, y=10, t=.2)])
-    result4 = chain_generators(EXECUTOR, [result3], [partial(_power, y=2, t=.1)])
-    result5 = chain_generators(EXECUTOR, [result4], [partial(_mod, y=100, t=0)])
+    result1 = chain_generators(PROCESS_EXECUTOR, [_generate_integers(0, 10)], [partial(_power, y=3, t=.3)])
+    result2 = chain_generators(PROCESS_EXECUTOR, [result1], [partial(_plus, y=7, t=.1)])
+    result3 = chain_generators(PROCESS_EXECUTOR, [result2], [partial(_minus, y=10, t=.2)])
+    result4 = chain_generators(PROCESS_EXECUTOR, [result3], [partial(_power, y=2, t=.1)])
+    result5 = chain_generators(PROCESS_EXECUTOR, [result4], [partial(_mod, y=100, t=0)])
     expected_values = [9, 4, 25, 76, 21, 84, 69, 0, 81, 76]
     result_list = list(result5)
     assert len(result_list) == len(expected_values)
@@ -72,7 +73,7 @@ def test_linear_chain():
 
 def test_fork():
     """ generator multiplexed to multiple-value layer """
-    result = chain_generators(EXECUTOR, [_generate_integers(0, 11)], [
+    result = chain_generators(PROCESS_EXECUTOR, [_generate_integers(0, 11)], [
         partial(_power, y=1, t=.5),
         partial(_power, y=2, t=.4),
         partial(_power, y=3, t=.3),
@@ -115,7 +116,7 @@ def _call_the_tracker(tracker: CallTracker, calls: int):
 
 def test_fork_copies():
     the_tracker = CallTracker()
-    result = chain_generators(EXECUTOR, [[[the_tracker]]], [
+    result = chain_generators(PROCESS_EXECUTOR, [[[the_tracker]]], [
         partial(_call_the_tracker, calls=3),
         partial(_call_the_tracker, calls=5),
         partial(_call_the_tracker, calls=7),
@@ -129,7 +130,7 @@ def test_fork_copies():
 
 def test_join():
     """ multiple generators joined with single function """
-    result = chain_generators(EXECUTOR, [
+    result = chain_generators(PROCESS_EXECUTOR, [
         _generate_integers(0, 5),
         _generate_integers(5, 10),
         _generate_integers(15, 20),
@@ -146,14 +147,14 @@ def test_join():
 
 def test_aggregate():
     """ multiple-value layer aggregated with single function """
-    result1 = chain_generators(EXECUTOR, [_generate_integers(0, 11)], [
+    result1 = chain_generators(PROCESS_EXECUTOR, [_generate_integers(0, 11)], [
         partial(_power, y=1, t=.5),
         partial(_power, y=2, t=.4),
         partial(_power, y=3, t=.3),
         partial(_power, y=4, t=.2),
         partial(_power, y=5, t=.1),
     ])
-    result2 = chain_generators(EXECUTOR, [result1], [_sum5])
+    result2 = chain_generators(PROCESS_EXECUTOR, [result1], [_sum5])
     expected_values = [
         sum([0, 0, 0, 0, 0]),
         sum([1, 1, 1, 1, 1]),
@@ -176,14 +177,14 @@ def test_aggregate():
 
 def test_statistics():
     """ multiple-value layer aggregated to multiple functions """
-    result1 = chain_generators(EXECUTOR, [_generate_integers(0, 11)], [
+    result1 = chain_generators(PROCESS_EXECUTOR, [_generate_integers(0, 11)], [
         partial(_power, y=1, t=.5),
         partial(_power, y=2, t=.4),
         partial(_power, y=3, t=.3),
         partial(_power, y=4, t=.2),
         partial(_power, y=5, t=.1),
     ])
-    result2 = chain_generators(EXECUTOR, [result1], [_sum5, _prod5])
+    result2 = chain_generators(PROCESS_EXECUTOR, [result1], [_sum5, _prod5])
     expected_layers = [
         [sum([0, 0, 0, 0, 0]), _prod5(0, 0, 0, 0, 0)],
         [sum([1, 1, 1, 1, 1]), _prod5(1, 1, 1, 1, 1)],
@@ -203,3 +204,23 @@ def test_statistics():
         assert len(i[0]) == 2
         assert i[0][0] == i[1][0]
         assert i[0][1] == i[1][1]
+
+
+class ClosureFunction:
+    def __init__(self):
+        self.context = ''
+    def __call__(self, x):
+        self.context += f'{x}'
+        return self.context
+    def __copy__(self):
+        assert False, "should not be called"
+    def __deepcopy__(self, memo):
+        assert False, "should not be called"
+
+def test_closure_class():
+    closure = ClosureFunction()
+    result1 = chain_generators(PROCESS_EXECUTOR, [_generate_integers(0, 5)], [str])
+    result2 = chain_generators(THREAD_EXECUTOR, [result1], [closure])
+    list_result = list(result2)
+    expected_layers = [['0'], ['01'], ['012'], ['0123'], ['01234']]
+    assert list_result == expected_layers
