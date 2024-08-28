@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import time
+from modules.data_pipeline import DelayedResultFunction
 
 
 def generate_integers(a, b):  # pylint: disable=invalid-name
@@ -71,16 +72,28 @@ def call_the_tracker(tracker: CallTracker, calls: int):
     return tracker
 
 
-class ClosureFunction:
+# pylint: disable=too-few-public-methods
+class StringAppender:
     def __init__(self):
-        self.context = ''
-    
+        self.string = ''
+
     def __call__(self, arg):
-        self.context += f'{arg}'
-        return self.context
+        self.string += f'{arg}'
+        return self.string
 
-    def __copy__(self):
-        assert False, "should not be called"
 
-    def __deepcopy__(self, memo):
-        assert False, "should not be called"
+# pylint: disable=too-few-public-methods
+class IntegerAverager(DelayedResultFunction):
+    def __init__(self, yield_divisor: int = 0):
+        self.yield_divisor = yield_divisor
+        self.sum = 0
+        self.count = 0
+
+    def __call__(self, arg):
+        if arg is None:
+            return self.sum / self.count
+        self.sum += arg
+        self.count += 1
+        if self.yield_divisor != 0 and self.count != 0 and self.count % self.yield_divisor == 0:
+            return self.sum / self.count
+        return None

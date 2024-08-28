@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 
+import copy
 import concurrent.futures
 from functools import partial
-from modules.data_pipeline import chain_generators
+import pytest
+from modules.data_pipeline import chain_generators, DelayedResultFunction
 from modules.data_pipeline_test_objects import generate_integers, power, plus, minus, mod, sum5, prod5, call_the_tracker
-from modules.data_pipeline_test_objects import CallTracker, ClosureFunction
+from modules.data_pipeline_test_objects import CallTracker, StringAppender, IntegerAverager
 
 PROCESS_EXECUTOR = concurrent.futures.ProcessPoolExecutor(max_workers=4)
 THREAD_EXECUTOR = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 
-def test_linear_chain():
+def test_chain_single_value_linear():
     """ chain of functions passing single value """
     result1 = chain_generators(PROCESS_EXECUTOR, [generate_integers(0, 10)], [partial(power, y=3, t=.3)])
     result2 = chain_generators(PROCESS_EXECUTOR, [result1], [partial(plus, y=7, t=.1)])
@@ -25,7 +27,7 @@ def test_linear_chain():
         assert i[0][0] == i[1]
 
 
-def test_fork():
+def test_chain_layer_expand_from_one():
     """ generator multiplexed to multiple-value layer """
     result = chain_generators(PROCESS_EXECUTOR, [generate_integers(0, 11)], [
         partial(power, y=1, t=.5),
@@ -53,7 +55,7 @@ def test_fork():
         assert i[0] == i[1]
 
 
-def test_fork_copies():
+def test_executor_process_copies():
     the_tracker = CallTracker()
     result = chain_generators(PROCESS_EXECUTOR, [[[the_tracker]]], [
         partial(call_the_tracker, calls=3),
@@ -67,7 +69,7 @@ def test_fork_copies():
     assert result_list[0][2].calls == 7
 
 
-def test_join():
+def test_chain_layer_collapse_generators_to_one():
     """ multiple generators joined with single function """
     result = chain_generators(PROCESS_EXECUTOR, [
         generate_integers(0, 5),
@@ -84,7 +86,7 @@ def test_join():
         assert i[0][0] == i[1]
 
 
-def test_aggregate():
+def test_chain_layer_collapse_functions_to_one():
     """ multiple-value layer aggregated with single function """
     result1 = chain_generators(PROCESS_EXECUTOR, [generate_integers(0, 11)], [
         partial(power, y=1, t=.5),
@@ -114,7 +116,7 @@ def test_aggregate():
         assert i[0][0] == i[1]
 
 
-def test_statistics():
+def test_chain_layer_collapse_functions_to_two():
     """ multiple-value layer aggregated to multiple functions """
     result1 = chain_generators(PROCESS_EXECUTOR, [generate_integers(0, 11)], [
         partial(power, y=1, t=.5),
@@ -145,10 +147,52 @@ def test_statistics():
         assert i[0][1] == i[1][1]
 
 
-def test_closure_class():
-    closure = ClosureFunction()
+def test_chain_stateful_function():
     result1 = chain_generators(PROCESS_EXECUTOR, [generate_integers(0, 5)], [str])
-    result2 = chain_generators(THREAD_EXECUTOR, [result1], [closure])
+    result2 = chain_generators(THREAD_EXECUTOR, [result1], [StringAppender()])
     list_result = list(result2)
     expected_layers = [['0'], ['01'], ['012'], ['0123'], ['01234']]
     assert list_result == expected_layers
+
+
+def test_chain_layer_aggregate_function_skip_all():
+    result1 = chain_generators(THREAD_EXECUTOR, [generate_integers(0, 38)], [IntegerAverager()])
+    list_result = list(result1)
+    expected_layers = [[18.5]]
+    assert list_result == expected_layers
+
+
+def test_chain_layer_aggregate_functions_skip_some():
+    def avg(values):
+        values_list = list(values)
+        return sum(values_list) / len(values_list)
+    result1 = chain_generators(THREAD_EXECUTOR, [generate_integers(0, 17)], [IntegerAverager(5), IntegerAverager(3)])
+    list_result = list(result1)
+    expected_layers = [
+        [None,           avg(range(3))],
+        [avg(range(5)),  None],
+        [None,           avg(range(6))],
+        [None,           avg(range(9))],
+        [avg(range(10)), None],
+        [None,           avg(range(12))],
+        [avg(range(15)), avg(range(15))],
+        [avg(range(17)), avg(range(17))],  # this is the last layer formed by calling IntegerAverager-s with None
+    ]
+    assert list_result == expected_layers
+
+
+def test_chainable_function_init():
+    chainable = DelayedResultFunction()
+    assert isinstance(chainable, DelayedResultFunction)
+
+
+def test_chainable_function_copy():
+    chainable = DelayedResultFunction()
+    with pytest.raises(NotImplementedError):
+        copy.copy(chainable)
+
+
+def test_chainable_function_deepcopy():
+    chainable = DelayedResultFunction()
+    with pytest.raises(NotImplementedError):
+        copy.deepcopy(chainable)
