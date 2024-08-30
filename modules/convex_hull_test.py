@@ -3,7 +3,7 @@
 import concurrent.futures
 import pytest
 from modules.convex_hull import LazyMultilayerConvexHull, ConvexHullPoint
-from modules.data_pipeline import chain_generators
+from modules.data_pipeline import chain_generators, DataChainType
 
 
 class PointMock(ConvexHullPoint):
@@ -163,8 +163,8 @@ class TestLazyMultilayerConvexHull:
     def test_convex_hull_pipeline(self, points, hull_layers):
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
         lmch = LazyMultilayerConvexHull(max_dirty_points=3, layers=len(hull_layers))
-        result1 = chain_generators(executor, [points], [PointMock])
-        result2 = chain_generators(executor, [result1], [lmch])
+        result1 = chain_generators(executor, [points], [PointMock], DataChainType.EXPAND)
+        result2 = chain_generators(executor, [result1], [lmch], DataChainType.FORWARD)
         result_list = list(result2)
         lmch_layer = result_list[0]
         lmch_result = lmch_layer[0]

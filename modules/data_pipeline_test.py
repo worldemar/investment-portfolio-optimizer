@@ -3,9 +3,10 @@
 import copy
 import concurrent.futures
 from functools import partial
+from math import prod
 import pytest
-from modules.data_pipeline import chain_generators, DelayedResultFunction
-from modules.data_pipeline_test_objects import generate_integers, power, plus, minus, mod, sum5, prod5, call_the_tracker
+from modules.data_pipeline import chain_generators, DelayedResultFunction, DataChainType
+from modules.data_pipeline_test_objects import generate_integers, power, plus, minus, mod, sumt, prodt, call_the_tracker
 from modules.data_pipeline_test_objects import CallTracker, StringAppender, IntegerAverager
 
 PROCESS_EXECUTOR = concurrent.futures.ProcessPoolExecutor(max_workers=4)
@@ -14,11 +15,12 @@ THREAD_EXECUTOR = concurrent.futures.ThreadPoolExecutor(max_workers=4)
 
 def test_chain_single_value_linear():
     """ chain of functions passing single value """
-    result1 = chain_generators(PROCESS_EXECUTOR, [generate_integers(0, 10)], [partial(power, y=3, t=.3)])
-    result2 = chain_generators(PROCESS_EXECUTOR, [result1], [partial(plus, y=7, t=.1)])
-    result3 = chain_generators(PROCESS_EXECUTOR, [result2], [partial(minus, y=10, t=.2)])
-    result4 = chain_generators(PROCESS_EXECUTOR, [result3], [partial(power, y=2, t=.1)])
-    result5 = chain_generators(PROCESS_EXECUTOR, [result4], [partial(mod, y=100, t=0)])
+    result1 = chain_generators(PROCESS_EXECUTOR, [generate_integers(0, 10)],
+                               [partial(power, y=3, t=.3)], DataChainType.FORWARD)
+    result2 = chain_generators(PROCESS_EXECUTOR, [result1], [partial(plus, y=7, t=.1)], DataChainType.FORWARD)
+    result3 = chain_generators(PROCESS_EXECUTOR, [result2], [partial(minus, y=10, t=.2)], DataChainType.FORWARD)
+    result4 = chain_generators(PROCESS_EXECUTOR, [result3], [partial(power, y=2, t=.1)], DataChainType.FORWARD)
+    result5 = chain_generators(PROCESS_EXECUTOR, [result4], [partial(mod, y=100, t=0)], DataChainType.FORWARD)
     expected_values = [9, 4, 25, 76, 21, 84, 69, 0, 81, 76]
     result_list = list(result5)
     assert len(result_list) == len(expected_values)
@@ -35,7 +37,7 @@ def test_chain_layer_expand_from_one():
         partial(power, y=3, t=.3),
         partial(power, y=4, t=.2),
         partial(power, y=5, t=.1),
-    ])
+    ], DataChainType.EXPAND)
     expected_layers = [
         [0, 0, 0, 0, 0],
         [1, 1, 1, 1, 1],
@@ -61,7 +63,7 @@ def test_executor_process_copies():
         partial(call_the_tracker, calls=3),
         partial(call_the_tracker, calls=5),
         partial(call_the_tracker, calls=7),
-    ])
+    ], DataChainType.EXPAND)
     result_list = list(result)
     assert len(result_list) == 1
     assert result_list[0][0].calls == 3
@@ -77,7 +79,7 @@ def test_chain_layer_collapse_generators_to_one():
         generate_integers(15, 20),
         generate_integers(3, 8),
         generate_integers(7, 12),
-    ], [prod5])
+    ], [prodt], DataChainType.COLLAPSE)
     expected = [0, 3072, 10710, 25920, 52668]
     result_list = list(result)
     assert len(result_list) == len(expected)
@@ -94,8 +96,8 @@ def test_chain_layer_collapse_functions_to_one():
         partial(power, y=3, t=.3),
         partial(power, y=4, t=.2),
         partial(power, y=5, t=.1),
-    ])
-    result2 = chain_generators(PROCESS_EXECUTOR, [result1], [sum5])
+    ], DataChainType.EXPAND)
+    result2 = chain_generators(PROCESS_EXECUTOR, [result1], [sumt], DataChainType.COLLAPSE)
     expected_values = [
         sum([0, 0, 0, 0, 0]),
         sum([1, 1, 1, 1, 1]),
@@ -124,20 +126,20 @@ def test_chain_layer_collapse_functions_to_two():
         partial(power, y=3, t=.3),
         partial(power, y=4, t=.2),
         partial(power, y=5, t=.1),
-    ])
-    result2 = chain_generators(PROCESS_EXECUTOR, [result1], [sum5, prod5])
+    ], DataChainType.EXPAND)
+    result2 = chain_generators(PROCESS_EXECUTOR, [result1], [sumt, prodt], DataChainType.COLLAPSE)
     expected_layers = [
-        [sum([0, 0, 0, 0, 0]), prod5(0, 0, 0, 0, 0)],
-        [sum([1, 1, 1, 1, 1]), prod5(1, 1, 1, 1, 1)],
-        [sum([2, 4, 8, 16, 32]), prod5(2, 4, 8, 16, 32)],
-        [sum([3, 9, 27, 81, 243]), prod5(3, 9, 27, 81, 243)],
-        [sum([4, 16, 64, 256, 1024]), prod5(4, 16, 64, 256, 1024)],
-        [sum([5, 25, 125, 625, 3125]), prod5(5, 25, 125, 625, 3125)],
-        [sum([6, 36, 216, 1296, 7776]), prod5(6, 36, 216, 1296, 7776)],
-        [sum([7, 49, 343, 2401, 16807]), prod5(7, 49, 343, 2401, 16807)],
-        [sum([8, 64, 512, 4096, 32768]), prod5(8, 64, 512, 4096, 32768)],
-        [sum([9, 81, 729, 6561, 59049]), prod5(9, 81, 729, 6561, 59049)],
-        [sum([10, 100, 1000, 10000, 100000]), prod5(10, 100, 1000, 10000, 100000)],
+        [sum([0, 0, 0, 0, 0]), prod([0, 0, 0, 0, 0])],
+        [sum([1, 1, 1, 1, 1]), prod([1, 1, 1, 1, 1])],
+        [sum([2, 4, 8, 16, 32]), prod([2, 4, 8, 16, 32])],
+        [sum([3, 9, 27, 81, 243]), prod([3, 9, 27, 81, 243])],
+        [sum([4, 16, 64, 256, 1024]), prod([4, 16, 64, 256, 1024])],
+        [sum([5, 25, 125, 625, 3125]), prod([5, 25, 125, 625, 3125])],
+        [sum([6, 36, 216, 1296, 7776]), prod([6, 36, 216, 1296, 7776])],
+        [sum([7, 49, 343, 2401, 16807]), prod([7, 49, 343, 2401, 16807])],
+        [sum([8, 64, 512, 4096, 32768]), prod([8, 64, 512, 4096, 32768])],
+        [sum([9, 81, 729, 6561, 59049]), prod([9, 81, 729, 6561, 59049])],
+        [sum([10, 100, 1000, 10000, 100000]), prod([10, 100, 1000, 10000, 100000])],
     ]
     result_list = list(result2)
     assert len(result_list) == len(expected_layers)
@@ -148,15 +150,18 @@ def test_chain_layer_collapse_functions_to_two():
 
 
 def test_chain_stateful_function():
-    result1 = chain_generators(PROCESS_EXECUTOR, [generate_integers(0, 5)], [str])
-    result2 = chain_generators(THREAD_EXECUTOR, [result1], [StringAppender()])
+    result1 = chain_generators(PROCESS_EXECUTOR, [generate_integers(0, 5)], [str], DataChainType.FORWARD)
+    result2 = chain_generators(THREAD_EXECUTOR, [result1], [StringAppender()], DataChainType.FORWARD)
     list_result = list(result2)
     expected_layers = [['0'], ['01'], ['012'], ['0123'], ['01234']]
     assert list_result == expected_layers
 
 
 def test_chain_layer_aggregate_function_skip_all():
-    result1 = chain_generators(THREAD_EXECUTOR, [generate_integers(0, 38)], [IntegerAverager()])
+    result1 = chain_generators(THREAD_EXECUTOR,
+                               [generate_integers(0, 38)],
+                               [IntegerAverager()],
+                               DataChainType.FORWARD)
     list_result = list(result1)
     expected_layers = [[18.5]]
     assert list_result == expected_layers
@@ -166,7 +171,10 @@ def test_chain_layer_aggregate_functions_skip_some():
     def avg(values):
         values_list = list(values)
         return sum(values_list) / len(values_list)
-    result1 = chain_generators(THREAD_EXECUTOR, [generate_integers(0, 17)], [IntegerAverager(5), IntegerAverager(3)])
+    result1 = chain_generators(THREAD_EXECUTOR,
+                               [generate_integers(0, 17)],
+                               [IntegerAverager(5), IntegerAverager(3)],
+                               DataChainType.EXPAND)
     list_result = list(result1)
     expected_layers = [
         [None,           avg(range(3))],

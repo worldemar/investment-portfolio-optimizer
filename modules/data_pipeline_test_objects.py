@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import time
+from math import prod
 from modules.data_pipeline import DelayedResultFunction
 
 
@@ -37,18 +38,18 @@ def mod(x=1, y=1, t=1):  # pylint: disable=invalid-name
     return x % y
 
 
-def sum5(a, b, c, d, e):  # pylint: disable=invalid-name
+def sumt(items):
     start = time.time()
-    while time.time() - start < (a + b + c + d + e) / 100 % 1:
-        _ = a + b + c + d + e
-    return a + b + c + d + e
+    while time.time() - start < sum(items) / 100 % 1:
+        _ = sum(items)
+    return sum(items)
 
 
-def prod5(a, b, c, d, e):  # pylint: disable=invalid-name
+def prodt(items):
     start = time.time()
-    while time.time() - start < (a * b * c * d * e) / 100 % 1:
-        _ = a * b * c * d * e
-    return a * b * c * d * e
+    while time.time() - start < prod(items) / 100 % 1:
+        _ = prod(items)
+    return prod(items)
 
 
 class CallTracker:
