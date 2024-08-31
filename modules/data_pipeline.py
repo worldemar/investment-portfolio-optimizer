@@ -21,16 +21,16 @@ class DelayedResultFunction:
 
 
 class ParameterFormat(enum.Enum):
-    'Describe how data from generators should be chained to functions'
+    'Describe how previous layer should be used as an argument for the function'
 
     VALUE = enum.auto()
-    'Each function is called with next value from corresponding generator as an argument.'
+    'Each function is called with next value from corresponding generator as an argument'
 
     ARGS = enum.auto()
-    'Each function is called with all generators next values used as a tuple of arguments.'
+    'Each function is called with all generators next values used as a tuple of arguments'
 
     LIST = enum.auto()
-    'Functions are called with all generators next values used as a single list argument.'
+    'Functions are called with all generators next values used as a single list argument'
 
 
 def chain_generators(
