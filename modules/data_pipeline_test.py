@@ -149,6 +149,25 @@ def test_chain_layer_collapse_functions_to_two():
         assert i[0][1] == i[1][1]
 
 
+def test_chain_layer_collapse_functions_to_two_by_value():
+    """ multiple-value layer aggregated to multiple functions """
+    result1 = chain_generators(PROCESS_EXECUTOR, [generate_integers(0, 6)], [
+        partial(power, y=2, t=.1),
+        partial(power, y=3, t=.1),
+    ], ParameterFormat.ARGS)
+    result2 = chain_generators(PROCESS_EXECUTOR, [result1], [
+        partial(plus, y=1, t=.1),
+        partial(plus, y=-1, t=.1),
+    ], ParameterFormat.VALUE)
+    expected_layers = [[1, -1], [2, 0], [5, 7], [10, 26], [17, 63], [26, 124]]
+    result_list = list(result2)
+    assert len(result_list) == len(expected_layers)
+    for i in zip(result_list, expected_layers):
+        assert len(i[0]) == 2
+        assert i[0][0] == i[1][0]
+        assert i[0][1] == i[1][1]
+
+
 def test_chain_stateful_function():
     result1 = chain_generators(PROCESS_EXECUTOR, [generate_integers(0, 5)], [str], ParameterFormat.VALUE)
     result2 = chain_generators(THREAD_EXECUTOR, [result1], [StringAppender()], ParameterFormat.VALUE)

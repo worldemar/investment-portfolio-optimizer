@@ -20,11 +20,11 @@ class DelayedResultFunction:
         raise NotImplementedError()
 
 
-class ParameterFormat(enum.IntFlag):
+class ParameterFormat(enum.Enum):
     'Describe how data from generators should be chained to functions'
 
     VALUE = enum.auto()
-    'Each function is called with next value from corresponding generator as argument.'
+    'Each function is called with next value from corresponding generator as an argument.'
 
     ARGS = enum.auto()
     'Each function is called with all generators next values used as a tuple of arguments.'
@@ -43,10 +43,10 @@ def chain_generators(
     # validate parameters
     if chain_type == ParameterFormat.VALUE:
         if len(funcs) != len(gens):
-            raise ValueError("Number of generators and functions must be equal when using forward chaining")
-    funcs_delayed = map(lambda fn: isinstance(fn, DelayedResultFunction), funcs)
+            raise ValueError(f'Number of generators and functions must be equal when using {chain_type} chaining')
+    funcs_delayed = list(map(lambda fn: isinstance(fn, DelayedResultFunction), funcs))
     if any(funcs_delayed) != all(funcs_delayed):
-        raise ValueError("All functions must be DelayedResultFunction or all of them must be not")
+        raise ValueError('All functions must be DelayedResultFunction or all of them must be not')
 
     # iterate over generators
     for layer in zip(*gens):
