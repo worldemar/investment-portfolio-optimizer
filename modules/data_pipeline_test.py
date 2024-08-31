@@ -157,7 +157,7 @@ def test_chain_stateful_function():
     assert list_result == expected_layers
 
 
-def test_chain_layer_aggregate_function_skip_all():
+def test_chain_layer_skip_all():
     result1 = chain_generators(THREAD_EXECUTOR,
                                [generate_integers(0, 38)],
                                [IntegerAverager()],
@@ -167,7 +167,25 @@ def test_chain_layer_aggregate_function_skip_all():
     assert list_result == expected_layers
 
 
-def test_chain_layer_aggregate_functions_skip_some():
+def test_chain_layer_ensure_funcnum_for_value_parameter_format():
+    with pytest.raises(ValueError):
+        result = chain_generators(THREAD_EXECUTOR,
+                         [generate_integers(0, 38)],
+                         [IntegerAverager(), StringAppender()],
+                         ParameterFormat.VALUE)
+        _ = list(result)
+
+
+def test_chain_layer_ensure_functypes():
+    with pytest.raises(ValueError):
+        result = chain_generators(THREAD_EXECUTOR,
+                         [generate_integers(0, 38)],
+                         [IntegerAverager(), sumt],
+                         ParameterFormat.LIST)
+        _ = list(result)
+
+
+def test_chain_layers_skip_some():
     def avg(values):
         values_list = list(values)
         return sum(values_list) / len(values_list)

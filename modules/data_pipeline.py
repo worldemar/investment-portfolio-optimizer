@@ -33,12 +33,22 @@ class ParameterFormat(enum.IntFlag):
     'Functions are called with all generators next values used as a single list argument.'
 
 
-def chain_generators(executor: Executor,
-        gens: List[Iterable[Any]], funcs: List[Callable[[Any], Any]],
-        chain_type: ParameterFormat) -> Iterable[List[Any]]:
+def chain_generators(
+        executor: Executor,
+        gens: List[Iterable[Any]],
+        funcs: List[Callable[[Any], Any]],
+        chain_type: ParameterFormat,
+        ) -> Iterable[List[Any]]:
+
+    # validate parameters
     if chain_type == ParameterFormat.VALUE:
         if len(funcs) != len(gens):
             raise ValueError("Number of generators and functions must be equal when using forward chaining")
+    funcs_delayed = map(lambda fn: isinstance(fn, DelayedResultFunction), funcs)
+    if any(funcs_delayed) != all(funcs_delayed):
+        raise ValueError("All functions must be DelayedResultFunction or all of them must be not")
+
+    # iterate over generators
     for layer in zip(*gens):
         layer_values = [v for g in layer for v in g]
         next_layer = []
@@ -56,7 +66,9 @@ def chain_generators(executor: Executor,
         if all(layer_value is None for layer_value in next_layer_values):
             continue
         yield next_layer_values
-    if all(isinstance(funcs, DelayedResultFunction) for funcs in funcs):
+
+    # yield value layer for delayed functions
+    if all(funcs_delayed):
         next_layer = []
         for func in funcs:
             next_layer.append(executor.submit(func, None))
