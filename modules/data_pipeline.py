@@ -20,23 +20,23 @@ class DelayedResultFunction:
         raise NotImplementedError()
 
 
-class DataChainType(enum.IntFlag):
+class ParameterFormat(enum.IntFlag):
     'Describe how data from generators should be chained to functions'
 
-    FORWARD = enum.auto()
-    'Functions are called with next value from corresponding (in order) generator as argument.'
+    VALUE = enum.auto()
+    'Each function is called with next value from corresponding generator as argument.'
 
-    EXPAND = enum.auto()
-    'Functions are called with all generators next values used as a tuple of arguments.'
+    ARGS = enum.auto()
+    'Each function is called with all generators next values used as a tuple of arguments.'
 
-    COLLAPSE = enum.auto()
+    LIST = enum.auto()
     'Functions are called with all generators next values used as a single list argument.'
 
 
 def chain_generators(executor: Executor,
         gens: List[Iterable[Any]], funcs: List[Callable[[Any], Any]],
-        chain_type: DataChainType) -> Iterable[List[Any]]:
-    if chain_type == DataChainType.FORWARD:
+        chain_type: ParameterFormat) -> Iterable[List[Any]]:
+    if chain_type == ParameterFormat.VALUE:
         if len(funcs) != len(gens):
             raise ValueError("Number of generators and functions must be equal when using forward chaining")
     for layer in zip(*gens):
@@ -44,11 +44,11 @@ def chain_generators(executor: Executor,
         next_layer = []
         for idx, func in enumerate(funcs):
             match chain_type:
-                case DataChainType.FORWARD:
+                case ParameterFormat.VALUE:
                     next_layer.append(executor.submit(func, layer_values[idx]))
-                case DataChainType.EXPAND:
+                case ParameterFormat.ARGS:
                     next_layer.append(executor.submit(func, *layer_values))
-                case DataChainType.COLLAPSE:
+                case ParameterFormat.LIST:
                     next_layer.append(executor.submit(func, layer_values))
                 case _:
                     raise NotImplementedError("Unsupported chain type")
