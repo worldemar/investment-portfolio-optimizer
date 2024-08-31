@@ -41,9 +41,6 @@ def chain_generators(
         ) -> Iterable[List[Any]]:
 
     # validate parameters
-    if chain_type == ParameterFormat.VALUE:
-        if len(funcs) != len(gens):
-            raise ValueError(f'Number of generators and functions must be equal when using {chain_type} chaining')
     funcs_delayed = list(map(lambda fn: isinstance(fn, DelayedResultFunction), funcs))
     if any(funcs_delayed) != all(funcs_delayed):
         raise ValueError('All functions must be DelayedResultFunction or all of them must be not')
