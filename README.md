@@ -43,3 +43,5 @@ each plot. Edge cases are calculated separately for each plot.
 
 <img src="./image-demos/cagr_variance.svg" width="50%"><img src="./image-demos/cagr_stdev.svg" width="50%">
 <img src="./image-demos/gain_sharpe.svg" width="50%"><img src="./image-demos/sharpe_variance.svg" width="50%">
+
+precision=10 hull=3 lists = DONE :: 15.46s

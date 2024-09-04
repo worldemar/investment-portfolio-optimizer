@@ -9,7 +9,7 @@ from io import StringIO
 from xml.etree import ElementTree
 import matplotlib.pyplot as plt
 import matplotlib.lines as pltlines
-from modules.convex_hull import Point, LazyMultilayerConvexHull
+from modules.convex_hull import ConvexHullPoint, LazyMultilayerConvexHull
 from collections.abc import Iterable
 
 
@@ -60,7 +60,7 @@ def draw_portfolios_statistics(
         f_x: callable, f_y: callable,
         title: str, xlabel: str, ylabel: str,
         color_map: dict, hull_layers: int):
-    class PortfolioPoint(Point):
+    class PortfolioPoint(ConvexHullPoint):
         def __init__(self, portfolio):
             self.portfolio = portfolio
         def x(self):
