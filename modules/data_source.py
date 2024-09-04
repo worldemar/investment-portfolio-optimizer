@@ -4,12 +4,12 @@ import csv
 from modules.portfolio import Portfolio
 from static_portfolios import STATIC_PORTFOLIOS
 
-def all_possible_portfolios(assets: list, percentage_step: int, percentages_ret: list):
-    if percentages_ret and len(percentages_ret) == len(assets) - 1:
-        yield [Portfolio(list(zip(assets, percentages_ret + [100 - sum(percentages_ret)])))]
+def all_possible_portfolios(assets: list, percentage_step: int, percentages_reserved: list):
+    if percentages_reserved and len(percentages_reserved) == len(assets) - 1:
+        yield Portfolio(list(zip(assets, percentages_reserved + [100 - sum(percentages_reserved)])))
         return
-    for asset_percent in range(0, 101 - sum(percentages_ret), percentage_step):
-        added_percentages = percentages_ret + [asset_percent]
+    for asset_percent in range(0, 101 - sum(percentages_reserved), percentage_step):
+        added_percentages = percentages_reserved + [asset_percent]
         yield from all_possible_portfolios(assets, percentage_step, added_percentages)
 
 def static_portfolio_layers():

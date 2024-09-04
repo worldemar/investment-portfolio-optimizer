@@ -23,16 +23,16 @@ class LazyMultilayerConvexHull(DelayedResultFunction):
         self._max_dirty_points = max_dirty_points
         self._hull_layers = [[] for _ in range(layers)]
 
+    def points(self):
+        self._reconvex_hull()
+        return [point for layer in self._hull_layers for point in layer]
+
     def __call__(self, point: ConvexHullPoint):
-        if point is None:
-            if self._dirty_points > 0:
-                self._reconvex_hull()
-            return self._hull_layers
         self._hull_layers[0].append(point)
         self._dirty_points += 1
         if self._dirty_points > self._max_dirty_points:
             self._reconvex_hull()
-        return None
+        return self
 
     def _reconvex_hull(self):
         self_hull_points = [point for layer in self._hull_layers for point in layer]
