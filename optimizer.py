@@ -255,18 +255,19 @@ def main(argv):
     total_time = time.time()
 
     cmdline_args = _parse_args(argv)
-    process_executor = concurrent.futures.ProcessPoolExecutor(max_workers=4)
-    thread_executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
+    process_executor = concurrent.futures.ProcessPoolExecutor(max_workers=10)
+    thread_executor = concurrent.futures.ThreadPoolExecutor(max_workers=10)
 
     tickers_to_test, yearly_revenue_multiplier = read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
 
     # portfolios = chain(static_portfolio_layers(), all_possible_portfolios(tickers_to_test, cmdline_args.precision, []))
     portfolios = static_portfolio_layers()
     sanitized = chain_generators(
-        thread_executor,
+        process_executor,
         [portfolios],
         [functools.partial(sanitize_portfolio, tickers_to_test=tickers_to_test)],
-        ParameterFormat.VALUE,
+        chain_type=ParameterFormat.VALUE,
+        chunk_size=100,
     )
     for portfolio in sanitized:
         portfolio
@@ -274,20 +275,22 @@ def main(argv):
     possible_portfolios = islice(all_possible_portfolios(tickers_to_test, cmdline_args.precision, []), 1000000)
     portfolios = chain(static_portfolio_layers(), possible_portfolios)
     portfolios_simulated = chain_generators(
-        thread_executor,
+        process_executor,
         [portfolios],
         [functools.partial(Portfolio.simulate, market_data=yearly_revenue_multiplier)],
-        ParameterFormat.ARGS,
+        chain_type=ParameterFormat.ARGS,
+        chunk_size=10000,
     )
 
     portfolio_points_XY = chain_generators(
-        thread_executor,
+        process_executor,
         [portfolios_simulated],
         [
             functools.partial(PortfolioXYFieldsPoint, varname_x = 'stat_var', varname_y = 'stat_cagr'),
             functools.partial(PortfolioXYFieldsPoint, varname_x = 'stat_stdev', varname_y = 'stat_gain'),
         ],
-        ParameterFormat.ARGS,
+        chain_type=ParameterFormat.ARGS,
+        chunk_size=10000,
     )
 
     portfolio_points_all_hulls = chain_generators(
@@ -297,7 +300,8 @@ def main(argv):
             LazyMultilayerConvexHull(max_dirty_points=1000, layers=3),
             LazyMultilayerConvexHull(max_dirty_points=1000, layers=3),
         ],
-        ParameterFormat.VALUE,
+        chain_type=ParameterFormat.VALUE,
+        chunk_size=10000,
     )
 
     # ppah = list(portfolio_points_all_hulls)
@@ -317,7 +321,8 @@ def main(argv):
             extract_hulls_from_points,
             extract_hulls_from_points,
         ],
-        ParameterFormat.VALUE,
+        chain_type=ParameterFormat.VALUE,
+        chunk_size=10000,
     )
 
     # pal = list(portfolios_all_lmchs)[0]  # take one (last) layer
@@ -333,7 +338,8 @@ def main(argv):
             functools.partial(compose_plot_data, field_x='stat_var', field_y='stat_cagr'),
             functools.partial(compose_plot_data, field_x='stat_stdev', field_y='stat_gain'),
         ],
-        ParameterFormat.VALUE,
+        chain_type=ParameterFormat.VALUE,
+        chunk_size=10000,
     )
 
     # pal = list(portfolios_plot_data)[0]  # take one (last) layer
@@ -349,7 +355,8 @@ def main(argv):
             functools.partial(draw_circles_with_tooltips, xlabel='Variance', ylabel='CAGR %', title='Variance vs CAGR %', directory='result', filename='Variance vs CAGR %', asset_color_map=dict(RGB_COLOR_MAP)),
             functools.partial(draw_circles_with_tooltips, xlabel='Standard deviation', ylabel='Gain', title='Standard deviation vs Gain', directory='result', filename='Standard deviation vs Gain', asset_color_map=dict(RGB_COLOR_MAP)),
         ],
-        ParameterFormat.VALUE,
+        chain_type=ParameterFormat.VALUE,
+        chunk_size=10000,
     )
     for draw_futures_result in draw_futures:
         draw_futures_result.result()

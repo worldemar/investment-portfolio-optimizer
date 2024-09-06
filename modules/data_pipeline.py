@@ -38,6 +38,7 @@ def chain_generators(
         gens: List[Iterable[Any]],
         funcs: List[Callable[[Any], Any]],
         chain_type: ParameterFormat,
+        chunk_size: int = 1,
         ) -> Iterable[List[Any]]:
 
     # validate parameters
@@ -45,24 +46,43 @@ def chain_generators(
     if any(funcs_delayed) != all(funcs_delayed):
         raise ValueError('All functions must be DelayedResultFunction or all of them must be not')
 
+    def chunker(iterable, size):
+        chunk = []
+        while True:
+            try:
+                chunk.append(next(iterable))
+            except StopIteration:
+                if chunk:
+                    yield chunk
+                return
+            if len(chunk) >= size:
+                yield chunk
+                chunk = []
+
     # iterate over generators
-    for layer in zip(*gens):
-        layer_values = [v for g in layer for v in g]
-        next_layer = []
-        for idx, func in enumerate(funcs):
-            match chain_type:
-                case ParameterFormat.VALUE:
-                    next_layer.append(executor.submit(func, layer_values[idx]))
-                case ParameterFormat.ARGS:
-                    next_layer.append(executor.submit(func, *layer_values))
-                case ParameterFormat.LIST:
-                    next_layer.append(executor.submit(func, layer_values))
-                case _:
-                    raise NotImplementedError("Unsupported chain type")
-        next_layer_values = list(map(lambda r: r.result(), next_layer))
-        if all(layer_value is None for layer_value in next_layer_values):
-            continue
-        yield next_layer_values
+    for layer_chunk in chunker(zip(*gens), chunk_size):
+        next_layer_chunk_futures = []
+        for layer in layer_chunk:
+            layer_values = [v for g in layer for v in g]
+            next_layer_futures = []
+            for idx, func in enumerate(funcs):
+                match chain_type:
+                    case ParameterFormat.VALUE:
+                        next_layer_futures.append(executor.submit(func, layer_values[idx]))
+                    case ParameterFormat.ARGS:
+                        next_layer_futures.append(executor.submit(func, *layer_values))
+                    case ParameterFormat.LIST:
+                        next_layer_futures.append(executor.submit(func, layer_values))
+                    case _:
+                        raise NotImplementedError("Unsupported chain type")
+            next_layer_chunk_futures.append(next_layer_futures)
+        next_layer_chunk_values = map(
+            lambda next_layer: list(map(lambda r: r.result(), next_layer)),
+            next_layer_chunk_futures)
+        for next_layer_values in next_layer_chunk_values:
+            if all(layer_value is None for layer_value in next_layer_values):
+                continue
+            yield next_layer_values
 
     # yield value layer for delayed functions
     if all(funcs_delayed):

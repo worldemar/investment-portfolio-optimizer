@@ -17,10 +17,10 @@ def test_chain_single_value_linear():
     """ chain of functions passing single value """
     result1 = chain_generators(PROCESS_EXECUTOR, [generate_integers(0, 10)],
                                [partial(power, y=3, t=.3)], ParameterFormat.VALUE)
-    result2 = chain_generators(PROCESS_EXECUTOR, [result1], [partial(plus, y=7, t=.1)], ParameterFormat.VALUE)
-    result3 = chain_generators(PROCESS_EXECUTOR, [result2], [partial(minus, y=10, t=.2)], ParameterFormat.VALUE)
-    result4 = chain_generators(PROCESS_EXECUTOR, [result3], [partial(power, y=2, t=.1)], ParameterFormat.VALUE)
-    result5 = chain_generators(PROCESS_EXECUTOR, [result4], [partial(mod, y=100, t=0)], ParameterFormat.VALUE)
+    result2 = chain_generators(PROCESS_EXECUTOR, [result1], [partial(plus, y=7, t=.1)], chain_type=ParameterFormat.VALUE, chunk_size=1)
+    result3 = chain_generators(PROCESS_EXECUTOR, [result2], [partial(minus, y=10, t=.2)], chain_type=ParameterFormat.VALUE, chunk_size=2)
+    result4 = chain_generators(PROCESS_EXECUTOR, [result3], [partial(power, y=2, t=.1)], chain_type=ParameterFormat.VALUE, chunk_size=3)
+    result5 = chain_generators(PROCESS_EXECUTOR, [result4], [partial(mod, y=100, t=0)], chain_type=ParameterFormat.VALUE, chunk_size=4)
     expected_values = [9, 4, 25, 76, 21, 84, 69, 0, 81, 76]
     result_list = list(result5)
     assert len(result_list) == len(expected_values)
@@ -37,7 +37,7 @@ def test_chain_layer_expand_from_one():
         partial(power, y=3, t=.3),
         partial(power, y=4, t=.2),
         partial(power, y=5, t=.1),
-    ], ParameterFormat.ARGS)
+    ], chain_type=ParameterFormat.ARGS, chunk_size=3)
     expected_layers = [
         [0, 0, 0, 0, 0],
         [1, 1, 1, 1, 1],
@@ -63,7 +63,7 @@ def test_executor_process_copies():
         partial(call_the_tracker, calls=3),
         partial(call_the_tracker, calls=5),
         partial(call_the_tracker, calls=7),
-    ], ParameterFormat.ARGS)
+    ], chain_type=ParameterFormat.ARGS, chunk_size=2)
     result_list = list(result)
     assert len(result_list) == 1
     assert result_list[0][0].calls == 3
@@ -79,7 +79,7 @@ def test_chain_layer_collapse_generators_to_one():
         generate_integers(15, 20),
         generate_integers(3, 8),
         generate_integers(7, 12),
-    ], [prodt], ParameterFormat.LIST)
+    ], [prodt], chain_type=ParameterFormat.LIST, chunk_size=2)
     expected = [0, 3072, 10710, 25920, 52668]
     result_list = list(result)
     assert len(result_list) == len(expected)
@@ -96,7 +96,7 @@ def test_chain_layer_collapse_functions_to_one():
         partial(power, y=3, t=.3),
         partial(power, y=4, t=.2),
         partial(power, y=5, t=.1),
-    ], ParameterFormat.ARGS)
+    ], chain_type=ParameterFormat.ARGS, chunk_size=3)
     result2 = chain_generators(PROCESS_EXECUTOR, [result1], [sumt], ParameterFormat.LIST)
     expected_values = [
         sum([0, 0, 0, 0, 0]),
@@ -126,8 +126,8 @@ def test_chain_layer_collapse_functions_to_two():
         partial(power, y=3, t=.3),
         partial(power, y=4, t=.2),
         partial(power, y=5, t=.1),
-    ], ParameterFormat.ARGS)
-    result2 = chain_generators(PROCESS_EXECUTOR, [result1], [sumt, prodt], ParameterFormat.LIST)
+    ], chain_type=ParameterFormat.ARGS, chunk_size=2)
+    result2 = chain_generators(PROCESS_EXECUTOR, [result1], [sumt, prodt], chain_type=ParameterFormat.LIST, chunk_size=2)
     expected_layers = [
         [sum([0, 0, 0, 0, 0]), prod([0, 0, 0, 0, 0])],
         [sum([1, 1, 1, 1, 1]), prod([1, 1, 1, 1, 1])],
@@ -154,11 +154,11 @@ def test_chain_layer_collapse_functions_to_two_by_value():
     result1 = chain_generators(PROCESS_EXECUTOR, [generate_integers(0, 6)], [
         partial(power, y=2, t=.1),
         partial(power, y=3, t=.1),
-    ], ParameterFormat.ARGS)
+    ], chain_type=ParameterFormat.ARGS, chunk_size=2)
     result2 = chain_generators(PROCESS_EXECUTOR, [result1], [
         partial(plus, y=1, t=.1),
         partial(plus, y=-1, t=.1),
-    ], ParameterFormat.VALUE)
+    ], chain_type=ParameterFormat.VALUE, chunk_size=2)
     expected_layers = [[1, -1], [2, 0], [5, 7], [10, 26], [17, 63], [26, 124]]
     result_list = list(result2)
     assert len(result_list) == len(expected_layers)
@@ -169,8 +169,8 @@ def test_chain_layer_collapse_functions_to_two_by_value():
 
 
 def test_chain_stateful_function():
-    result1 = chain_generators(PROCESS_EXECUTOR, [generate_integers(0, 5)], [str], ParameterFormat.VALUE)
-    result2 = chain_generators(THREAD_EXECUTOR, [result1], [StringAppender()], ParameterFormat.VALUE)
+    result1 = chain_generators(PROCESS_EXECUTOR, [generate_integers(0, 5)], [str], chain_type=ParameterFormat.VALUE, chunk_size=2)
+    result2 = chain_generators(THREAD_EXECUTOR, [result1], [StringAppender()], chain_type=ParameterFormat.VALUE, chunk_size=2)
     list_result = list(result2)
     expected_layers = [['0'], ['01'], ['012'], ['0123'], ['01234']]
     assert list_result == expected_layers
@@ -180,7 +180,8 @@ def test_chain_layer_skip_all():
     result1 = chain_generators(THREAD_EXECUTOR,
                                [generate_integers(0, 38)],
                                [IntegerAverager()],
-                               ParameterFormat.VALUE)
+                               chain_type=ParameterFormat.VALUE,
+                               chunk_size=2)
     list_result = list(result1)
     expected_layers = [[18.5]]
     assert list_result == expected_layers
@@ -191,7 +192,8 @@ def test_chain_layer_ensure_funcnum_for_value_parameter_format():
         result = chain_generators(THREAD_EXECUTOR,
                          [generate_integers(0, 38)],
                          [IntegerAverager(), StringAppender()],
-                         ParameterFormat.VALUE)
+                         chain_type=ParameterFormat.VALUE,
+                         chunk_size=2)
         _ = list(result)
 
 
@@ -200,7 +202,8 @@ def test_chain_layer_ensure_functypes():
         result = chain_generators(THREAD_EXECUTOR,
                          [generate_integers(0, 38)],
                          [IntegerAverager(), sumt],
-                         ParameterFormat.LIST)
+                         chain_type=ParameterFormat.LIST,
+                         chunk_size=2)
         _ = list(result)
 
 
@@ -211,7 +214,8 @@ def test_chain_layers_skip_some():
     result1 = chain_generators(THREAD_EXECUTOR,
                                [generate_integers(0, 17)],
                                [IntegerAverager(5), IntegerAverager(3)],
-                               ParameterFormat.ARGS)
+                               chain_type=ParameterFormat.ARGS,
+                               chunk_size=2)
     list_result = list(result1)
     expected_layers = [
         [None,           avg(range(3))],
