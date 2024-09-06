@@ -40,6 +40,7 @@ class Portfolio:
         self.stat_var = sum((ann_gain - self.stat_cagr - 1) ** 2 for ann_gain in self.annual_gains.values())
         self.stat_var /= (len(self.annual_gains.values()) - 1)
         self.stat_sharpe = self.stat_cagr / self.stat_stdev
+        return self
 
     def __repr__(self):
         weights_without_zeros = []

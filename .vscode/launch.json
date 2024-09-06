@@ -10,7 +10,7 @@
             "request": "launch",
             "program": "optimizer.py",
             "console": "integratedTerminal",
-            "args": ["--precision=5", "--hull=3"]
+            "args": ["--precision=10", "--hull=3"]
         },
         {
             "name": "Python Debugger: Plot demo",
@@ -27,6 +27,13 @@
             "program": "investfunds_converter.py",
             "console": "integratedTerminal",
             "args": []
-        }
+        },
+        {
+            "name": "Performance test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "performance-test.py",
+            "console": "integratedTerminal",
+        },
     ]
 }
