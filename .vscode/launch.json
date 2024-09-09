@@ -27,6 +27,13 @@
             "program": "investfunds_converter.py",
             "console": "integratedTerminal",
             "args": []
-        }
+        },
+        {
+            "name": "Performance test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "performance-test.py",
+            "console": "integratedTerminal",
+        },
     ]
 }

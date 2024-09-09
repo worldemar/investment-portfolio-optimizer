@@ -45,3 +45,26 @@ each plot. Edge cases are calculated separately for each plot.
 <img src="./image-demos/gain_sharpe.svg" width="50%"><img src="./image-demos/sharpe_variance.svg" width="50%">
 
 precision=10 hull=3 lists = DONE :: 15.46s
+
+
+20-core i9-12900H
+
+proc = concurrent.futures.ProcessPoolExecutor(workers=10)
+thrd = concurrent.futures.ThreadPoolExecutor(workers=10)
+chain = custom chaining based on concurrent.futures
+chunk = add chunksize=1000 parameter
+
+Execution time (s) for different mapping techniques (avg. 3 measurements)
+Calls | proc.map(chunk)|   map| thrd.map(chunk)| thrd.map| thrd.chain(chunk)| thrd.chain| proc.map| proc.chain(chunk) | proc.chain|
+----------------------------------------------------------------------------------------------------------------------|------------
+  2^10|            0.05|  0.04|            0.06|     0.05|              0.05|       0.08|     0.26|               0.22|       0.40|
+  2^11|            0.05|  0.09|            0.14|     0.10|              0.10|       0.18|     0.54|               0.42|       0.63|
+  2^12|            0.06|  0.18|            0.23|     0.33|              0.36|       0.37|     0.95|               0.88|       1.74|
+  2^13|            0.09|  0.36|            0.46|     0.56|              0.44|       0.70|     1.72|               1.67|       2.52|
+  2^14|            0.15|  0.68|            1.14|     1.14|              1.47|       1.48|     3.37|               3.31|       6.73|
+  2^15|            0.25|  1.34|            1.96|     2.10|              1.80|       2.83|     6.60|               6.72|      11.32|
+  2^16|            0.48|  2.56|            5.54|     4.91|              4.83|       5.98|    25.08|              13.65|      24.20|
+  2^17|            1.01|  5.36|           10.63|     8.84|              9.17|      11.56|    72.86|              27.44|      45.12|
+  2^18|            1.83|  9.62|           18.15|    18.92|             18.85|      24.48|    54.63|              62.55|      97.85|
+  2^19|            3.76| 19.97|            N/A |     N/A |              N/A |       N/A |     N/A |               N/A |       N/A |
+  2^20|            7.42| 39.54|            N/A |     N/A |              N/A |       N/A |     N/A |               N/A |       N/A |
