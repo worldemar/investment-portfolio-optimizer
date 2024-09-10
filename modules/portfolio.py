@@ -22,10 +22,12 @@ class Portfolio:
     def number_of_assets(self):
         return len(self.weights)
 
-    def is_asset_allocation_valid(self, market_tickers: list):
-        all_weights_in_market = all(ticker in market_tickers for ticker, _ in self.weights.items())
-        all_weights_sum_to_100 = sum(value for _, value in self.weights.items()) == 100
-        return all_weights_in_market and all_weights_sum_to_100
+    def asset_allocation_error(self, market_tickers: list):
+        if (not all(ticker in market_tickers for ticker, _ in self.weights.items())):
+            return f'some tickers in portfolio are not in market data: {set(self.weights.keys()) - set(market_tickers)}'
+        if (sum(value for _, value in self.weights.items()) != 100):
+            return f'sum of weights is not 100: {sum(self.weights.values())}'
+        return ''
 
     def simulate(self, market_data):
         capital = 1

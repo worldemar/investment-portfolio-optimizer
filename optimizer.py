@@ -32,6 +32,16 @@ def _parse_args(argv=None):
     return parser.parse_args()
 
 
+def _report_errors_in_static_portfolios(portfolios: List[Portfolio], tickers_to_test: List[str]):
+    num_errors = 0
+    for static_portfolio in STATIC_PORTFOLIOS:
+        error = static_portfolio.asset_allocation_error(tickers_to_test)
+        if error:
+            num_errors += 1
+            print(f'Static portfolio {static_portfolio}\nhas invalid allocation: {error}')
+    return num_errors
+
+
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
 def main(argv):
@@ -41,11 +51,22 @@ def main(argv):
 
     total_time = time.time()
 
+    coords_tuples = [
+        ('stat_var','stat_cagr'),
+        ('stat_stdev','stat_gain'),
+    ]
+
     tickers_to_test, yearly_revenue_multiplier = data_source.read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
     # deque is the fastest way to exhaust generator
-    _is_asset_allocation_valid = functools.partial(
-        Portfolio.is_asset_allocation_valid, market_tickers=tickers_to_test)
-    deque(map(_is_asset_allocation_valid, STATIC_PORTFOLIOS), maxlen=0)
+    num_errors = _report_errors_in_static_portfolios(portfolios=STATIC_PORTFOLIOS, tickers_to_test=tickers_to_test)
+    if num_errors:
+        print(f'Found {num_errors} invalid static portfolios')
+        return
+
+    static_portfolios_simulated = map(
+        functools.partial(Portfolio.simulate, market_data=yearly_revenue_multiplier),
+        STATIC_PORTFOLIOS,
+    )
 
     possible_asset_allocations = data_source.all_possible_allocations(tickers_to_test, cmdline_args.precision)
     possible_portfolios = map(Portfolio, possible_asset_allocations)
@@ -55,10 +76,7 @@ def main(argv):
         portfolios,
         chunksize=1000,
     )
-    coords_tuples = [
-        ('stat_var','stat_cagr'),
-        ('stat_stdev','stat_gain'),
-    ]
+
     portfolios_points_XY = map(
         functools.partial(data_filter.portfolio_XYpoints, list_of_point_coord_pairs=coords_tuples),
         portfolios_simulated,
@@ -76,7 +94,7 @@ def main(argv):
     }
     for coord_tuple, lmch in lmchs.items():
         portfolios_plot_data[coord_tuple] = data_filter.compose_plot_data(
-            map(lambda x: x.portfolio, lmch.points()),
+            chain(static_portfolios_simulated, map(lambda x: x.portfolio, lmch.points())),
             field_x=coord_tuple[0],
             field_y=coord_tuple[1],
         )
