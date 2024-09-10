@@ -66,23 +66,25 @@ def main(argv):
     ]
 
     tickers_to_test, yearly_revenue_multiplier = data_source.read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
-    # deque is the fastest way to exhaust generator
+
     num_errors = _report_errors_in_static_portfolios(portfolios=STATIC_PORTFOLIOS, tickers_to_test=tickers_to_test)
     if num_errors:
         logger.error(f'Found {num_errors} invalid static portfolios')
         return
 
-    static_portfolios_simulated = map(
+    static_portfolios_simulated = list(map(
         functools.partial(Portfolio.simulate, market_data=yearly_revenue_multiplier),
         STATIC_PORTFOLIOS,
-    )
+    ))
+    logger.info(f'{len(static_portfolios_simulated)} static portfolios will be plotted on all graphs')
 
     possible_asset_allocations = data_source.all_possible_allocations(tickers_to_test, cmdline_args.precision)
+
     possible_portfolios = map(Portfolio, possible_asset_allocations)
-    portfolios = chain(STATIC_PORTFOLIOS, possible_portfolios)
+
     portfolios_simulated = process_executor.map(
         functools.partial(Portfolio.simulate, market_data=yearly_revenue_multiplier),
-        portfolios,
+        possible_portfolios,
         chunksize=1000,
     )
 
