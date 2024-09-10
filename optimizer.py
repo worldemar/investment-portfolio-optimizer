@@ -17,6 +17,13 @@ from asset_colors import RGB_COLOR_MAP
 from modules.convex_hull import LazyMultilayerConvexHull, ConvexHullPoint
 from static_portfolios import STATIC_PORTFOLIOS
 
+import logging
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s :: %(levelname)s :: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+    )
 
 def _parse_args(argv=None):
     parser = argparse.ArgumentParser(argv)
@@ -33,18 +40,20 @@ def _parse_args(argv=None):
 
 
 def _report_errors_in_static_portfolios(portfolios: List[Portfolio], tickers_to_test: List[str]):
+    logger = logging.getLogger(__name__)
     num_errors = 0
     for static_portfolio in STATIC_PORTFOLIOS:
         error = static_portfolio.asset_allocation_error(tickers_to_test)
         if error:
             num_errors += 1
-            print(f'Static portfolio {static_portfolio}\nhas invalid allocation: {error}')
+            logger.error(f'Static portfolio {static_portfolio}\nhas invalid allocation: {error}')
     return num_errors
 
 
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
 def main(argv):
+    logger = logging.getLogger(__name__)
 
     cmdline_args = _parse_args(argv)
     process_executor = concurrent.futures.ProcessPoolExecutor(max_workers=8)
@@ -60,7 +69,7 @@ def main(argv):
     # deque is the fastest way to exhaust generator
     num_errors = _report_errors_in_static_portfolios(portfolios=STATIC_PORTFOLIOS, tickers_to_test=tickers_to_test)
     if num_errors:
-        print(f'Found {num_errors} invalid static portfolios')
+        logger.error(f'Found {num_errors} invalid static portfolios')
         return
 
     static_portfolios_simulated = map(
@@ -111,7 +120,7 @@ def main(argv):
         )
 
     total_time = time.time() - total_time
-    print(f'DONE :: {total_time:.2f}s')
+    logger.info(f'DONE :: {total_time:.2f}s')
 
 
 if __name__ == '__main__':
