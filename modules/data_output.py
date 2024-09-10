@@ -9,6 +9,7 @@ from io import StringIO
 from xml.etree import ElementTree
 import matplotlib.pyplot as plt
 import matplotlib.lines as pltlines
+import modules.convex_hull
 from modules.convex_hull import ConvexHullPoint, LazyMultilayerConvexHull
 from collections.abc import Iterable
 

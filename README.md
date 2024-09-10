@@ -68,3 +68,6 @@ Calls | proc.map(chunk)|   map| thrd.map(chunk)| thrd.map| thrd.chain(chunk)| th
   2^18|            1.83|  9.62|           18.15|    18.92|             18.85|      24.48|    54.63|              62.55|      97.85|
   2^19|            3.76| 19.97|            N/A |     N/A |              N/A |       N/A |     N/A |               N/A |       N/A |
   2^20|            7.42| 39.54|            N/A |     N/A |              N/A |       N/A |     N/A |               N/A |       N/A |
+
+separate: 
+combined: 55.43+57.24+56.59=169.26

@@ -6,15 +6,15 @@ from static_portfolios import STATIC_PORTFOLIOS
 
 def all_possible_allocations(assets: list, percentage_step: int, percentages_ret: list = []):
     if percentages_ret and len(percentages_ret) == len(assets) - 1:
-        yield [zip(assets, percentages_ret + [100 - sum(percentages_ret)])]
+        yield zip(assets, percentages_ret + [100 - sum(percentages_ret)])
         return
     for asset_percent in range(0, 101 - sum(percentages_ret), percentage_step):
         added_percentages = percentages_ret + [asset_percent]
         yield from all_possible_allocations(assets, percentage_step, added_percentages)
 
-def all_possible_portfolios(assets: list, percentage_step: int, percentages_ret: list):
+def all_possible_portfolios(assets: list, percentage_step: int, percentages_ret: list = []):
     if percentages_ret and len(percentages_ret) == len(assets) - 1:
-        yield Portfolio(list(zip(assets, percentages_ret + [100 - sum(percentages_ret)])))
+        yield Portfolio(dict(zip(assets, percentages_ret + [100 - sum(percentages_ret)])))
         return
     for asset_percent in range(0, 101 - sum(percentages_ret), percentage_step):
         added_percentages = percentages_ret + [asset_percent]

@@ -8,6 +8,8 @@ import time
 import modules.data_source as data_source
 import modules.data_filter as data_filter
 import modules.data_output as data_output
+
+from collections import deque
 from typing import List
 from itertools import chain, islice
 from modules.portfolio import Portfolio
@@ -33,26 +35,25 @@ def _parse_args(argv=None):
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
 def main(argv):
-    total_time = time.time()
 
     cmdline_args = _parse_args(argv)
-    process_executor = concurrent.futures.ProcessPoolExecutor(max_workers=4)
+    process_executor = concurrent.futures.ProcessPoolExecutor(max_workers=8)
+
+    total_time = time.time()
 
     tickers_to_test, yearly_revenue_multiplier = data_source.read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
+    # deque is the fastest way to exhaust generator
+    _is_asset_allocation_valid = functools.partial(
+        Portfolio.is_asset_allocation_valid, market_tickers=tickers_to_test)
+    deque(map(_is_asset_allocation_valid, STATIC_PORTFOLIOS), maxlen=0)
 
-    sanitized = map(
-        functools.partial(data_filter.sanitize_portfolio, tickers_to_test=tickers_to_test),
-        STATIC_PORTFOLIOS
-    )
-    for portfolio in sanitized:
-        portfolio
-
-    possible_portfolios = data_source.all_possible_portfolios(tickers_to_test, cmdline_args.precision, [])
+    possible_asset_allocations = data_source.all_possible_allocations(tickers_to_test, cmdline_args.precision)
+    possible_portfolios = map(Portfolio, possible_asset_allocations)
     portfolios = chain(STATIC_PORTFOLIOS, possible_portfolios)
     portfolios_simulated = process_executor.map(
         functools.partial(Portfolio.simulate, market_data=yearly_revenue_multiplier),
         portfolios,
-        chunksize=100,
+        chunksize=1000,
     )
     coords_tuples = [
         ('stat_var','stat_cagr'),
@@ -64,7 +65,7 @@ def main(argv):
     )
 
     lmchs = {
-        coord_tuple : LazyMultilayerConvexHull(max_dirty_points=1000000, layers=cmdline_args.hull) for coord_tuple in coords_tuples
+        coord_tuple : LazyMultilayerConvexHull(max_dirty_points=1000, layers=cmdline_args.hull) for coord_tuple in coords_tuples
     }
     for portfolio_points_XY in portfolios_points_XY:
         for coord_tuple in coords_tuples:

@@ -83,3 +83,18 @@ def simulate_portfolios(executor, market_data, portfolios: Iterable):
 def simulate_portfolio(portfolio: Portfolio = None, market_data = None):
     portfolio.simulate(market_data)
     return portfolio
+
+def simulate_portfolio(portfolio: Portfolio = None, market_data = None):
+    portfolio.simulate(market_data)
+    return portfolio
+
+def simulate_marketdata_and_convert_to_xy_points(asset_allocation: dict, market_data: dict, xy_field_pairs: list[tuple[str, str]]):
+    portfolio = Portfolio(asset_allocation)
+    portfolio.simulate(market_data)
+    return {
+        (field_x, field_y) : PortfolioXYFieldsPoint(portfolio, field_x, field_y) for field_x, field_y in xy_field_pairs
+    }
+
+def simulate_marketdata(asset_allocation: dict, market_data: dict, xy_field_pairs: list[tuple[str, str]]):
+    portfolio = Portfolio(asset_allocation).simulate(market_data)
+    return portfolio

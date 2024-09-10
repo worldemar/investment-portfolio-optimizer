@@ -6,10 +6,10 @@ import statistics
 
 # pylint: disable=too-many-instance-attributes
 class Portfolio:
-    def __init__(self, weights: dict, plot_always=False, plot_marker='o'):
+    def __init__(self, weights: dict[str,float], plot_always=False, plot_marker='o'):
         self.plot_marker = plot_marker
         self.plot_always = plot_always
-        self.weights = weights
+        self.weights = dict(weights)
         self.annual_gains = {}
         self.annual_capital = {}
         self.stat_gain = -1
@@ -20,14 +20,19 @@ class Portfolio:
         self.tags = []
 
     def number_of_assets(self):
-        return len([weight for weight, value in self.weights if value != 0])
+        return len(self.weights)
+
+    def is_asset_allocation_valid(self, market_tickers: list):
+        all_weights_in_market = all(ticker in market_tickers for ticker, _ in self.weights.items())
+        all_weights_sum_to_100 = sum(value for _, value in self.weights.items()) == 100
+        return all_weights_in_market and all_weights_sum_to_100
 
     def simulate(self, market_data):
         capital = 1
         self.annual_capital[list(market_data.keys())[0] - 1] = 1
         for year in market_data.keys():
             new_capital = 0
-            for ticker, weight in self.weights:
+            for ticker, weight in self.weights.items():
                 new_capital += capital * weight / 100 * market_data[year][ticker]
             if capital > 0:
                 self.annual_gains[year] = new_capital / capital
@@ -44,7 +49,7 @@ class Portfolio:
 
     def __repr__(self):
         weights_without_zeros = []
-        for ticker, weight in self.weights:
+        for ticker, weight in self.weights.items():
             if weight == 0:
                 continue
             weights_without_zeros.append(f'{ticker}: {weight}%')
@@ -61,7 +66,7 @@ class Portfolio:
 
     def __weights_without_zeros(self):
         weights_without_zeros = []
-        for ticker, weight in self.weights:
+        for ticker, weight in self.weights.items():
             if weight == 0:
                 continue
             weights_without_zeros.append(f'{ticker}: {weight}%')
@@ -86,7 +91,7 @@ class Portfolio:
 
     def plot_color(self, color_map):
         color = [0, 0, 0, 1]
-        for ticker, weight in self.weights:
+        for ticker, weight in self.weights.items():
             if ticker in color_map:
                 color[0] = color[0] + color_map[ticker][0] * weight / 100
                 color[1] = color[1] + color_map[ticker][1] * weight / 100
