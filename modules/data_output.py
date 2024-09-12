@@ -5,6 +5,7 @@
 
 import os
 import time
+import logging
 from io import StringIO
 from xml.etree import ElementTree
 import matplotlib.pyplot as plt
@@ -111,6 +112,7 @@ def draw_circles_with_tooltips(
         xlabel=None, ylabel=None, title=None,
         directory='.', filename='plot',
         asset_color_map=None, portfolio_legend=None):
+    logger = logging.getLogger(__name__)
 
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -206,7 +208,8 @@ def draw_circles_with_tooltips(
             zorder=2
         )
 
-    plt.savefig(os.path.join(directory, filename + '.png'), format="png", dpi=300)
+    plt.savefig(os.path.join(directory, filename + ' new.png'), format="png", dpi=300)
+    logger.info(f'Plot ready: {os.path.join(directory, filename + " new.png")}')
 
     for index, circle in enumerate(all_circles):
         axes.annotate(
@@ -260,7 +263,8 @@ def draw_circles_with_tooltips(
         """
 
     tree.insert(0, ElementTree.XML(script))
-    ElementTree.ElementTree(tree).write(os.path.join(directory, filename + '.svg'))
+    ElementTree.ElementTree(tree).write(os.path.join(directory, filename + ' new.svg'))
+    logger.info(f'Plot ready: {os.path.join(directory, filename + " new.svg")}')
 
 
 if __name__ == '__main__':

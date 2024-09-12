@@ -12,10 +12,10 @@ class PortfolioXYFieldsPoint(ConvexHullPoint):
         self._varname_y = varname_y
 
     def x(self):
-        return self.portfolio.__dict__[self._varname_x]
+        return self.portfolio.get_stat(self._varname_x)
 
     def y(self):
-        return self.portfolio.__dict__[self._varname_y]
+        return self.portfolio.get_stat(self._varname_y)
 
     def portfolio(self):
         return self.portfolio
@@ -24,7 +24,7 @@ class PortfolioXYFieldsPoint(ConvexHullPoint):
         return f'[{self.x():.3f}, {self.y():.3f}] {self.portfolio}'
 
 
-def portfolio_XYpoints(portfolio: Portfolio, list_of_point_coord_pairs: list[tuple]):
+def portfolio_coord_points(portfolio: Portfolio, list_of_point_coord_pairs: list[tuple]):
     return {
         (field_x, field_y) : PortfolioXYFieldsPoint(portfolio, field_x, field_y) for field_x, field_y in list_of_point_coord_pairs
     }
@@ -36,8 +36,8 @@ def extract_hulls_from_points(point_hull_layers):
 
 def compose_plot_data(portfolios: list[Portfolio], field_x: str, field_y: str):
     return [[{
-            'x': portfolio.__dict__[field_x],
-            'y': portfolio.__dict__[field_y],
+            'x': portfolio.get_stat(field_x),
+            'y': portfolio.get_stat(field_y),
             'text': '\n'.join([
                 portfolio.plot_tooltip_assets(),
                 '—' * max(len(x) for x in portfolio.plot_tooltip_assets().split('\n')),

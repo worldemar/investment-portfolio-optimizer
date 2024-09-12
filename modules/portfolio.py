@@ -20,7 +20,10 @@ class Portfolio:
         self.tags = []
 
     def number_of_assets(self):
-        return len(self.weights)
+        '''
+        Number of asset weights that are not zero
+        '''
+        return len(list(weight for weight in self.weights.values() if weight!= 0))
 
     def asset_allocation_error(self, market_tickers: list):
         if (not all(ticker in market_tickers for ticker, _ in self.weights.items())):
@@ -48,6 +51,15 @@ class Portfolio:
         self.stat_var /= (len(self.annual_gains.values()) - 1)
         self.stat_sharpe = self.stat_cagr / self.stat_stdev
         return self
+
+    def get_stat(self, stat_name: str):
+        return {
+            'Gain(x)': self.stat_gain,
+            'CAGR(%)': self.stat_cagr * 100,
+            'Sharpe': self.stat_sharpe,
+            'Variance': self.stat_var,
+            'Stdev': self.stat_stdev,
+        }[stat_name]
 
     def __repr__(self):
         weights_without_zeros = []

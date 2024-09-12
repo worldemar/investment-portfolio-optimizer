@@ -58,15 +58,20 @@ def main(argv):
     cmdline_args = _parse_args(argv)
     process_executor = concurrent.futures.ProcessPoolExecutor(max_workers=8)
 
-    total_time = time.time()
-
+    time_start = time.time()
 
     coords_tuples = [
-        ('stat_var','stat_cagr'),
-        ('stat_var','stat_sharpe'),
-        ('stat_stdev','stat_gain'),
-        ('stat_stdev','stat_sharpe'),
-        ('stat_sharpe','stat_cagr'),
+        # Y, X
+        ('CAGR(%)', 'Variance'),
+        ('CAGR(%)', 'Stdev'),
+        ('CAGR(%)', 'Sharpe'),
+        ('Gain(x)', 'Variance'),
+        ('Gain(x)', 'Stdev'),
+        ('Gain(x)', 'Sharpe'),
+        ('Sharpe', 'Stdev'),
+        ('Sharpe', 'Variance'),
+        ('Sharpe', 'Gain(x)'),
+        ('Sharpe', 'CAGR(%)'),
     ]
 
     tickers_to_test, yearly_revenue_multiplier = data_source.read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
@@ -92,17 +97,19 @@ def main(argv):
         chunksize=1000,
     )
 
-    portfolios_points_XY = map(
-        functools.partial(data_filter.portfolio_XYpoints, list_of_point_coord_pairs=coords_tuples),
+    portfolios_points_YX = map(
+        functools.partial(data_filter.portfolio_coord_points, list_of_point_coord_pairs=coords_tuples),
         portfolios_simulated,
     )
+    logger.info(f'+{time.time() - time_start:.2f}s :: simulated portfolios map ready')
 
     lmchs = {
-        coord_tuple : LazyMultilayerConvexHull(max_dirty_points=1000, layers=cmdline_args.hull) for coord_tuple in coords_tuples
+        coord_tuple : LazyMultilayerConvexHull(max_dirty_points=3000, layers=cmdline_args.hull) for coord_tuple in coords_tuples
     }
-    for portfolio_points_XY in portfolios_points_XY:
+    for portfolio_points_YX in portfolios_points_YX:
         for coord_tuple in coords_tuples:
-            lmchs[coord_tuple](portfolio_points_XY[coord_tuple])
+            lmchs[coord_tuple](portfolio_points_YX[coord_tuple])
+    logger.info(f'+{time.time() - time_start:.2f}s :: hulls ready')
 
     portfolios_plot_data = {
         coord_tuple : None for coord_tuple in coords_tuples
@@ -110,23 +117,25 @@ def main(argv):
     for coord_tuple, lmch in lmchs.items():
         portfolios_plot_data[coord_tuple] = data_filter.compose_plot_data(
             chain(static_portfolios_simulated, map(lambda x: x.portfolio, lmch.points())),
-            field_x=coord_tuple[0],
-            field_y=coord_tuple[1],
+            field_x=coord_tuple[1],
+            field_y=coord_tuple[0],
         )
+    logger.info(f'+{time.time() - time_start:.2f}s :: plot data ready')
 
+    plots = []
     for coord_tuple, plot_data in portfolios_plot_data.items():
-        data_output.draw_circles_with_tooltips(
+        plots.append(process_executor.submit(data_output.draw_circles_with_tooltips,
             circle_lines=plot_data,
-            xlabel=coord_tuple[0],
-            ylabel=coord_tuple[1],
+            xlabel=coord_tuple[1],
+            ylabel=coord_tuple[0],
             title=f'{coord_tuple[0]} vs {coord_tuple[1]}',
             directory='result',
-            filename=f'{coord_tuple[0]} vs {coord_tuple[1]}',
+            filename=f'{coord_tuple[0]} - {coord_tuple[1]}',
             asset_color_map=dict(RGB_COLOR_MAP),
-        )
-
-    total_time = time.time() - total_time
-    logger.info(f'DONE :: {total_time:.2f}s')
+        ))
+    for plot in plots:
+        plot.result()
+    logger.info(f'+{time.time() - time_start:.2f}s :: graphs ready')
 
 
 if __name__ == '__main__':

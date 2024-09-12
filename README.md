@@ -44,30 +44,41 @@ each plot. Edge cases are calculated separately for each plot.
 <img src="./image-demos/cagr_variance.svg" width="50%"><img src="./image-demos/cagr_stdev.svg" width="50%">
 <img src="./image-demos/gain_sharpe.svg" width="50%"><img src="./image-demos/sharpe_variance.svg" width="50%">
 
-precision=10 hull=3 lists = DONE :: 15.46s
+main branch
+precision=5 hull=3:
+DONE :: 888037 portfolios tested in 15.35s
+times: prepare = 3.00s, simulate = 12.36s
+--- Graph ready: CAGR % - Variance --- 3.37s
+--- Graph ready: Sharpe - Variance --- 1.18s
+--- Graph ready: CAGR % - Stdev --- 1.65s
+--- Graph ready: Sharpe - Stdev --- 1.20s
+--- Graph ready: CAGR % - Sharpe --- 0.82s
+DONE :: 70.09s
 
-
-20-core i9-12900H
-
-proc = concurrent.futures.ProcessPoolExecutor(workers=10)
-thrd = concurrent.futures.ThreadPoolExecutor(workers=10)
-chain = custom chaining based on concurrent.futures
-chunk = add chunksize=1000 parameter
-
-Execution time (s) for different mapping techniques (avg. 3 measurements)
-Calls | proc.map(chunk)|   map| thrd.map(chunk)| thrd.map| thrd.chain(chunk)| thrd.chain| proc.map| proc.chain(chunk) | proc.chain|
-----------------------------------------------------------------------------------------------------------------------|------------
-  2^10|            0.05|  0.04|            0.06|     0.05|              0.05|       0.08|     0.26|               0.22|       0.40|
-  2^11|            0.05|  0.09|            0.14|     0.10|              0.10|       0.18|     0.54|               0.42|       0.63|
-  2^12|            0.06|  0.18|            0.23|     0.33|              0.36|       0.37|     0.95|               0.88|       1.74|
-  2^13|            0.09|  0.36|            0.46|     0.56|              0.44|       0.70|     1.72|               1.67|       2.52|
-  2^14|            0.15|  0.68|            1.14|     1.14|              1.47|       1.48|     3.37|               3.31|       6.73|
-  2^15|            0.25|  1.34|            1.96|     2.10|              1.80|       2.83|     6.60|               6.72|      11.32|
-  2^16|            0.48|  2.56|            5.54|     4.91|              4.83|       5.98|    25.08|              13.65|      24.20|
-  2^17|            1.01|  5.36|           10.63|     8.84|              9.17|      11.56|    72.86|              27.44|      45.12|
-  2^18|            1.83|  9.62|           18.15|    18.92|             18.85|      24.48|    54.63|              62.55|      97.85|
-  2^19|            3.76| 19.97|            N/A |     N/A |              N/A |       N/A |     N/A |               N/A |       N/A |
-  2^20|            7.42| 39.54|            N/A |     N/A |              N/A |       N/A |     N/A |               N/A |       N/A |
-
-separate: 
-combined: 55.43+57.24+56.59=169.26
+map-pipeline branch
+precision=5 hull=3:
+2024-09-12 17:28:06 :: INFO :: 7 static portfolios will be plotted on all graphs
+2024-09-12 17:28:09 :: INFO :: +3.07s :: simulated portfolios map ready
+2024-09-12 17:29:25 :: INFO :: +79.49s :: hulls ready
+2024-09-12 17:29:26 :: INFO :: +79.61s :: plot data ready
+2024-09-12 17:29:26 :: INFO :: Plot ready: result\CAGR(%) - Sharpe new.png
+2024-09-12 17:29:26 :: INFO :: Plot ready: result\Gain(x) - Sharpe new.png
+2024-09-12 17:29:26 :: INFO :: Plot ready: result\Sharpe - Stdev new.png
+2024-09-12 17:29:26 :: INFO :: Plot ready: result\Sharpe - Variance new.png
+2024-09-12 17:29:26 :: INFO :: Plot ready: result\CAGR(%) - Stdev new.png
+2024-09-12 17:29:26 :: INFO :: Plot ready: result\Gain(x) - Stdev new.png
+2024-09-12 17:29:26 :: INFO :: Plot ready: result\Gain(x) - Variance new.png
+2024-09-12 17:29:26 :: INFO :: Plot ready: result\CAGR(%) - Variance new.png
+2024-09-12 17:29:27 :: INFO :: Plot ready: result\Gain(x) - Sharpe new.svg
+2024-09-12 17:29:27 :: INFO :: Plot ready: result\CAGR(%) - Sharpe new.svg
+2024-09-12 17:29:27 :: INFO :: Plot ready: result\Sharpe - Gain(x) new.png
+2024-09-12 17:29:27 :: INFO :: Plot ready: result\Sharpe - CAGR(%) new.png
+2024-09-12 17:29:27 :: INFO :: Plot ready: result\Sharpe - Stdev new.svg
+2024-09-12 17:29:27 :: INFO :: Plot ready: result\Sharpe - Variance new.svg
+2024-09-12 17:29:28 :: INFO :: Plot ready: result\Sharpe - Gain(x) new.svg
+2024-09-12 17:29:28 :: INFO :: Plot ready: result\Gain(x) - Stdev new.svg
+2024-09-12 17:29:28 :: INFO :: Plot ready: result\Sharpe - CAGR(%) new.svg
+2024-09-12 17:29:28 :: INFO :: Plot ready: result\CAGR(%) - Stdev new.svg
+2024-09-12 17:29:28 :: INFO :: Plot ready: result\Gain(x) - Variance new.svg
+2024-09-12 17:29:28 :: INFO :: Plot ready: result\CAGR(%) - Variance new.svg
+2024-09-12 17:29:28 :: INFO :: +82.27s :: graphs ready
