@@ -5,6 +5,7 @@ import argparse
 import multiprocessing
 import functools
 import time
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from modules.portfolio import Portfolio
 from modules.capitalgain import read_capitalgain_csv_data
 from modules.plot import draw_portfolios_statistics, draw_portfolios_history
@@ -66,7 +67,7 @@ def main(argv):
         portfolios_simulated = list(pool.map(pool_func, portfolios))
     time_simulate = time.time()
 
-    print(f'DONE :: {len(portfolios_simulated)} portfolios tested')
+    print(f'DONE :: {len(portfolios_simulated)} portfolios tested in {time.time()-time_start:.2f}s')
     print(f'times: prepare = {time_prepare-time_start:.2f}s, simulate = {time_simulate-time_prepare:.2f}s')
 
     used_colors = {ticker: color for ticker, color in RGB_COLOR_MAP.items() if ticker in tickers_to_test}

@@ -207,7 +207,7 @@ def draw_circles_with_tooltips(
             zorder=2
         )
 
-    plt.savefig(os.path.join(directory, filename + '.png'), format="png", dpi=300)
+    plt.savefig(os.path.join(directory, filename + ' old.png'), format="png", dpi=300)
 
     for index, circle in enumerate(all_circles):
         axes.annotate(
@@ -261,7 +261,7 @@ def draw_circles_with_tooltips(
         """
 
     tree.insert(0, ElementTree.XML(script))
-    ElementTree.ElementTree(tree).write(os.path.join(directory, filename + '.svg'))
+    ElementTree.ElementTree(tree).write(os.path.join(directory, filename + ' old.svg'))
 
 
 if __name__ == '__main__':
