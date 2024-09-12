@@ -43,3 +43,12 @@ each plot. Edge cases are calculated separately for each plot.
 
 <img src="./image-demos/cagr_variance.svg" width="50%"><img src="./image-demos/cagr_stdev.svg" width="50%">
 <img src="./image-demos/gain_sharpe.svg" width="50%"><img src="./image-demos/sharpe_variance.svg" width="50%">
+
+DONE :: 888037 portfolios tested in 15.29s
+times: prepare = 2.98s, simulate = 12.30s
+--- Graph ready: CAGR % - Variance --- 5.16s
+--- Graph ready: Sharpe - Variance --- 1.08s
+--- Graph ready: CAGR % - Stdev --- 5.09s
+--- Graph ready: Sharpe - Stdev --- 3.90s
+--- Graph ready: CAGR % - Sharpe --- 0.85s
+DONE :: in 172.43s

@@ -100,60 +100,7 @@ def main(argv):
         f_x=lambda x: x.stat_sharpe, f_y=lambda y: y.stat_cagr * 100,
         title=title, xlabel='Sharpe', ylabel='CAGR %', color_map=used_colors, hull_layers=cmdline_args.hull)
 
-    portfolios_for_history = set()
-    portfolios_simulated.sort(key=lambda x: x.stat_cagr)
-    portfolios_simulated[-1].tags.append('MAX CAGR')
-    portfolios_for_history.add(portfolios_simulated[-1])
-    portfolios_simulated[0].tags.append('MIN CAGR')
-    portfolios_for_history.add(portfolios_simulated[0])
-    portfolios_simulated.sort(key=lambda x: x.stat_var)
-    portfolios_simulated[-1].tags.append('MAX VAR')
-    portfolios_for_history.add(portfolios_simulated[-1])
-    portfolios_simulated[0].tags.append('MIN VAR')
-    portfolios_for_history.add(portfolios_simulated[0])
-    portfolios_simulated.sort(key=lambda x: x.stat_sharpe)
-    portfolios_simulated[-1].tags.append('MAX SHARPE')
-    portfolios_for_history.add(portfolios_simulated[-1])
-    portfolios_simulated[0].tags.append('MIN SHARPE')
-    portfolios_for_history.add(portfolios_simulated[0])
-    for portfolio in portfolios_simulated:
-        if portfolio.number_of_assets() == 1:
-            portfolios_for_history.add(portfolio)
-    draw_portfolios_history(
-        portfolios_for_history,
-        title='Edge cases portfolios',
-        xlabel='Year', ylabel='gain %', color_map=RGB_COLOR_MAP)
-
-    portfolios_for_history = set()
-    portfolios_simulated.sort(key=lambda x: x.stat_cagr)
-    for i in range(-1, -10, -1):
-        portfolios_simulated[i].tags = [f'MAX CAGR #{abs(i)}']
-        portfolios_for_history.add(portfolios_simulated[i])
-    draw_portfolios_history(
-        portfolios_for_history,
-        title='Max CAGR portfolios',
-        xlabel='Year', ylabel='gain %', color_map=RGB_COLOR_MAP)
-
-    portfolios_for_history = set()
-    portfolios_simulated.sort(key=lambda x: -x.stat_stdev)
-    for i in range(-1, -10, -1):
-        portfolios_simulated[i].tags = [f'MIN STDEV #{abs(i)}']
-        portfolios_for_history.add(portfolios_simulated[i])
-    draw_portfolios_history(
-        portfolios_for_history,
-        title='Min STDEV portfolios',
-        xlabel='Year', ylabel='gain %', color_map=RGB_COLOR_MAP)
-
-    portfolios_for_history = set()
-    portfolios_simulated.sort(key=lambda x: x.stat_sharpe)
-    for i in range(-1, -10, -1):
-        portfolios_simulated[i].tags = [f'MAX SHARP #{abs(i)}']
-        portfolios_for_history.add(portfolios_simulated[i])
-    draw_portfolios_history(
-        portfolios_for_history,
-        title='Max Sharp portfolios',
-        xlabel='Year', ylabel='gain %', color_map=RGB_COLOR_MAP)
-
+    print(f'DONE :: in {time.time()-time_start:.2f}s')
 
 if __name__ == '__main__':
     main(sys.argv)
