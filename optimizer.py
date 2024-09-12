@@ -60,9 +60,13 @@ def main(argv):
 
     total_time = time.time()
 
+
     coords_tuples = [
         ('stat_var','stat_cagr'),
+        ('stat_var','stat_sharpe'),
         ('stat_stdev','stat_gain'),
+        ('stat_stdev','stat_sharpe'),
+        ('stat_sharpe','stat_cagr'),
     ]
 
     tickers_to_test, yearly_revenue_multiplier = data_source.read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
