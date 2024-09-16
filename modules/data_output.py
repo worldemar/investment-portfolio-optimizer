@@ -13,6 +13,7 @@ import matplotlib.lines as pltlines
 import modules.convex_hull
 from modules.convex_hull import ConvexHullPoint, LazyMultilayerConvexHull
 from collections.abc import Iterable
+from asset_colors import RGB_COLOR_MAP
 
 
 def draw_portfolios_history(
@@ -103,6 +104,19 @@ def draw_portfolios_statistics(
         filename=f'{ylabel} - {xlabel}',
         asset_color_map=color_map)
     return None
+
+
+def draw_coord_tuple_plot_data(coordtuple_plot_data):
+    coord_tuple, plot_data = coordtuple_plot_data
+    draw_circles_with_tooltips(
+        circle_lines=plot_data,
+        xlabel=coord_tuple[1],
+        ylabel=coord_tuple[0],
+        title=f'{coord_tuple[0]} vs {coord_tuple[1]}',
+        directory='result',
+        filename=f'{coord_tuple[0]} - {coord_tuple[1]}',
+        asset_color_map=dict(RGB_COLOR_MAP),
+    )
 
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-locals

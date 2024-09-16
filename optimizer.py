@@ -2,7 +2,8 @@
 
 import sys
 import argparse
-import concurrent.futures
+import multiprocessing
+import queue
 import functools
 import time
 import modules.data_source as data_source
@@ -11,7 +12,7 @@ import modules.data_output as data_output
 
 from collections import deque
 from typing import List
-from itertools import chain, islice
+from itertools import chain, islice, tee
 from modules.portfolio import Portfolio
 from asset_colors import RGB_COLOR_MAP
 from modules.convex_hull import LazyMultilayerConvexHull, ConvexHullPoint
@@ -50,15 +51,28 @@ def _report_errors_in_static_portfolios(portfolios: List[Portfolio], tickers_to_
     return num_errors
 
 
+def allocation_to_coord_points(asset_allocation, market_data, coord_tuples: List[tuple[str,str]]):
+    portfolio = Portfolio(asset_allocation)
+    portfolio.simulate(market_data)
+    points = data_filter.portfolio_coord_points(portfolio, coord_tuples)
+    return points
+
+def allocation_to_simulated(asset_allocation, market_data, coord_tuples: List[tuple[str,str]]):
+    portfolio = Portfolio(asset_allocation)
+    portfolio.simulate(market_data)
+    return portfolio
+
+
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
 def main(argv):
     logger = logging.getLogger(__name__)
 
     cmdline_args = _parse_args(argv)
-    process_executor = concurrent.futures.ProcessPoolExecutor(max_workers=8)
 
     time_start = time.time()
+
+    process_pool = multiprocessing.Pool(processes=8)
 
     coords_tuples = [
         # Y, X
@@ -87,28 +101,34 @@ def main(argv):
     ))
     logger.info(f'{len(static_portfolios_simulated)} static portfolios will be plotted on all graphs')
 
-    possible_asset_allocations = data_source.all_possible_allocations(tickers_to_test, cmdline_args.precision)
+    possible_asset_allocations = islice(data_source.all_possible_allocations(tickers_to_test, cmdline_args.precision), 100000)
 
-    possible_portfolios = map(Portfolio, possible_asset_allocations)
-
-    portfolios_simulated = process_executor.map(
-        functools.partial(Portfolio.simulate, market_data=yearly_revenue_multiplier),
-        possible_portfolios,
-        chunksize=1000,
-    )
-
-    portfolios_points_YX = map(
-        functools.partial(data_filter.portfolio_coord_points, list_of_point_coord_pairs=coords_tuples),
-        portfolios_simulated,
+    logger.info(f'+{time.time() - time_start:.2f}s :: simulating portfolios map...')
+    portfolios_simulated = process_pool.imap(
+        functools.partial(allocation_to_simulated, market_data=yearly_revenue_multiplier, coord_tuples=coords_tuples),
+        possible_asset_allocations,
+        chunksize=64,
     )
     logger.info(f'+{time.time() - time_start:.2f}s :: simulated portfolios map ready')
 
+    # coord_tees = tee(portfolios_simulated, len(coords_tuples))
+    # lmchs_list = [LazyMultilayerConvexHull(max_dirty_points=1000, layers=cmdline_args.hull) for coord_tuple in coords_tuples]
+    # map_pairs = zip(lmchs_list, coord_tees)
+    # lmch_processes = []
+    # for lmch, portfolio_points_YX in map_pairs:
+    #     lmch_processes.append(multiprocessing.Process(target=functools.partial(lmch.add_points, lmch, portfolio_points_YX)))
+    # for lmch_process in lmch_processes:
+    #     lmch_process.start()
+    # for lmch_process in lmch_processes:
+    #     lmch_process.join()
+
     lmchs = {
-        coord_tuple : LazyMultilayerConvexHull(max_dirty_points=3000, layers=cmdline_args.hull) for coord_tuple in coords_tuples
+        coord_tuple : LazyMultilayerConvexHull(max_dirty_points=10000, layers=cmdline_args.hull) for coord_tuple in coords_tuples
     }
-    for portfolio_points_YX in portfolios_points_YX:
+    for portfolio in portfolios_simulated:
         for coord_tuple in coords_tuples:
-            lmchs[coord_tuple](portfolio_points_YX[coord_tuple])
+            field_x, field_y = coord_tuple
+            lmchs[coord_tuple](data_filter.PortfolioXYFieldsPoint(portfolio, field_x, field_y))
     logger.info(f'+{time.time() - time_start:.2f}s :: hulls ready')
 
     portfolios_plot_data = {
@@ -122,19 +142,10 @@ def main(argv):
         )
     logger.info(f'+{time.time() - time_start:.2f}s :: plot data ready')
 
-    plots = []
-    for coord_tuple, plot_data in portfolios_plot_data.items():
-        plots.append(process_executor.submit(data_output.draw_circles_with_tooltips,
-            circle_lines=plot_data,
-            xlabel=coord_tuple[1],
-            ylabel=coord_tuple[0],
-            title=f'{coord_tuple[0]} vs {coord_tuple[1]}',
-            directory='result',
-            filename=f'{coord_tuple[0]} - {coord_tuple[1]}',
-            asset_color_map=dict(RGB_COLOR_MAP),
-        ))
-    for plot in plots:
-        plot.result()
+    process_pool.map(
+        data_output.draw_coord_tuple_plot_data,
+        portfolios_plot_data.items(),
+    )
     logger.info(f'+{time.time() - time_start:.2f}s :: graphs ready')
 
 
