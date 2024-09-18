@@ -34,7 +34,7 @@ def extract_hulls_from_points(point_hull_layers):
     return [point.portfolio for hull_layer in point_hull_layers for point in hull_layer]
 
 
-def compose_plot_data(portfolios: list[Portfolio], field_x: str, field_y: str):
+def compose_plot_data(portfolios: Iterable[Portfolio], field_x: str, field_y: str):
     return [[{
             'x': portfolio.get_stat(field_x),
             'y': portfolio.get_stat(field_y),
