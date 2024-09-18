@@ -13,7 +13,7 @@
             "env": {
                 "PYDEVD_DISABLE_FILE_VALIDATION" : "1",
             },
-            "args": ["--precision=5", "--hull=3"]
+            "args": ["--precision=10", "--hull=10"]
         },
         {
             "name": "Debug: Plot demo",

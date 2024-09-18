@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 
 import importlib
-from modules.data_pipeline import DelayedResultFunction
-from typing import Iterable
-
 
 class ConvexHullPoint:
     def __init__(self):
@@ -17,7 +14,7 @@ class ConvexHullPoint:
 
 
 # pylint: disable=too-few-public-methods
-class LazyMultilayerConvexHull(DelayedResultFunction):
+class LazyMultilayerConvexHull():
     def __init__(self, max_dirty_points: int = 100, layers: int = 1):
         self.ScipySpatialConvexHull = importlib.import_module('scipy.spatial').ConvexHull
         self._dirty_points = 0
@@ -26,14 +23,17 @@ class LazyMultilayerConvexHull(DelayedResultFunction):
         self._hull_layers = [[] for _ in range(layers)]
 
     def points(self):
-        self._reconvex_hull()
+        if self._dirty_points > 0:
+            self._reconvex_hull()
         return [point for layer in self._hull_layers for point in layer]
 
-    def add_points(self, points: Iterable):
-        for point in points:
-            self.__call__(point)
+    def hull_layers(self):
+        if self._dirty_points > 0:
+            self._reconvex_hull()
+        return self._hull_layers
 
     def __call__(self, point: ConvexHullPoint):
+        assert point is not None
         self._hull_layers[0].append(point)
         self._dirty_points += 1
         if self._dirty_points > self._max_dirty_points:
@@ -41,9 +41,6 @@ class LazyMultilayerConvexHull(DelayedResultFunction):
         return self
 
     def _reconvex_hull(self):
-        self_hull_points = [point for layer in self._hull_layers for point in layer]
-        for layer in range(self._layers):
-            self._hull_layers[layer] = self_hull_points[layer:layer + 10]
         self_hull_points = [point for layer in self._hull_layers for point in layer]
         for layer in range(self._layers):
             if len(self_hull_points) >= 3:

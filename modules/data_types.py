@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
-import math
-import statistics
+from math import prod as math_prod
+from statistics import stdev as statistics_stdev
+from config.asset_colors import RGB_COLOR_MAP
 
+class DataStreamFinished:
+    pass
 
 # pylint: disable=too-many-instance-attributes
 class Portfolio:
@@ -30,6 +33,8 @@ class Portfolio:
             return f'some tickers in portfolio are not in market data: {set(self.weights.keys()) - set(market_tickers)}'
         if (sum(value for _, value in self.weights.items()) != 100):
             return f'sum of weights is not 100: {sum(self.weights.values())}'
+        if (not all(ticker in RGB_COLOR_MAP.keys() for ticker, _ in self.weights.items())):
+            return f'some tickers have no color defined, add them to asset_colors.py: {set(self.weights.keys()) - set(RGB_COLOR_MAP.keys())}'
         return ''
 
     def simulate(self, market_data):
@@ -44,8 +49,8 @@ class Portfolio:
             capital = new_capital
             self.annual_capital[year] = new_capital
 
-        self.stat_gain = math.prod(self.annual_gains.values())
-        self.stat_stdev = statistics.stdev(self.annual_gains.values())
+        self.stat_gain = math_prod(self.annual_gains.values())
+        self.stat_stdev = statistics_stdev(self.annual_gains.values())
         self.stat_cagr = self.stat_gain**(1 / len(self.annual_gains.values())) - 1
         self.stat_var = sum((ann_gain - self.stat_cagr - 1) ** 2 for ann_gain in self.annual_gains.values())
         self.stat_var /= (len(self.annual_gains.values()) - 1)

@@ -3,18 +3,52 @@
     Helper functions to draw figures using matplotlib.
 """
 
-import os
+from os.path import exists, join as os_path_join
+from os import makedirs
 import time
 import logging
 from io import StringIO
 from xml.etree import ElementTree
 import matplotlib.pyplot as plt
 import matplotlib.lines as pltlines
-import modules.convex_hull
+import modules.data_filter as data_filter
+import modules.data_types as data_types
+from multiprocessing import Queue as multiprocessingQueue
 from modules.convex_hull import ConvexHullPoint, LazyMultilayerConvexHull
 from collections.abc import Iterable
-from asset_colors import RGB_COLOR_MAP
+from config.asset_colors import RGB_COLOR_MAP
+from config.config import CHUNK_SIZE
 
+
+def plot_hull(
+        coord_pair: tuple[str,str] = None,
+        hull_layers: int = None,
+        persistent_portfolios: list[data_types.Portfolio] = None,
+        source_queue: multiprocessingQueue = None):
+    lmch = LazyMultilayerConvexHull(max_dirty_points=CHUNK_SIZE*10, layers=hull_layers)
+    while True:
+        simulated_portfolios = source_queue.get()
+        if isinstance(simulated_portfolios, data_types.DataStreamFinished):
+            break
+        for simulated_portfolio in simulated_portfolios:
+            point = data_filter.PortfolioXYFieldsPoint(simulated_portfolio, coord_pair[1], coord_pair[0])
+            lmch(point)
+    for portfolio in persistent_portfolios:
+        lmch(data_filter.PortfolioXYFieldsPoint(portfolio, coord_pair[1], coord_pair[0]))
+    plot_data = data_filter.compose_plot_data(
+            map(lambda x: x.portfolio, lmch.points()),
+            field_x=coord_pair[1],
+            field_y=coord_pair[0],
+        )
+    draw_circles_with_tooltips(
+        circle_lines=plot_data,
+        xlabel=coord_pair[1],
+        ylabel=coord_pair[0],
+        title=f'{coord_pair[0]} vs {coord_pair[1]}',
+        directory='result',
+        filename=f'{coord_pair[0]} - {coord_pair[1]}',
+        asset_color_map=dict(RGB_COLOR_MAP),
+    )
 
 def draw_portfolios_history(
         portfolios_list: list,
@@ -71,7 +105,7 @@ def draw_portfolios_statistics(
         def y(self):
             return f_y(self.portfolio)
     portfolios_to_draw = []
-    lmch = LazyMultilayerConvexHull(max_dirty_points=1000, layers=hull_layers)
+    lmch = LazyMultilayerConvexHull(max_dirty_points=CHUNK_SIZE, layers=hull_layers)
     for portfolio in portfolios:
         point = PortfolioPoint(portfolio)
         lmch.add_point(point)
@@ -128,8 +162,8 @@ def draw_circles_with_tooltips(
         asset_color_map=None, portfolio_legend=None):
     logger = logging.getLogger(__name__)
 
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+    if not exists(directory):
+        makedirs(directory)
 
     ElementTree.register_namespace("", "http://www.w3.org/2000/svg")
     plt.rcParams["font.family"] = "monospace"
@@ -222,8 +256,8 @@ def draw_circles_with_tooltips(
             zorder=2
         )
 
-    plt.savefig(os.path.join(directory, filename + ' new.png'), format="png", dpi=300)
-    logger.info(f'Plot ready: {os.path.join(directory, filename + " new.png")}')
+    plt.savefig(os_path_join(directory, filename + ' new.png'), format="png", dpi=300)
+    logger.info(f'Plot ready: {os_path_join(directory, filename + " new.png")}')
 
     for index, circle in enumerate(all_circles):
         axes.annotate(
@@ -277,8 +311,8 @@ def draw_circles_with_tooltips(
         """
 
     tree.insert(0, ElementTree.XML(script))
-    ElementTree.ElementTree(tree).write(os.path.join(directory, filename + ' new.svg'))
-    logger.info(f'Plot ready: {os.path.join(directory, filename + " new.svg")}')
+    ElementTree.ElementTree(tree).write(os_path_join(directory, filename + ' new.svg'))
+    logger.info(f'Plot ready: {os_path_join(directory, filename + " new.svg")}')
 
 
 if __name__ == '__main__':

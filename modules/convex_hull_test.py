@@ -3,8 +3,6 @@
 import concurrent.futures
 import pytest
 from modules.convex_hull import LazyMultilayerConvexHull, ConvexHullPoint
-from modules.data_pipeline import chain_generators, ParameterFormat
-
 
 class PointMock(ConvexHullPoint):
     def __init__(self, x, y):
@@ -156,19 +154,6 @@ class TestLazyMultilayerConvexHull:
         for point in points:
             lmch(PointMock(point[0], point[1]))
         for hull_layer_idx, expected_hull_layer in enumerate(hull_layers):
-            lmch_layers = sorted(lmch(None)[hull_layer_idx])
-            test_layers = sorted(expected_hull_layer)
-            assert str(lmch_layers) == str(test_layers)
-
-    def test_convex_hull_pipeline(self, points, hull_layers):
-        executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
-        lmch = LazyMultilayerConvexHull(max_dirty_points=3, layers=len(hull_layers))
-        result1 = chain_generators(executor, [points], [PointMock], ParameterFormat.ARGS)
-        result2 = chain_generators(executor, [result1], [lmch], ParameterFormat.VALUE)
-        result_list = list(result2)
-        lmch_layer = result_list[0]
-        lmch_result = lmch_layer[0]
-        for hull_layer_idx, expected_hull_layer in enumerate(hull_layers):
-            lmch_layers = sorted(lmch_result[hull_layer_idx])
+            lmch_layers = sorted(lmch.hull_layers()[hull_layer_idx])
             test_layers = sorted(expected_hull_layer)
             assert str(lmch_layers) == str(test_layers)
