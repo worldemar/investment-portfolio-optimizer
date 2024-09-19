@@ -105,6 +105,8 @@ def main(argv):
     coord_tuple_queues = {
         coord_pair: multiprocessing.Queue(maxsize=10) for coord_pair in coords_tuples
     }
+    manager = multiprocessing.Manager()
+    # plots_data = manager.dict()
     process_wait_list.append(multiprocessing.Process(
         target=data_filter.queue_multiplexer,
         kwargs={
@@ -114,10 +116,11 @@ def main(argv):
     ))
     for coord_pair in coords_tuples:
         process_wait_list.append(multiprocessing.Process(
-            target=data_output.plot_hull,
+            target=data_output.plot_data,
             kwargs={
-                'persistent_portfolios': edge_portfolios_simulated + static_portfolios_simulated,
                 'source_queue': coord_tuple_queues[coord_pair],
+                # 'plots_data': plots_data,
+                'persistent_portfolios': edge_portfolios_simulated + static_portfolios_simulated,
                 'coord_pair': coord_pair,
                 'hull_layers': cmdline_args.hull,
             }

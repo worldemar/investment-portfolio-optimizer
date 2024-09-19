@@ -8,23 +8,24 @@ from os import makedirs
 import time
 import logging
 from io import StringIO
-from xml.etree import ElementTree
-import matplotlib.pyplot as plt
-import matplotlib.lines as pltlines
 import modules.data_filter as data_filter
 import modules.data_types as data_types
 from multiprocessing import Queue as multiprocessingQueue
 from modules.convex_hull import ConvexHullPoint, LazyMultilayerConvexHull
 from collections.abc import Iterable
+from functools import partial
+from itertools import chain
 from config.asset_colors import RGB_COLOR_MAP
 from config.config import CHUNK_SIZE
+import importlib
 
 
-def plot_hull(
+def plot_data(
+        source_queue: multiprocessingQueue = None,
         coord_pair: tuple[str,str] = None,
         hull_layers: int = None,
         persistent_portfolios: list[data_types.Portfolio] = None,
-        source_queue: multiprocessingQueue = None):
+        ):
     lmch = LazyMultilayerConvexHull(max_dirty_points=CHUNK_SIZE*10, layers=hull_layers)
     while True:
         simulated_portfolios = source_queue.get()
@@ -33,10 +34,13 @@ def plot_hull(
         for simulated_portfolio in simulated_portfolios:
             point = data_filter.PortfolioXYFieldsPoint(simulated_portfolio, coord_pair[1], coord_pair[0])
             lmch(point)
+    persistent_portfolios_points = map(
+        partial(data_filter.PortfolioXYFieldsPoint, varname_x=coord_pair[1], varname_y=coord_pair[0]),
+        persistent_portfolios)
     for portfolio in persistent_portfolios:
         lmch(data_filter.PortfolioXYFieldsPoint(portfolio, coord_pair[1], coord_pair[0]))
     plot_data = data_filter.compose_plot_data(
-            map(lambda x: x.portfolio, lmch.points()),
+            map(lambda x: x.portfolio, chain(lmch.points(), persistent_portfolios_points)),
             field_x=coord_pair[1],
             field_y=coord_pair[0],
         )
@@ -47,108 +51,6 @@ def plot_hull(
         title=f'{coord_pair[0]} vs {coord_pair[1]}',
         directory='result',
         filename=f'{coord_pair[0]} - {coord_pair[1]}',
-        asset_color_map=dict(RGB_COLOR_MAP),
-    )
-
-def draw_portfolios_history(
-        portfolios_list: list,
-        title: str, xlabel: str, ylabel: str,
-        color_map: dict):
-    time_start = time.time()
-    plot_data = []
-    for portfolio in portfolios_list:
-        line_data = []
-        tooltip_line = '—' * max(
-            [len(portfolio.plot_title())] + [len(x) for x in portfolio.plot_tooltip_assets().split('\n')])
-        for year in sorted(portfolio.annual_capital.keys()):
-            line_data.append({
-                'x': year,
-                'y': portfolio.annual_capital[year] * 100 - 100,
-                'text': '\n'.join([
-                    portfolio.plot_title(),
-                    tooltip_line,
-                    portfolio.plot_tooltip_assets(),
-                    tooltip_line,
-                    f'By {year}: {portfolio.annual_capital[year]*100-100:+.0f}%',
-                ]),
-                'marker': portfolio.plot_marker,
-                'color': portfolio.plot_color(color_map),
-                'size': 50 if portfolio.plot_always else 50 / portfolio.number_of_assets(),
-                'linewidth': 1 if portfolio.plot_always else 1 / portfolio.number_of_assets(),
-            })
-        plot_data.append(line_data)
-    draw_circles_with_tooltips(
-        circle_lines=plot_data,
-        xlabel=xlabel,
-        ylabel=ylabel,
-        title=title,
-        directory='result',
-        filename=f'{title} - {ylabel} - {xlabel}',
-        asset_color_map=color_map,
-        portfolio_legend=portfolios_list)
-    time_end = time.time()
-    print(f'--- Graph ready: {title} - {ylabel} - {xlabel} --- {time_end-time_start:.2f}s')
-
-
-# pylint: disable=too-many-arguments
-# pylint: disable=too-many-locals
-def draw_portfolios_statistics(
-        portfolios: Iterable,
-        f_x: callable, f_y: callable,
-        title: str, xlabel: str, ylabel: str,
-        color_map: dict, hull_layers: int):
-    class PortfolioPoint(ConvexHullPoint):
-        def __init__(self, portfolio):
-            self.portfolio = portfolio
-        def x(self):
-            return f_x(self.portfolio)
-        def y(self):
-            return f_y(self.portfolio)
-    portfolios_to_draw = []
-    lmch = LazyMultilayerConvexHull(max_dirty_points=CHUNK_SIZE, layers=hull_layers)
-    for portfolio in portfolios:
-        point = PortfolioPoint(portfolio)
-        lmch.add_point(point)
-        if portfolio.number_of_assets() == 1 or portfolio.plot_always:
-            portfolios_to_draw.append(portfolio)
-    hull_layers = lmch.hull_layers()
-    portfolios_to_draw.extend([point.portfolio for layer in hull_layers for point in layer])
-
-    plot_data = []
-    for portfolio in portfolios_to_draw:
-        plot_data.append([{
-            'x': f_x(portfolio),
-            'y': f_y(portfolio),
-            'text': '\n'.join([
-                portfolio.plot_tooltip_assets(),
-                '—' * max(len(x) for x in portfolio.plot_tooltip_assets().split('\n')),
-                portfolio.plot_tooltip_stats(),
-            ]),
-            'marker': portfolio.plot_marker,
-            'color': portfolio.plot_color(color_map),
-            'size': 100 if portfolio.plot_always else 50 / portfolio.number_of_assets(),
-            'linewidth': 0.5 if portfolio.plot_always else 1 / portfolio.number_of_assets(),
-        }])
-    draw_circles_with_tooltips(
-        circle_lines=plot_data,
-        xlabel=xlabel,
-        ylabel=ylabel,
-        title=title,
-        directory='result',
-        filename=f'{ylabel} - {xlabel}',
-        asset_color_map=color_map)
-    return None
-
-
-def draw_coord_tuple_plot_data(coordtuple_plot_data):
-    coord_tuple, plot_data = coordtuple_plot_data
-    draw_circles_with_tooltips(
-        circle_lines=plot_data,
-        xlabel=coord_tuple[1],
-        ylabel=coord_tuple[0],
-        title=f'{coord_tuple[0]} vs {coord_tuple[1]}',
-        directory='result',
-        filename=f'{coord_tuple[0]} - {coord_tuple[1]}',
         asset_color_map=dict(RGB_COLOR_MAP),
     )
 
@@ -165,7 +67,9 @@ def draw_circles_with_tooltips(
     if not exists(directory):
         makedirs(directory)
 
-    ElementTree.register_namespace("", "http://www.w3.org/2000/svg")
+    plt = importlib.import_module('matplotlib.pyplot')
+    pltlines = importlib.import_module('matplotlib.lines')
+
     plt.rcParams["font.family"] = "monospace"
     _, axes = plt.subplots(figsize=(9, 6))
 
@@ -282,6 +186,8 @@ def draw_circles_with_tooltips(
 
     # XML trickery for interactive tooltips
 
+    ElementTree = importlib.import_module('xml.etree.ElementTree')
+    ElementTree.register_namespace("", "http://www.w3.org/2000/svg")
     tree, xmlid = ElementTree.XMLID(virtual_file.getvalue())
     tree.set('onload', 'init(evt)')
 
