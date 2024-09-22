@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
-import concurrent.futures
+import random
 import pytest
 from modules.convex_hull import LazyMultilayerConvexHull, ConvexHullPoint
+
 
 class PointMock(ConvexHullPoint):
     def __init__(self, x, y):
@@ -147,6 +148,7 @@ class PointMock(ConvexHullPoint):
         ],
     ]
 )
+# pylint: disable=too-few-public-methods
 class TestLazyMultilayerConvexHull:
 
     def test_convex_hull(self, points, hull_layers):

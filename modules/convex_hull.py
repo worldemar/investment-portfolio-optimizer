@@ -2,6 +2,7 @@
 
 import importlib
 
+
 class ConvexHullPoint:
     def __init__(self):
         pass
@@ -13,10 +14,9 @@ class ConvexHullPoint:
         return None
 
 
-# pylint: disable=too-few-public-methods
 class LazyMultilayerConvexHull():
     def __init__(self, max_dirty_points: int = 100, layers: int = 1):
-        self.ScipySpatialConvexHull = importlib.import_module('scipy.spatial').ConvexHull
+        self._pyhull_convex_hull = importlib.import_module('pyhull.convex_hull').ConvexHull
         self._dirty_points = 0
         self._layers = layers
         self._max_dirty_points = max_dirty_points
@@ -45,8 +45,9 @@ class LazyMultilayerConvexHull():
         for layer in range(self._layers):
             if len(self_hull_points) >= 3:
                 points_for_hull = [[point.x(), point.y()] for point in self_hull_points]
-                hull = self.ScipySpatialConvexHull(points_for_hull, incremental=False)
-                hull_points = [self_hull_points[hull_vertex] for hull_vertex in hull.vertices]
+                hull = self._pyhull_convex_hull(points_for_hull)
+                hull_vertexes = set(vertex for hull_vertex in hull.vertices for vertex in hull_vertex)
+                hull_points = list(self_hull_points[vertex] for vertex in hull_vertexes)
                 for hull_point in hull_points:
                     self_hull_points.remove(hull_point)
                 self._hull_layers[layer] = hull_points
