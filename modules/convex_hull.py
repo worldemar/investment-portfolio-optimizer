@@ -43,17 +43,17 @@ class LazyMultilayerConvexHull():
     def _reconvex_hull(self):
         self_hull_points = [point for layer in self._hull_layers for point in layer]
         for layer in range(self._layers):
-            points_for_hull = [[point.x(), point.y()] for point in self_hull_points]
-            hull = self._pyhull_convex_hull(points_for_hull)
+            if len(self_hull_points) == 0:
+                self._hull_layers[layer] = []
+                continue
+            hull = self._pyhull_convex_hull([[point.x(), point.y()] for point in self_hull_points])
             hull_vertexes = set(vertex for hull_vertex in hull.vertices for vertex in hull_vertex)
             hull_points = list(self_hull_points[vertex] for vertex in hull_vertexes)
-            if hull_points != []:
+            if len(hull_points) > 0:
                 for hull_point in hull_points:
                     self_hull_points.remove(hull_point)
                 self._hull_layers[layer] = hull_points
             else:
                 self._hull_layers[layer] = self_hull_points
                 self_hull_points = []
-            if self_hull_points == []:
-                break
         self._dirty_points = 0
