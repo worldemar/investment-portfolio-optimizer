@@ -11,7 +11,7 @@ from io import StringIO
 import modules.data_filter as data_filter
 import modules.data_types as data_types
 from multiprocessing import Queue as multiprocessingQueue
-from modules.convex_hull import ConvexHullPoint, LazyMultilayerConvexHull
+from modules.convex_hull import multilayer_convex_hull, batched_multilayer_convex_hull
 from collections.abc import Iterable
 from functools import partial
 from itertools import chain
@@ -26,24 +26,18 @@ def plot_data(
         hull_layers: int = None,
         persistent_portfolios: list[data_types.Portfolio] = None,
         ):
-    lmch = LazyMultilayerConvexHull(max_dirty_points=CHUNK_SIZE*10, layers=hull_layers)
+    batches_hulls_points = []
     while True:
-        simulated_portfolios = source_queue.get()
-        if isinstance(simulated_portfolios, data_types.DataStreamFinished):
+        points_batch = source_queue.get()
+        if isinstance(points_batch, data_types.DataStreamFinished):
             break
-        for simulated_portfolio in simulated_portfolios:
-            point = data_filter.PortfolioXYFieldsPoint(simulated_portfolio, coord_pair[1], coord_pair[0])
-            lmch(point)
-    persistent_portfolios_points = map(
-        partial(data_filter.PortfolioXYFieldsPoint, varname_x=coord_pair[1], varname_y=coord_pair[0]),
-        persistent_portfolios)
-    for portfolio in persistent_portfolios:
-        lmch(data_filter.PortfolioXYFieldsPoint(portfolio, coord_pair[1], coord_pair[0]))
-    plot_data = data_filter.compose_plot_data(
-            map(lambda x: x.portfolio, chain(lmch.points(), persistent_portfolios_points)),
-            field_x=coord_pair[1],
-            field_y=coord_pair[0],
-        )
+        batch_xy_points = data_filter.portfolios_xy_points(points_batch, coord_pair)
+        batches_hulls_points.extend(multilayer_convex_hull(batch_xy_points, hull_layers))
+    simulated_hull_points = multilayer_convex_hull(batches_hulls_points, hull_layers)
+    persistent_portfolios_points = data_filter.portfolios_xy_points(persistent_portfolios, coord_pair)
+    portfolios_for_plot = list(map(lambda x: x.portfolio, chain(simulated_hull_points, persistent_portfolios_points)))
+    portfolios_for_plot.sort(key=lambda x: -x.number_of_assets())
+    plot_data = data_filter.compose_plot_data(portfolios_for_plot, field_x=coord_pair[1], field_y=coord_pair[0])
     draw_circles_with_tooltips(
         circle_lines=plot_data,
         xlabel=coord_pair[1],
