@@ -3,57 +3,26 @@
 import importlib
 
 
-class ConvexHullPoint:
-    def __init__(self):
-        pass
-
-    def x(self):  # pylint: disable=invalid-name
-        return None
-
-    def y(self):  # pylint: disable=invalid-name
-        return None
+class ConvexHullPoint(tuple):
+    pass
 
 
-class LazyMultilayerConvexHull():
-    def __init__(self, max_dirty_points: int = 100, layers: int = 1):
-        self._pyhull_convex_hull = importlib.import_module('pyhull.convex_hull').ConvexHull
-        self._dirty_points = 0
-        self._layers = layers
-        self._max_dirty_points = max_dirty_points
-        self._hull_layers = [[] for _ in range(layers)]
+def multilayer_convex_hull(point_batch: list[ConvexHullPoint], layers: int = 1):
+    pyhull_convex_hull = importlib.import_module('pyhull.convex_hull').ConvexHull
+    hull_layers_points = []
+    self_hull_points = list(point_batch)
+    for layer in range(layers):
+        if len(self_hull_points) == 0:
+            break
+        hull = pyhull_convex_hull(self_hull_points)
+        hull_vertexes = set(vertex for hull_vertex in hull.vertices for vertex in hull_vertex)
+        hull_points = list(self_hull_points[vertex] for vertex in hull_vertexes)
+        if len(hull_points) > 0:
+            for hull_point in hull_points:
+                self_hull_points.remove(hull_point)
+                hull_layers_points.append(hull_point)
+        else:
+            hull_layers_points.extend(self_hull_points)
+    return hull_layers_points
 
-    def points(self):
-        if self._dirty_points > 0:
-            self._reconvex_hull()
-        return [point for layer in self._hull_layers for point in layer]
 
-    def hull_layers(self):
-        if self._dirty_points > 0:
-            self._reconvex_hull()
-        return self._hull_layers
-
-    def __call__(self, point: ConvexHullPoint):
-        assert point is not None
-        self._hull_layers[0].append(point)
-        self._dirty_points += 1
-        if self._dirty_points > self._max_dirty_points:
-            self._reconvex_hull()
-        return self
-
-    def _reconvex_hull(self):
-        self_hull_points = [point for layer in self._hull_layers for point in layer]
-        for layer in range(self._layers):
-            if len(self_hull_points) == 0:
-                self._hull_layers[layer] = []
-                continue
-            hull = self._pyhull_convex_hull([[point.x(), point.y()] for point in self_hull_points])
-            hull_vertexes = set(vertex for hull_vertex in hull.vertices for vertex in hull_vertex)
-            hull_points = list(self_hull_points[vertex] for vertex in hull_vertexes)
-            if len(hull_points) > 0:
-                for hull_point in hull_points:
-                    self_hull_points.remove(hull_point)
-                self._hull_layers[layer] = hull_points
-            else:
-                self._hull_layers[layer] = self_hull_points
-                self_hull_points = []
-        self._dirty_points = 0
