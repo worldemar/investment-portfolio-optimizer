@@ -35,7 +35,7 @@
             "name": "Performance test",
             "type": "debugpy",
             "request": "launch",
-            "program": "performance-test.py",
+            "program": "austin.py",
             "console": "integratedTerminal",
         },
     ]
