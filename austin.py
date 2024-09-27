@@ -5,7 +5,7 @@ import time
 import os
 import psutil
 import importlib
-from modules.convex_hull import LazyMultilayerConvexHull, ConvexHullPoint, batched_multilayer_convex_hull, multilayer_convex_hull
+from modules.convex_hull import ConvexHullPoint2, ConvexHullPoint, batched_multilayer_convex_hull, multilayer_convex_hull
 
 class PointMock(ConvexHullPoint):
     def __new__(cls, x, y, payload):
@@ -72,20 +72,16 @@ def main2():
     REPEATS=10
     for N in range(10,20):
         random_points = [PointMock(random.random(), random.random(), n) for n in range(2**N)]
-        unsorted_start = time.time()
-        for r in range(REPEATS):
-            unsorted_hull = pyhull_convex_hull(random_points)
-        unsorted_end = time.time()
-        unsorted_batch_start = time.time()
+        random_points2 = [PointMock2(random.random(), random.random(), n) for n in range(2**N)]
+        batch_start = time.time()
         for r in range(REPEATS):
             sorted_hull = batched_multilayer_convex_hull(random_points, batch_size=100000)
-        unsorted_batch_end = time.time()
-        random_points.sort()
-        sorted_start = time.time()
+        batch_end = time.time()
+        batch2_start = time.time()
         for r in range(REPEATS):
-            sorted_hull = pyhull_convex_hull(random_points)
-        sorted_end = time.time()
-        print(f'N={N} :: unsorted :: {(unsorted_end - unsorted_start)/REPEATS:.2f}s sorted :: {(sorted_end - sorted_start)/REPEATS:.2f}s :: batch :: {(unsorted_batch_end - unsorted_batch_start)/REPEATS:.2f}s')
+            sorted_hull2 = batched_multilayer_convex_hull(random_points2, batch_size=100000)
+        batch2_end = time.time()
+        print(f'{N} :: {batch_end-batch_start:.2f}s {batch2_end-batch2_start:.2f}s')
 
 if __name__ == '__main__':
     main2()
