@@ -3,29 +3,46 @@
     Helper functions to draw figures using matplotlib.
 """
 
+from collections.abc import Iterable
 from os.path import exists, join as os_path_join
 from os import makedirs
-import time
 import logging
 from io import StringIO
+from typing import List
+from config.static_portfolios import STATIC_PORTFOLIOS
 import modules.data_filter as data_filter
 import modules.data_types as data_types
 from multiprocessing import Queue as multiprocessingQueue
-from modules.convex_hull import multilayer_convex_hull, batched_multilayer_convex_hull
-from collections.abc import Iterable
-from functools import partial
+from modules.data_filter import multilayer_convex_hull
 from itertools import chain
 from config.asset_colors import RGB_COLOR_MAP
-from config.config import CHUNK_SIZE
 import importlib
+
+from modules.data_types import Portfolio
+
+
+def compose_plot_data(portfolios: Iterable[data_types.Portfolio], field_x: str, field_y: str):
+    return [[{
+            'x': portfolio.get_stat(field_x),
+            'y': portfolio.get_stat(field_y),
+            'text': '\n'.join([
+                portfolio.plot_tooltip_assets(),
+                '—' * max(len(x) for x in portfolio.plot_tooltip_assets().split('\n')),
+                portfolio.plot_tooltip_stats(),
+            ]),
+            'marker': portfolio.plot_marker,
+            'color': portfolio.plot_color(dict(RGB_COLOR_MAP.items())),
+            'size': 100 if portfolio.plot_always else 50 / portfolio.number_of_assets(),
+            'linewidth': 0.5 if portfolio.plot_always else 1 / portfolio.number_of_assets(),
+            }] for portfolio in portfolios
+            ]
 
 
 def plot_data(
         source_queue: multiprocessingQueue = None,
-        coord_pair: tuple[str,str] = None,
+        coord_pair: tuple[str, str] = None,
         hull_layers: int = None,
-        persistent_portfolios: list[data_types.Portfolio] = None,
-        ):
+        persistent_portfolios: list[data_types.Portfolio] = None):
     batches_hulls_points = []
     while True:
         points_batch = source_queue.get()
@@ -35,9 +52,9 @@ def plot_data(
         batches_hulls_points.extend(multilayer_convex_hull(batch_xy_points, hull_layers))
     simulated_hull_points = multilayer_convex_hull(batches_hulls_points, hull_layers)
     persistent_portfolios_points = data_filter.portfolios_xy_points(persistent_portfolios, coord_pair)
-    portfolios_for_plot = list(map(lambda x: x.portfolio, chain(simulated_hull_points, persistent_portfolios_points)))
+    portfolios_for_plot = list(map(lambda x: x.portfolio(), chain(simulated_hull_points, persistent_portfolios_points)))
     portfolios_for_plot.sort(key=lambda x: -x.number_of_assets())
-    plot_data = data_filter.compose_plot_data(portfolios_for_plot, field_x=coord_pair[1], field_y=coord_pair[0])
+    plot_data = compose_plot_data(portfolios_for_plot, field_x=coord_pair[1], field_y=coord_pair[0])
     draw_circles_with_tooltips(
         circle_lines=plot_data,
         xlabel=coord_pair[1],
@@ -47,6 +64,7 @@ def plot_data(
         filename=f'{coord_pair[0]} - {coord_pair[1]}',
         asset_color_map=dict(RGB_COLOR_MAP),
     )
+
 
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-locals
@@ -150,7 +168,7 @@ def draw_circles_with_tooltips(
             facecolor=circle['color'],
             edgecolor='black',
             linewidth=circle['linewidth'],
-            gid=f'patch_{index:08d}',
+            gid=f'patch_{index: 08d}',
             zorder=2
         )
 
@@ -159,7 +177,7 @@ def draw_circles_with_tooltips(
 
     for index, circle in enumerate(all_circles):
         axes.annotate(
-            gid=f'tooltip_{index:08d}',
+            gid=f'tooltip_{index: 08d}',
             text=circle['text'],
             xy=(circle['x'], circle['y']),
             xytext=(0, 8),
@@ -180,19 +198,19 @@ def draw_circles_with_tooltips(
 
     # XML trickery for interactive tooltips
 
-    ElementTree = importlib.import_module('xml.etree.ElementTree')
-    ElementTree.register_namespace("", "http://www.w3.org/2000/svg")
-    tree, xmlid = ElementTree.XMLID(virtual_file.getvalue())
+    element_tree = importlib.import_module('xml.etree.ElementTree')
+    element_tree.register_namespace("", "http://www.w3.org/2000/svg")
+    tree, xmlid = element_tree.XMLID(virtual_file.getvalue())
     tree.set('onload', 'init(evt)')
 
     for index, circle in enumerate(all_circles):
-        element = xmlid[f'tooltip_{index:08d}']
+        element = xmlid[f'tooltip_{index: 08d}']
         element.set('visibility', 'hidden')
 
     for index, circle in enumerate(all_circles):
-        element = xmlid[f'patch_{index:08d}']
-        element.set('onmouseover', f"ShowTooltip('tooltip_{index:08d}')")
-        element.set('onmouseout', f"HideTooltip('tooltip_{index:08d}')")
+        element = xmlid[f'patch_{index: 08d}']
+        element.set('onmouseover', f"ShowTooltip('tooltip_{index: 08d}')")
+        element.set('onmouseout', f"HideTooltip('tooltip_{index: 08d}')")
 
     script = """
         <script type="text/ecmascript">
@@ -210,8 +228,8 @@ def draw_circles_with_tooltips(
         </script>
         """
 
-    tree.insert(0, ElementTree.XML(script))
-    ElementTree.ElementTree(tree).write(os_path_join(directory, filename + ' new.svg'))
+    tree.insert(0, element_tree.XML(script))
+    element_tree.ElementTree(tree).write(os_path_join(directory, filename + ' new.svg'))
     logger.info(f'Plot ready: {os_path_join(directory, filename + " new.svg")}')
 
 
@@ -224,12 +242,12 @@ if __name__ == '__main__':
             demo_data_line.append({
                 'x': ((i + j * 100) / 1000) ** 2 * cos((i + j * 100) / 25),
                 'y': (i + j * 100)**0.5 * sin((i + j * 100) / 25),
-                'text': f'{i}\n{i**0.5:.0f}\n{j}',
+                'text': f'{i}\n{i**0.5: .0f}\n{j}',
                 'color': (1.0 * (i + j * 100) / 1000, abs(cos((i + j * 100) / 25)), 1.0 - (i + j * 100) / 1000),
                 'size': (i + j * 100) / 20,
             })
         demo_data.append(demo_data_line)
-    RGB_COLOR_MAP = {
+    COLOR_MAP = {
         'red': (1, 0, 0),
         'blue': (0, 0, 1),
         'cyan': (0, 1, 1),
@@ -240,7 +258,18 @@ if __name__ == '__main__':
         xlabel='X LABEL', ylabel='Y LABEL',
         title='Demo',
         circle_lines=demo_data,
-        asset_color_map=RGB_COLOR_MAP,
+        asset_color_map=COLOR_MAP,
         directory='result',
         filename='plot_demo'
     )
+
+
+def report_errors_in_static_portfolios(portfolios: List[Portfolio], tickers_to_test: List[str]):
+    logger = logging.getLogger(__name__)
+    num_errors = 0
+    for static_portfolio in STATIC_PORTFOLIOS:
+        error = static_portfolio.asset_allocation_error(tickers_to_test)
+        if error:
+            num_errors += 1
+            logger.error(f'Static portfolio {static_portfolio}\nhas invalid allocation: {error}')
+    return num_errors

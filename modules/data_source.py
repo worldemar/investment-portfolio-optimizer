@@ -53,6 +53,7 @@ def simulated_q(
     logger.info(f'Simulated {total_portfolios} portfolios, rate: {int(total_portfolios / (time_now - time_start))}/s')
     sink_queue.put(data_types.DataStreamFinished())
 
+
 def read_capitalgain_csv_data(filename):
     yearly_revenue_multiplier = {}  # year, ticker = cash multiplier
     # read csv values from tickers.csv

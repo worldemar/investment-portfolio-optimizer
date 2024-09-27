@@ -5,11 +5,11 @@ import argparse
 import multiprocessing
 import functools
 import time
+from modules.data_output import report_errors_in_static_portfolios
 import modules.data_source as data_source
 import modules.data_filter as data_filter
 import modules.data_output as data_output
 from collections import deque
-from typing import List
 from modules.data_types import Portfolio
 from config.asset_colors import RGB_COLOR_MAP
 from config.static_portfolios import STATIC_PORTFOLIOS
@@ -17,11 +17,13 @@ from config.config import CHUNK_SIZE
 
 import logging
 
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s :: %(levelname)s :: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
     )
+
 
 def _parse_args(argv=None):
     parser = argparse.ArgumentParser(argv)
@@ -36,15 +38,6 @@ def _parse_args(argv=None):
              ' of edge portfolios, set to 0 to draw all portfolios')
     return parser.parse_args()
 
-def _report_errors_in_static_portfolios(portfolios: List[Portfolio], tickers_to_test: List[str]):
-    logger = logging.getLogger(__name__)
-    num_errors = 0
-    for static_portfolio in STATIC_PORTFOLIOS:
-        error = static_portfolio.asset_allocation_error(tickers_to_test)
-        if error:
-            num_errors += 1
-            logger.error(f'Static portfolio {static_portfolio}\nhas invalid allocation: {error}')
-    return num_errors
 
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
@@ -52,7 +45,6 @@ def main(argv):
     process_wait_list = []
     logger = logging.getLogger(__name__)
     cmdline_args = _parse_args(argv)
-    # process_pool = multiprocessing.Pool(processes=8)
     coords_tuples = [
         # Y, X
         ('CAGR(%)', 'Variance'),
@@ -70,7 +62,7 @@ def main(argv):
     time_start = time.time()
     tickers_to_test, yearly_revenue_multiplier = data_source.read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
 
-    num_errors = _report_errors_in_static_portfolios(portfolios=STATIC_PORTFOLIOS, tickers_to_test=tickers_to_test)
+    num_errors = report_errors_in_static_portfolios(portfolios=STATIC_PORTFOLIOS, tickers_to_test=tickers_to_test)
     if num_errors > 0:
         logger.error(f'Found {num_errors} invalid static portfolios')
         return

@@ -3,7 +3,8 @@
 import random
 from typing import List
 import pytest
-from modules.convex_hull import ConvexHullPoint, multilayer_convex_hull
+from modules.data_types import ConvexHullPoint
+from modules.data_filter import multilayer_convex_hull
 
 
 class PointMock(ConvexHullPoint):

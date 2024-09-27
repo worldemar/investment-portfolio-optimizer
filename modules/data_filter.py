@@ -1,30 +1,28 @@
 #!/usr/bin/env python3
 
-import concurrent.futures.thread
+import importlib
 import functools
-import concurrent.futures
-import config.asset_colors as asset_colors
 from collections.abc import Iterable
-import modules.data_types as data_types
-from modules.convex_hull import ConvexHullPoint
 import multiprocessing
-import modules.data_source as data_source
+from modules import data_types
 
 
-class PortfolioXYFieldsPoint(ConvexHullPoint):
+class PortfolioXYFieldsPoint(data_types.ConvexHullPoint):
     def __new__(cls, portfolio: data_types.Portfolio, varname_x: str, varname_y: str):
         return super().__new__(cls, (portfolio.get_stat(varname_x), portfolio.get_stat(varname_y)))
 
     def __init__(self, portfolio: data_types.Portfolio, varname_x: str, varname_y: str):
-        self.portfolio = portfolio
-
-    def __init__(self, portfolio: data_types.Portfolio, varname_x: str, varname_y: str):
-        self.portfolio = portfolio
+        self._portfolio = portfolio
         self._varname_x = varname_x
         self._varname_y = varname_y
 
     def portfolio(self):
-        return self.portfolio
+        return self._portfolio
+
+
+def portfolios_xy_points(portfolios: Iterable[data_types.Portfolio], coord_pair: tuple[str, str]):
+    xy_func = functools.partial(PortfolioXYFieldsPoint, varname_x=coord_pair[1], varname_y=coord_pair[0])
+    return map(xy_func, portfolios)
 
 
 def queue_multiplexer(
@@ -39,21 +37,21 @@ def queue_multiplexer(
     for queue in queues:
         queue.put(data_types.DataStreamFinished())
 
-def compose_plot_data(portfolios: Iterable[data_types.Portfolio], field_x: str, field_y: str):
-    return [[{
-            'x': portfolio.get_stat(field_x),
-            'y': portfolio.get_stat(field_y),
-            'text': '\n'.join([
-                portfolio.plot_tooltip_assets(),
-                '—' * max(len(x) for x in portfolio.plot_tooltip_assets().split('\n')),
-                portfolio.plot_tooltip_stats(),
-            ]),
-            'marker': portfolio.plot_marker,
-            'color': portfolio.plot_color(dict(asset_colors.RGB_COLOR_MAP.items())),
-            'size': 100 if portfolio.plot_always else 50 / portfolio.number_of_assets(),
-            'linewidth': 0.5 if portfolio.plot_always else 1 / portfolio.number_of_assets(),
-    }] for portfolio in portfolios]
 
-def portfolios_xy_points(portfolios: Iterable[data_types.Portfolio], coord_pair: tuple[str, str]):
-    xy_func = functools.partial(PortfolioXYFieldsPoint, varname_x=coord_pair[1], varname_y=coord_pair[0])
-    return map(xy_func, portfolios)
+def multilayer_convex_hull(point_batch: list[data_types.ConvexHullPoint], layers: int = 1):
+    pyhull_convex_hull = importlib.import_module('pyhull.convex_hull').ConvexHull
+    hull_layers_points = []
+    self_hull_points = list(point_batch)
+    for _ in range(layers):
+        if len(self_hull_points) == 0:
+            break
+        hull = pyhull_convex_hull(self_hull_points)
+        hull_vertexes = set(vertex for hull_vertex in hull.vertices for vertex in hull_vertex)
+        hull_points = list(self_hull_points[vertex] for vertex in hull_vertexes)
+        if len(hull_points) > 0:
+            for hull_point in hull_points:
+                self_hull_points.remove(hull_point)
+                hull_layers_points.append(hull_point)
+        else:
+            hull_layers_points.extend(self_hull_points)
+    return hull_layers_points

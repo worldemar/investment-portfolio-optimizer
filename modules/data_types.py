@@ -4,8 +4,14 @@ from math import prod as math_prod
 from statistics import stdev as statistics_stdev
 from config.asset_colors import RGB_COLOR_MAP
 
+
+class ConvexHullPoint(tuple):
+    pass
+
+
 class DataStreamFinished:
     pass
+
 
 # pylint: disable=too-many-instance-attributes
 class Portfolio:
