@@ -3,6 +3,7 @@
 import importlib
 import functools
 from collections.abc import Iterable
+import concurrent.futures
 import multiprocessing
 from modules import data_types
 
@@ -28,12 +29,13 @@ def portfolios_xy_points(portfolios: Iterable[data_types.Portfolio], coord_pair:
 def queue_multiplexer(
         source_queue: multiprocessing.Queue,
         queues: list[multiprocessing.Queue]):
-    while True:
-        item = source_queue.get()
-        if isinstance(item, data_types.DataStreamFinished):
-            break
-        for queue in queues:
-            queue.put(item)
+    with concurrent.futures.ThreadPoolExecutor() as thread_pool:
+        while True:
+            item = source_queue.get()
+            if isinstance(item, data_types.DataStreamFinished):
+                break
+            for queue in queues:
+                thread_pool.submit(queue.put, item)
     for queue in queues:
         queue.put(data_types.DataStreamFinished())
 

@@ -4,6 +4,7 @@ import csv
 import time
 from modules.data_types import Portfolio
 import logging
+import concurrent.futures
 from functools import partial
 from multiprocessing import Queue as MultiprocessingQueue, Pool as MultiprocessingPool
 import modules.data_types as data_types
@@ -30,26 +31,26 @@ def simulated_q(
         market_data: dict[str, dict[str, float]] = None,
         sink_queue: MultiprocessingQueue = None):
     logger = logging.getLogger(__name__)
-    pool = MultiprocessingPool(processes=4)
-    simulated_portfolios = pool.imap(
-        partial(allocation_to_simulated, market_data=market_data),
-        all_possible_allocations(assets, percentage_step),
-        chunksize=CHUNK_SIZE,
-    )
-    time_start = time.time()
-    time_previous_report = time_start
-    total_portfolios = 0
-    send_buffer = []
-    for portfolio in simulated_portfolios:
-        send_buffer.append(portfolio)
-        total_portfolios += 1
-        if len(send_buffer) >= CHUNK_SIZE:
-            sink_queue.put(send_buffer)
-            send_buffer = []
-        time_now = time.time()
-        if time_now - time_previous_report > 5:
-            time_previous_report = time_now
-            logger.info(f'Simulated {total_portfolios} portfolios, rate: {int(total_portfolios / (time_now - time_start))}/s')
+    with concurrent.futures.ProcessPoolExecutor() as process_pool, concurrent.futures.ThreadPoolExecutor() as thread_pool:
+        simulated_portfolios = process_pool.imap(
+            partial(allocation_to_simulated, market_data=market_data),
+            all_possible_allocations(assets, percentage_step),
+            chunksize=CHUNK_SIZE,
+        )
+        time_start = time.time()
+        time_previous_report = time_start
+        total_portfolios = 0
+        send_buffer = []
+        for portfolio in simulated_portfolios:
+            send_buffer.append(portfolio)
+            total_portfolios += 1
+            if len(send_buffer) >= CHUNK_SIZE:
+                thread_pool.submit(sink_queue.put, send_buffer)
+                send_buffer = []
+            time_now = time.time()
+            if time_now - time_previous_report > 5:
+                time_previous_report = time_now
+                logger.info(f'Simulated {total_portfolios} portfolios, rate: {int(total_portfolios / (time_now - time_start))}/s')
     logger.info(f'Simulated {total_portfolios} portfolios, rate: {int(total_portfolios / (time_now - time_start))}/s')
     sink_queue.put(data_types.DataStreamFinished())
 
