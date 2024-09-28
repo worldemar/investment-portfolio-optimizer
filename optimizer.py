@@ -80,7 +80,7 @@ def main(argv):
     logger.info(f'{len(edge_portfolios_simulated)} edge portfolios will be plotted on all graphs')
 
     logger.info(f'+{time.time() - time_start:.2f}s :: preparing portfolio simulation data pipeline...')
-    portfolios_simulated_queue = multiprocessing.Queue(maxsize=5)
+    portfolios_simulated_queue = multiprocessing.Queue(maxsize=50)
     process_wait_list.append(multiprocessing.Process(
         target=data_source.simulated_q,
         kwargs={
@@ -92,7 +92,7 @@ def main(argv):
     ))
 
     coord_tuple_queues = {
-        coord_pair: multiprocessing.Queue(maxsize=10) for coord_pair in coords_tuples
+        coord_pair: multiprocessing.Queue(maxsize=50) for coord_pair in coords_tuples
     }
     process_wait_list.append(multiprocessing.Process(
         target=data_filter.queue_multiplexer,
