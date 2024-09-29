@@ -17,104 +17,26 @@ def allocation_to_simulated(asset_allocation, market_data):
     portfolio.simulate(market_data)
     return portfolio
 
-# 20k/s - tested - dumbest version
-# def all_possible_allocations(assets: list, percentage_step: int, percentages_ret: list = []):
-#     possible_asset_percentages = set(itertools.chain(range(0, 101, percentage_step), [100 % percentage_step]))
-#     for percentages_ret in itertools.product(possible_asset_percentages, repeat=len(assets)):
-#         if sum(percentages_ret) == 100:
-#            yield dict(zip(assets, percentages_ret))
-
-# 24k/s - tested - version from refact
-# def all_possible_allocations(assets, step, total=100, portfolio=None, i=0):
-#     if portfolio is None:
-#         portfolio = [0]*len(assets)
-#     if i == len(assets):
-#         if sum(portfolio) == total:
-#             yield dict(zip(assets, portfolio))
-#     else:
-#         for j in range(0, total+1, step):
-#             portfolio[i] = j
-#             yield from all_possible_allocations(assets, step, total, portfolio, i+1)
-
-# 1300k/s - tested - older version
-# def all_possible_allocations(assets: list, percentage_step: int, percentages_ret: list = []):
-#     if len(percentages_ret) == len(assets) - 1:
-#         yield dict(zip(assets, percentages_ret + [100 - sum(percentages_ret)]))
-#         return
-#     for asset_percent in range(0, 101 - sum(percentages_ret), percentage_step):
-#         added_percentages = percentages_ret + [asset_percent]
-#         yield from all_possible_allocations(assets, percentage_step, added_percentages)
-
-# 1200k/s - tested - older version
-# def all_possible_allocations(assets: list, percentage_step: int, current_allocation: list = []):
-#     remaining_percent = 100 - sum(current_allocation)
-#     if len(current_allocation) == len(assets) - 1:
-#         yield dict(zip(assets, current_allocation + [remaining_percent]))
-#         return
-#     possible_asset_percentages = set(itertools.chain(range(0, remaining_percent + 1, percentage_step), [remaining_percent % percentage_step]))
-#     for asset_percentage in possible_asset_percentages:
-#         yield from all_possible_allocations(assets, percentage_step, current_allocation + [asset_percentage])
-
-# 20k/s - tested - dumb version
-# def all_possible_allocations(assets: list, step: int):
-#     if 100 % step != 0:
-#         raise ValueError(f'cannot use step={step}, must be a divisor of 100')
-#     asset_values = filter(lambda x: sum(x) == 100, itertools.product(range(0,101,step), repeat=len(assets)))
-#     for asset_values in asset_values:
-#         yield dict(zip(assets, asset_values))
-
-# 1800k/s - tested - manual version
-# def all_possible_allocations(assets: list, step: int, current_allocation: dict[str, int] = {}):
-#     if 100 % step != 0:
-#         raise ValueError(f'cannot use step={step}, must be a divisor of 100')
-#     if len(assets) == 1:
-#         portfolio = current_allocation.copy()
-#         portfolio[assets[0]] = 100 - sum(portfolio.values())
-#         yield portfolio
-#         return
-#     for possible_next_asset_percent in range(0, 100 - sum(current_allocation.values()) + 1, step):
-#         portfolio = current_allocation.copy()
-#         portfolio[assets[0]] = possible_next_asset_percent
-#         yield from all_possible_allocations(assets[1:], step, portfolio)
-
-# 1200k/s - tested
-# def all_possible_allocations(assets: list, step: int, current_allocation: list[int] = []):
-#     if 100 % step != 0:
-#         raise ValueError(f'cannot use step={step}, must be a divisor of 100')
-#     if len(current_allocation) == len(assets) - 1:
-#         yield dict(zip(assets, current_allocation + [100 - sum(current_allocation)]))
-#         return
-#     for possible_next_asset_percent in range(0, 100 - sum(current_allocation) + 1, step):
-#         deeper_allocation = current_allocation + [possible_next_asset_percent]
-#         yield from all_possible_allocations(assets, step, deeper_allocation)
-
-# 1300k/s - tested
-# def all_possible_allocations(assets: tuple, step: int, current_allocation: tuple[int] = ()):
-#     if 100 % step != 0:
-#         raise ValueError(f'cannot use step={step}, must be a divisor of 100')
-#     if len(current_allocation) == len(assets) - 1:
-#         yield dict(zip(assets, current_allocation + (100 - sum(current_allocation),)))
-#         return
-#     for possible_next_asset_percent in range(0, 100 - sum(current_allocation) + 1, step):
-#         deeper_allocation = current_allocation + (possible_next_asset_percent,)
-#         yield from all_possible_allocations(assets, step, deeper_allocation)
-
-# 2500k/s - tested - manual optimized version
-# def all_possible_allocations(assets: list, step: int, portfolio: dict[str, int] = {}, asset_idx: int = 0):
-#     if 100 % step != 0:
-#         raise ValueError(f'cannot use step={step}, must be a divisor of 100')
-#     if asset_idx == len(assets) - 1:
-#         portfolio[assets[asset_idx]] = 100 - sum(portfolio.values())
-#         yield portfolio
-#         portfolio[assets[asset_idx]] = 0
-#         return
-#     for possible_next_asset_percent in range(0, 100 - sum(portfolio.values()) + 1, step):
-#         portfolio[assets[asset_idx]] = possible_next_asset_percent
-#         yield from all_possible_allocations(assets, step, portfolio, asset_idx + 1)
-#         portfolio[assets[asset_idx]] = 0
-
-# 3900+k/s - tested - manual optimized version
 def all_possible_allocations(assets: list, step: int):
+    def _allocations_recursive(
+            assets: list, step: int,
+            asset_idx: int = 0, asset_idx_max: int = 0,
+            portfolio: dict[str, int] = {},
+            portfolio_values_sum: int = 0):
+        asset_name = assets[asset_idx]
+        if asset_idx == asset_idx_max:
+            portfolio[asset_name] = 100 - portfolio_values_sum
+            yield portfolio
+            portfolio[asset_name] = 0
+        else:
+            for next_asset_percent in range(0, 100 - portfolio_values_sum + 1, step):
+                portfolio[asset_name] = next_asset_percent
+                yield from _allocations_recursive(
+                    assets, step,
+                    asset_idx + 1, asset_idx_max,
+                    portfolio,
+                    portfolio_values_sum + next_asset_percent)
+                portfolio[asset_name] = 0
     if 100 % step != 0:
         raise ValueError(f'cannot use step={step}, must be a divisor of 100')
     yield from _allocations_recursive(
@@ -122,29 +44,6 @@ def all_possible_allocations(assets: list, step: int):
         asset_idx = 0, asset_idx_max = len(assets) - 1,
         portfolio = {a:0 for a in assets},
         portfolio_values_sum = 0)
-
-def _allocations_recursive(
-        # actual parameters
-        assets: list, step: int,
-        # cached values from upper recursion
-        asset_idx: int = 0, asset_idx_max: int = 0,
-        portfolio: dict[str, int] = {},
-        portfolio_values_sum: int = 0):
-    asset_name = assets[asset_idx]
-    if asset_idx == asset_idx_max:
-        portfolio[asset_name] = 100 - portfolio_values_sum
-        yield portfolio
-        portfolio[asset_name] = 0
-    else:
-        for next_asset_percent in range(0, 100 - portfolio_values_sum + 1, step):
-            portfolio[asset_name] = next_asset_percent
-            yield from _allocations_recursive(
-                assets, step,
-                asset_idx + 1, asset_idx_max,
-                portfolio,
-                portfolio_values_sum + next_asset_percent)
-            portfolio[asset_name] = 0
-
 
 def simulated_q(
         assets: list = None,
