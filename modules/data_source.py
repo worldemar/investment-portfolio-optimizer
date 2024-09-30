@@ -6,16 +6,23 @@ from modules.data_types import Portfolio
 import logging
 import concurrent.futures
 from functools import partial
-from multiprocessing import Queue as MultiprocessingQueue, Pool as MultiprocessingPool
+import multiprocessing
+import multiprocessing.connection
 import modules.data_types as data_types
 import itertools
 import collections
 from config.config import CHUNK_SIZE
+import pickle
 
-def allocation_to_simulated(asset_allocation, market_data):
+def allocation_simulate(asset_allocation, ticker_revenue_per_year):
     portfolio = Portfolio(asset_allocation)
-    portfolio.simulate(market_data)
+    portfolio.simulate(ticker_revenue_per_year)
     return portfolio
+
+def allocation_simulate_serialize(asset_allocation, ticker_revenue_per_year):
+    portfolio = Portfolio(asset_allocation)
+    portfolio.simulate(ticker_revenue_per_year)
+    return portfolio.serialize()
 
 def all_possible_allocations(assets: list, step: int):
     def _allocations_recursive(
@@ -48,71 +55,28 @@ def all_possible_allocations(assets: list, step: int):
 def simulated_q(
         assets: list = None,
         percentage_step: int = None,
-        market_data: dict[str, dict[str, float]] = None,
-        sink_queue: MultiprocessingQueue = None):
+        ticker_revenue_per_year: dict[str, dict[str, float]] = None,
+        sink: multiprocessing.connection.Connection = None):
     logger = logging.getLogger(__name__)
-    with MultiprocessingPool() as process_pool, concurrent.futures.ThreadPoolExecutor() as thread_pool:
-        # total_portfolios = 10*1000*1000
-        total_portfolios = 1000*1000
-        # total_portfolios = 100*1000
-        # total_portfolios = 10*1000
-        simulated_portfolios = itertools.islice(process_pool.imap(
-            partial(allocation_to_simulated, market_data=market_data),
-            all_possible_allocations(assets, percentage_step),
-            chunksize=CHUNK_SIZE,
-        ), total_portfolios)
-        time_start = time.time()
+    process_pool = multiprocessing.Pool()
+    thread_pool = concurrent.futures.ThreadPoolExecutor()
 
-        # ~100k/s
-        collections.deque(simulated_portfolios, maxlen=0)
+    # allocation_limit = 10*1000*1000
+    allocation_limit = 1000*1000
+    # allocation_limit = 200*1000
+    # allocation_limit = 10*1000
 
-        # 51000/s
-        # collections.deque(map(partial(thread_pool.submit, sink_queue.put), itertools.batched(simulated_portfolios, CHUNK_SIZE)), maxlen=0)
+    time_start = time.time()
 
-        # 54602/s
-        # collections.deque(map(sink_queue.put, itertools.batched(simulated_portfolios, CHUNK_SIZE)), maxlen=0)
-
-        # 53366/s
-        # for portfolio_batch in itertools.batched(simulated_portfolios, CHUNK_SIZE):
-        #     thread_pool.submit(sink_queue.put, portfolio_batch)
-
-        # 49947/s
-        # for portfolio_batch in itertools.batched(simulated_portfolios, CHUNK_SIZE):
-        #     sink_queue.put(portfolio_batch)
-
-        # 49942/s
-        # send_buffer = []
-        # for portfolio in simulated_portfolios:
-        #     send_buffer.append(portfolio)
-        #     if len(send_buffer) >= CHUNK_SIZE:
-        #         thread_pool.submit(sink_queue.put, send_buffer)
-        #         send_buffer = []
-
-        # 51823/s
-        # send_buffer = []
-        # for portfolio in simulated_portfolios:
-        #     send_buffer.append(portfolio)
-        #     if len(send_buffer) >= CHUNK_SIZE:
-        #         sink_queue.put(send_buffer)
-        #         send_buffer = []
-
-        # 48709/s
-        # time_start = time.time()
-        # time_previous_report = time_start
-        # total_portfolios = 0
-        # send_buffer = []
-        # for portfolio in simulated_portfolios:
-        #     send_buffer.append(portfolio)
-        #     total_portfolios += 1
-        #     if len(send_buffer) >= CHUNK_SIZE:
-        #         thread_pool.submit(sink_queue.put, send_buffer)
-        #         send_buffer = []
-        #     time_now = time.time()
-        #     if time_now - time_previous_report > 5:
-        #         time_previous_report = time_now
-        #         logger.info(f'Simulated {total_portfolios} portfolios, rate: {int(total_portfolios / (time_now - time_start))}/s')
-    sink_queue.put(data_types.DataStreamFinished())
-    logger.info(f'Simulated {total_portfolios} portfolios, rate: {int(total_portfolios / (time.time() - time_start))}/s')
+    possible_allocations_gen = itertools.islice(all_possible_allocations(assets, percentage_step), allocation_limit)
+    simulate_func = partial(allocation_simulate_serialize, ticker_revenue_per_year=ticker_revenue_per_year)
+    for possible_allocation_batch in itertools.batched(possible_allocations_gen, CHUNK_SIZE):
+        simulated_portfolios_batch = process_pool.map(simulate_func, possible_allocation_batch)
+        bytes = pickle.dumps(simulated_portfolios_batch)
+        sink.send_bytes(bytes)
+    thread_pool.shutdown()
+    sink.send(data_types.DataStreamFinished())
+    logger.info(f'Simulated {allocation_limit} portfolios, rate: {int(allocation_limit / (time.time() - time_start))}/s')
 
 
 def read_capitalgain_csv_data(filename):

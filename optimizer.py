@@ -10,6 +10,7 @@ import modules.data_source as data_source
 import modules.data_filter as data_filter
 import modules.data_output as data_output
 from collections import deque
+import itertools
 from modules.data_types import Portfolio
 from config.asset_colors import RGB_COLOR_MAP
 from config.static_portfolios import STATIC_PORTFOLIOS
@@ -42,6 +43,39 @@ def _parse_args(argv=None):
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
 def main(argv):
+    # logger = logging.getLogger(__name__)
+    # tickers_to_test, yearly_revenue_multiplier = data_source.read_capitalgain_csv_data('config/asset_returns.csv')
+    # p = STATIC_PORTFOLIOS[-1]
+    # p.simulate(yearly_revenue_multiplier)
+    # t1 = time.time()
+    # count = 0
+    # while time.time() - t1 < 10:
+    #     p.serialize()
+    #     count += 1
+    # t2 = time.time()
+    # logger.info(f'performance: {int(count/(t2 - t1)/1000):.2f}k/s')
+    # return
+
+    # logger = logging.getLogger(__name__)
+    # tickers_to_test, yearly_revenue_multiplier = data_source.read_capitalgain_csv_data('config/asset_returns.csv')
+    # t1 = time.time()
+    # N = 20000000
+    # deque(itertools.islice(data_source.all_possible_allocations(list(tickers_to_test), 1), N), maxlen=0)
+    # t2 = time.time()
+    # logger.info(f'Time to generate all possible allocations: {t2 - t1:.2f}s ({int(N/(t2-t1)/1000):d}k/s)')
+    # sys.exit(0)
+
+    # logger = logging.getLogger(__name__)
+    # tickers_to_test, yearly_revenue_multiplier = data_source.read_capitalgain_csv_data('config/asset_returns.csv')
+    # t1 = time.time()
+    # N = 1000000
+    # deque(map(
+    #     functools.partial(data_source.allocation_to_simulated, ticker_revenue_per_year=yearly_revenue_multiplier),
+    #     itertools.islice(data_source.all_possible_allocations(list(tickers_to_test), 1), N)), maxlen=0)
+    # t2 = time.time()
+    # logger.info(f'Time to generate all possible allocations: {t2 - t1:.2f}s ({int(N/(t2-t1)/1000):d}k/s)')
+    # sys.exit(0)
+
     process_wait_list = []
     logger = logging.getLogger(__name__)
     cmdline_args = _parse_args(argv)
@@ -71,46 +105,55 @@ def main(argv):
         return
 
     static_portfolios_simulated = list(map(
-        functools.partial(Portfolio.simulate, market_data=yearly_revenue_multiplier),
+        functools.partial(Portfolio.simulate, ticker_revenue_per_year=yearly_revenue_multiplier),
         STATIC_PORTFOLIOS))
     logger.info(f'{len(static_portfolios_simulated)} static portfolios will be plotted on all graphs')
     edge_portfolios_simulated = list(map(
-        functools.partial(data_source.allocation_to_simulated, market_data=yearly_revenue_multiplier),
-        data_source.all_possible_allocations(tickers_to_test, CHUNK_SIZE)))
+        functools.partial(data_source.allocation_simulate, ticker_revenue_per_year=yearly_revenue_multiplier),
+        data_source.all_possible_allocations(tickers_to_test, 100)))
     logger.info(f'{len(edge_portfolios_simulated)} edge portfolios will be plotted on all graphs')
 
     logger.info(f'+{time.time() - time_start:.2f}s :: preparing portfolio simulation data pipeline...')
-    portfolios_simulated_queue = multiprocessing.Queue(maxsize=50)
+    portfolios_simulated_source, portfolios_simulated_sink = multiprocessing.Pipe(duplex=False)
     process_wait_list.append(multiprocessing.Process(
         target=data_source.simulated_q,
         kwargs={
             'assets': tickers_to_test,
             'percentage_step': cmdline_args.precision,
-            'market_data': yearly_revenue_multiplier,
-            'sink_queue': portfolios_simulated_queue,
+            'ticker_revenue_per_year': yearly_revenue_multiplier,
+            'sink': portfolios_simulated_sink,
         }
     ))
-
     coord_tuple_queues = {
-        coord_pair: multiprocessing.Queue(maxsize=50) for coord_pair in coords_tuples
+        coord_pair: dict(zip(('source', 'sink'), multiprocessing.Pipe(duplex=False))) for coord_pair in coords_tuples
     }
     process_wait_list.append(multiprocessing.Process(
         target=data_filter.queue_multiplexer,
         kwargs={
-            'source_queue': portfolios_simulated_queue,
-            'queues': list(coord_tuple_queues.values()),
+            'source': portfolios_simulated_source,
+            'sinks': list(pipe['sink'] for pipe in coord_tuple_queues.values()),
         }
     ))
     for coord_pair in coords_tuples:
         process_wait_list.append(multiprocessing.Process(
             target=data_output.plot_data,
             kwargs={
-                'source_queue': coord_tuple_queues[coord_pair],
+                'source': coord_tuple_queues[coord_pair]['source'],
                 'persistent_portfolios': edge_portfolios_simulated + static_portfolios_simulated,
                 'coord_pair': coord_pair,
                 'hull_layers': cmdline_args.hull,
             }
         ))
+
+    # process_wait_list.append(multiprocessing.Process(
+    #         target=data_output.plot_data,
+    #         kwargs={
+    #             'source': portfolios_simulated_queue,
+    #             'persistent_portfolios': edge_portfolios_simulated + static_portfolios_simulated,
+    #             'coord_pair': ('CAGR(%)', 'Stdev'),
+    #             'hull_layers': cmdline_args.hull,
+    #         }
+    #     ))
     logger.info(f'+{time.time() - time_start:.2f}s :: data pipeline prepared')
 
     deque(map(multiprocessing.Process.start, process_wait_list), 0)

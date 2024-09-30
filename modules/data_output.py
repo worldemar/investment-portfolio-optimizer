@@ -12,11 +12,13 @@ from typing import List
 from config.static_portfolios import STATIC_PORTFOLIOS
 import modules.data_filter as data_filter
 import modules.data_types as data_types
-from multiprocessing import Queue as multiprocessingQueue
+import multiprocessing
+import multiprocessing.connection
 from modules.data_filter import multilayer_convex_hull
 from itertools import chain
 from config.asset_colors import RGB_COLOR_MAP
 import importlib
+import pickle
 
 from modules.data_types import Portfolio
 
@@ -39,16 +41,19 @@ def compose_plot_data(portfolios: Iterable[data_types.Portfolio], field_x: str, 
 
 
 def plot_data(
-        source_queue: multiprocessingQueue = None,
+        source: multiprocessing.connection.Connection = None,
         coord_pair: tuple[str, str] = None,
         hull_layers: int = None,
         persistent_portfolios: list[data_types.Portfolio] = None):
     batches_hulls_points = []
+    data_stream_end_pickle = pickle.dumps(data_types.DataStreamFinished())
     while True:
-        points_batch = source_queue.get()
-        if isinstance(points_batch, data_types.DataStreamFinished):
+        bytes = source.recv_bytes()
+        if bytes == data_stream_end_pickle:
             break
-        batch_xy_points = data_filter.portfolios_xy_points(points_batch, coord_pair)
+        portfolios_batch = pickle.loads(bytes)
+        deserialized_portfolios = list(map(Portfolio.deserialize, portfolios_batch))
+        batch_xy_points = data_filter.portfolios_xy_points(deserialized_portfolios, coord_pair)
         batches_hulls_points.extend(multilayer_convex_hull(batch_xy_points, hull_layers))
     simulated_hull_points = multilayer_convex_hull(batches_hulls_points, hull_layers)
     persistent_portfolios_points = data_filter.portfolios_xy_points(persistent_portfolios, coord_pair)

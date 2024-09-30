@@ -5,12 +5,17 @@ import functools
 from collections.abc import Iterable
 import concurrent.futures
 import multiprocessing
+import multiprocessing.connection
 from modules import data_types
-
+import pickle
 
 class PortfolioXYFieldsPoint(data_types.ConvexHullPoint):
     def __new__(cls, portfolio: data_types.Portfolio, varname_x: str, varname_y: str):
-        return super().__new__(cls, (portfolio.get_stat(varname_x), portfolio.get_stat(varname_y)))
+        try:
+            return super().__new__(cls, (portfolio.get_stat(varname_x), portfolio.get_stat(varname_y)))
+        except Exception as e:
+            print(f'PortfolioXYFieldsPoint > {e}')
+            return None
 
     def __init__(self, portfolio: data_types.Portfolio, varname_x: str, varname_y: str):
         self._portfolio = portfolio
@@ -25,19 +30,19 @@ def portfolios_xy_points(portfolios: Iterable[data_types.Portfolio], coord_pair:
     xy_func = functools.partial(PortfolioXYFieldsPoint, varname_x=coord_pair[1], varname_y=coord_pair[0])
     return map(xy_func, portfolios)
 
-
 def queue_multiplexer(
-        source_queue: multiprocessing.Queue,
-        queues: list[multiprocessing.Queue]):
+        source: multiprocessing.connection.Connection,
+        sinks: list[multiprocessing.connection.Connection]):
+    data_stream_end_pickle = pickle.dumps(data_types.DataStreamFinished())
     with concurrent.futures.ThreadPoolExecutor() as thread_pool:
         while True:
-            item = source_queue.get()
-            if isinstance(item, data_types.DataStreamFinished):
+            bytes = source.recv_bytes()
+            j = []
+            for sink in sinks:
+                sink.send_bytes(bytes)
+            if bytes == data_stream_end_pickle:
+                print(f'queue_multiplexer > received data stream end {bytes}')
                 break
-            for queue in queues:
-                thread_pool.submit(queue.put, item)
-    for queue in queues:
-        queue.put(data_types.DataStreamFinished())
 
 
 def multilayer_convex_hull(point_batch: list[data_types.ConvexHullPoint], layers: int = 1):
