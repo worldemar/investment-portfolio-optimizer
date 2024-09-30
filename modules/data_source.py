@@ -21,29 +21,29 @@ def all_possible_allocations(assets: list, step: int):
     def _allocations_recursive(
             assets: list, step: int,
             asset_idx: int = 0, asset_idx_max: int = 0,
-            portfolio: dict[str, int] = {},
-            portfolio_values_sum: int = 0):
+            allocation: dict[str, int] = {},
+            allocation_sum: int = 0):
         asset_name = assets[asset_idx]
         if asset_idx == asset_idx_max:
-            portfolio[asset_name] = 100 - portfolio_values_sum
-            yield portfolio
-            portfolio[asset_name] = 0
+            allocation[asset_name] = 100 - allocation_sum
+            yield allocation.copy()
+            allocation[asset_name] = 0
         else:
-            for next_asset_percent in range(0, 100 - portfolio_values_sum + 1, step):
-                portfolio[asset_name] = next_asset_percent
+            for next_asset_percent in range(0, 100 - allocation_sum + 1, step):
+                allocation[asset_name] = next_asset_percent
                 yield from _allocations_recursive(
                     assets, step,
                     asset_idx + 1, asset_idx_max,
-                    portfolio,
-                    portfolio_values_sum + next_asset_percent)
-                portfolio[asset_name] = 0
+                    allocation,
+                    allocation_sum + next_asset_percent)
+                allocation[asset_name] = 0
     if 100 % step != 0:
         raise ValueError(f'cannot use step={step}, must be a divisor of 100')
     yield from _allocations_recursive(
         assets = assets, step = step,
         asset_idx = 0, asset_idx_max = len(assets) - 1,
-        portfolio = {a:0 for a in assets},
-        portfolio_values_sum = 0)
+        allocation = {a:0 for a in assets},
+        allocation_sum = 0)
 
 def simulated_q(
         assets: list = None,
