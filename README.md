@@ -52,3 +52,12 @@ times: prepare = 2.98s, simulate = 12.30s
 --- Graph ready: Sharpe - Stdev --- 3.90s
 --- Graph ready: CAGR % - Sharpe --- 0.85s
 DONE :: in 172.43s
+
+processes=16
+DONE :: 888037 portfolios tested in 11.50s, rate: 77k/s
+--- Graph ready: CAGR % - Variance --- 1.85s
+--- Graph ready: Sharpe - Variance --- 1.06s
+--- Graph ready: CAGR % - Stdev --- 1.55s
+--- Graph ready: Sharpe - Stdev --- 1.21s
+--- Graph ready: CAGR % - Sharpe --- 0.85s
+DONE :: in 60.26s, rate = 14k/s

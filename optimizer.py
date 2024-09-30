@@ -62,13 +62,13 @@ def main(argv):
     time_start = time.time()
     portfolios = STATIC_PORTFOLIOS + list(gen_portfolios(tickers_to_test, cmdline_args.precision, []))
     time_prepare = time.time()
-    with multiprocessing.Pool() as pool:
+    with multiprocessing.Pool(processes=16) as pool:
         pool_func = functools.partial(_simulate_portfolio, yearly_revenue_multiplier)
         portfolios_simulated = list(pool.map(pool_func, portfolios))
     time_simulate = time.time()
 
-    print(f'DONE :: {len(portfolios_simulated)} portfolios tested in {time.time()-time_start:.2f}s')
-    print(f'times: prepare = {time_prepare-time_start:.2f}s, simulate = {time_simulate-time_prepare:.2f}s')
+    time_done = time.time()
+    print(f'DONE :: {len(portfolios_simulated)} portfolios tested in {time_done-time_start:.2f}s, rate: {int(len(portfolios_simulated)/(time_done-time_start)/1000):d}k/s')
 
     used_colors = {ticker: color for ticker, color in RGB_COLOR_MAP.items() if ticker in tickers_to_test}
     title = ', '.join(
@@ -100,7 +100,8 @@ def main(argv):
         f_x=lambda x: x.stat_sharpe, f_y=lambda y: y.stat_cagr * 100,
         title=title, xlabel='Sharpe', ylabel='CAGR %', color_map=used_colors, hull_layers=cmdline_args.hull)
 
-    print(f'DONE :: in {time.time()-time_start:.2f}s')
+    time_done = time.time()
+    print(f'DONE :: in {time_done-time_start:.2f}s, rate = {int(len(portfolios_simulated)/(time_done-time_start)/1000):d}k/s')
 
 if __name__ == '__main__':
     main(sys.argv)
