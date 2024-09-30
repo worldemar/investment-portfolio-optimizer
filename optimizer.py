@@ -84,13 +84,13 @@ def main(argv):
         ('CAGR(%)', 'Variance'),
         ('CAGR(%)', 'Stdev'),
         ('CAGR(%)', 'Sharpe'),
-        ('Gain(x)', 'Variance'),
-        ('Gain(x)', 'Stdev'),
-        ('Gain(x)', 'Sharpe'),
+        # ('Gain(x)', 'Variance'),
+        # ('Gain(x)', 'Stdev'),
+        # ('Gain(x)', 'Sharpe'),
         ('Sharpe', 'Stdev'),
         ('Sharpe', 'Variance'),
-        ('Sharpe', 'Gain(x)'),
-        ('Sharpe', 'CAGR(%)'),
+        # ('Sharpe', 'Gain(x)'),
+        # ('Sharpe', 'CAGR(%)'),
     ]
 
     time_start = time.time()
@@ -145,15 +145,6 @@ def main(argv):
             }
         ))
 
-    # process_wait_list.append(multiprocessing.Process(
-    #         target=data_output.plot_data,
-    #         kwargs={
-    #             'source': portfolios_simulated_queue,
-    #             'persistent_portfolios': edge_portfolios_simulated + static_portfolios_simulated,
-    #             'coord_pair': ('CAGR(%)', 'Stdev'),
-    #             'hull_layers': cmdline_args.hull,
-    #         }
-    #     ))
     logger.info(f'+{time.time() - time_start:.2f}s :: data pipeline prepared')
 
     deque(map(multiprocessing.Process.start, process_wait_list), 0)

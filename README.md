@@ -82,3 +82,20 @@ precision=5 hull=3:
 2024-09-12 17:29:28 :: INFO :: Plot ready: result\Gain(x) - Variance new.svg
 2024-09-12 17:29:28 :: INFO :: Plot ready: result\CAGR(%) - Variance new.svg
 2024-09-12 17:29:28 :: INFO :: +82.27s :: graphs ready
+
+2024-09-30 10:56:49 :: INFO :: 7 static portfolios will be plotted on all graphs
+2024-09-30 10:56:49 :: INFO :: 10 edge portfolios will be plotted on all graphs
+2024-09-30 10:56:49 :: INFO :: +0.00s :: preparing portfolio simulation data pipeline...
+2024-09-30 10:56:49 :: INFO :: +0.00s :: data pipeline prepared
+2024-09-30 10:56:49 :: INFO :: +0.31s :: all processes started
+2024-09-30 10:59:43 :: INFO :: Plot ready: result\CAGR(%) - Sharpe new.png
+2024-09-30 10:59:44 :: INFO :: Plot ready: result\Sharpe - Stdev new.png
+2024-09-30 10:59:44 :: INFO :: Plot ready: result\Sharpe - Variance new.png
+2024-09-30 10:59:44 :: INFO :: Plot ready: result\CAGR(%) - Variance new.png
+2024-09-30 10:59:44 :: INFO :: Plot ready: result\CAGR(%) - Stdev new.png
+2024-09-30 10:59:45 :: INFO :: Plot ready: result\CAGR(%) - Sharpe new.svg
+2024-09-30 10:59:45 :: INFO :: Plot ready: result\Sharpe - Stdev new.svg
+2024-09-30 10:59:45 :: INFO :: Plot ready: result\Sharpe - Variance new.svg
+2024-09-30 10:59:48 :: INFO :: Plot ready: result\CAGR(%) - Stdev new.svg
+2024-09-30 10:59:48 :: INFO :: Plot ready: result\CAGR(%) - Variance new.svg
+2024-09-30 10:59:48 :: INFO :: +179.32s :: graphs ready

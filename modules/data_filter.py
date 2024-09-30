@@ -41,7 +41,6 @@ def queue_multiplexer(
             for sink in sinks:
                 sink.send_bytes(bytes)
             if bytes == data_stream_end_pickle:
-                print(f'queue_multiplexer > received data stream end {bytes}')
                 break
 
 
