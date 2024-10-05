@@ -37,11 +37,13 @@ def queue_multiplexer(
     with concurrent.futures.ThreadPoolExecutor() as thread_pool:
         while True:
             bytes = source.recv_bytes()
-            j = []
-            for sink in sinks:
-                sink.send_bytes(bytes)
             if bytes == data_stream_end_pickle:
-                break
+                break # make sure all threads are finished
+            for sink in sinks:
+                thread_pool.submit(sink.send_bytes, bytes)
+    for sink in sinks:
+        sink.send_bytes(bytes)
+
 
 
 def multilayer_convex_hull(point_batch: list[data_types.ConvexHullPoint], layers: int = 1):
