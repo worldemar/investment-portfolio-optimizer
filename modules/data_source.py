@@ -64,21 +64,23 @@ def simulated_q(
 
     # allocation_limit = 10*1000*1000
     # allocation_limit = 1000*1000
-    # allocation_limit = 200*1000
+    # allocation_limit = 100*1000
     # allocation_limit = 10*1000
 
     time_start = time.time()
 
     # possible_allocations_gen = itertools.islice(all_possible_allocations(assets, percentage_step), allocation_limit)
     possible_allocations_gen = all_possible_allocations(assets, percentage_step)
-    simulate_func = partial(allocation_simulate_serialize, ticker_revenue_per_year=ticker_revenue_per_year)
+    total_portfolios = 0
+    simulate_func = partial(allocation_simulate_serialize, assets=assets, asset_revenue_per_year=asset_revenue_per_year)
     for possible_allocation_batch in itertools.batched(possible_allocations_gen, CHUNK_SIZE):
         simulated_portfolios_batch = process_pool.map(simulate_func, possible_allocation_batch)
         bytes = pickle.dumps(simulated_portfolios_batch)
         sink.send_bytes(bytes)
+        total_portfolios += len(possible_allocation_batch)
     thread_pool.shutdown()
     sink.send(data_types.DataStreamFinished())
-    # logger.info(f'Simulated {allocation_limit} portfolios, rate: {int(allocation_limit / (time.time() - time_start))}/s')
+    logger.info(f'Simulated {total_portfolios} portfolios, rate: {int(total_portfolios / (time.time() - time_start))}/s')
 
 
 def read_capitalgain_csv_data(filename):
