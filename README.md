@@ -44,16 +44,16 @@ each plot. Edge cases are calculated separately for each plot.
 <img src="./image-demos/cagr_variance.svg" width="50%"><img src="./image-demos/cagr_stdev.svg" width="50%">
 <img src="./image-demos/gain_sharpe.svg" width="50%"><img src="./image-demos/sharpe_variance.svg" width="50%">
 
-main branch
+main-performance
 precision=5 hull=3:
-DONE :: 888037 portfolios tested in 15.35s
-times: prepare = 3.00s, simulate = 12.36s
---- Graph ready: CAGR % - Variance --- 3.37s
---- Graph ready: Sharpe - Variance --- 1.18s
---- Graph ready: CAGR % - Stdev --- 1.65s
---- Graph ready: Sharpe - Stdev --- 1.20s
---- Graph ready: CAGR % - Sharpe --- 0.82s
-DONE :: 70.09s
+processes=16
+DONE :: 888037 portfolios tested in 11.50s, rate: 77k/s
+--- Graph ready: CAGR % - Variance --- 1.85s
+--- Graph ready: Sharpe - Variance --- 1.06s
+--- Graph ready: CAGR % - Stdev --- 1.55s
+--- Graph ready: Sharpe - Stdev --- 1.21s
+--- Graph ready: CAGR % - Sharpe --- 0.85s
+DONE :: in 60.26s, rate = 14k/s
 
 map-pipeline branch
 precision=5 hull=3:
@@ -99,3 +99,39 @@ precision=5 hull=3:
 2024-09-30 10:59:48 :: INFO :: Plot ready: result\CAGR(%) - Stdev new.svg
 2024-09-30 10:59:48 :: INFO :: Plot ready: result\CAGR(%) - Variance new.svg
 2024-09-30 10:59:48 :: INFO :: +179.32s :: graphs ready
+
+2024-10-06 11:28:49 :: INFO :: 7 static portfolios will be plotted on all graphs
+2024-10-06 11:28:49 :: INFO :: 10 edge portfolios will be plotted on all graphs
+2024-10-06 11:28:49 :: INFO :: +0.00s :: preparing portfolio simulation data pipeline...
+2024-10-06 11:28:49 :: INFO :: +0.00s :: data pipeline prepared
+2024-10-06 11:28:49 :: INFO :: +0.05s :: all processes started
+2024-10-06 11:30:03 :: INFO :: Simulated 10015005 portfolios, rate: 137205/s
+2024-10-06 11:30:14 :: INFO :: Plot ready: result\CAGR(%) - Sharpe - ConvexHull1.png
+2024-10-06 11:30:14 :: INFO :: Plot ready: result\Sharpe - Stdev - ConvexHull1.png
+2024-10-06 11:30:14 :: INFO :: Plot ready: result\Sharpe - Variance - ConvexHull1.png
+2024-10-06 11:30:14 :: INFO :: Plot ready: result\CAGR(%) - Stdev - ConvexHull1.png
+2024-10-06 11:30:14 :: INFO :: Plot ready: result\CAGR(%) - Variance - ConvexHull1.png
+2024-10-06 11:30:14 :: INFO :: Plot ready: result\CAGR(%) - Sharpe - ConvexHull1 new.svg
+2024-10-06 11:30:14 :: INFO :: Plot ready: result\Sharpe - Stdev - ConvexHull1 new.svg
+2024-10-06 11:30:14 :: INFO :: Plot ready: result\Sharpe - Variance - ConvexHull1 new.svg
+2024-10-06 11:30:14 :: INFO :: Plot ready: result\CAGR(%) - Stdev - ConvexHull1 new.svg
+2024-10-06 11:30:15 :: INFO :: Plot ready: result\CAGR(%) - Variance - ConvexHull1 new.svg
+2024-10-06 11:30:15 :: INFO :: +85.55s :: graphs ready
+
+2024-10-06 11:31:06 :: INFO :: 7 static portfolios will be plotted on all graphs
+2024-10-06 11:31:06 :: INFO :: 10 edge portfolios will be plotted on all graphs
+2024-10-06 11:31:06 :: INFO :: +0.00s :: preparing portfolio simulation data pipeline...
+2024-10-06 11:31:06 :: INFO :: +0.00s :: data pipeline prepared
+2024-10-06 11:31:06 :: INFO :: +0.04s :: all processes started
+2024-10-06 11:32:19 :: INFO :: Simulated 10015005 portfolios, rate: 137309/s
+2024-10-06 11:34:10 :: INFO :: Plot ready: result\CAGR(%) - Sharpe - ConvexHull5.png
+2024-10-06 11:34:10 :: INFO :: Plot ready: result\Sharpe - Stdev - ConvexHull5.png
+2024-10-06 11:34:10 :: INFO :: Plot ready: result\Sharpe - Variance - ConvexHull5.png
+2024-10-06 11:34:10 :: INFO :: Plot ready: result\CAGR(%) - Stdev - ConvexHull5.png
+2024-10-06 11:34:11 :: INFO :: Plot ready: result\CAGR(%) - Sharpe - ConvexHull5 new.svg
+2024-10-06 11:34:11 :: INFO :: Plot ready: result\CAGR(%) - Variance - ConvexHull5.png
+2024-10-06 11:34:12 :: INFO :: Plot ready: result\Sharpe - Stdev - ConvexHull5 new.svg
+2024-10-06 11:34:12 :: INFO :: Plot ready: result\Sharpe - Variance - ConvexHull5 new.svg
+2024-10-06 11:34:13 :: INFO :: Plot ready: result\CAGR(%) - Stdev - ConvexHull5 new.svg
+2024-10-06 11:34:15 :: INFO :: Plot ready: result\CAGR(%) - Variance - ConvexHull5 new.svg
+2024-10-06 11:34:15 :: INFO :: +188.67s :: graphs ready

@@ -20,23 +20,19 @@ class DataStreamFinished:
 
 # pylint: disable=too-many-instance-attributes
 class Portfolio:
-    def __init__(self, weights: dict[str,int], plot_always=False, plot_marker='o'):
+    def __init__(self, assets: list[str], weights: list[int], plot_always=False, plot_marker='o'):
         self.plot_marker = plot_marker
         self.plot_always = plot_always
-        self.weights = dict(weights)
-        self.annual_gains = {}
-        self.annual_capital = {}
+        self.assets = assets
+        self.weights = weights
         self.stat_gain = -1
         self.stat_stdev = -1
         self.stat_cagr = -1
         self.stat_var = -1
         self.stat_sharpe = -1
-        self.tags = []
 
-    def deserialize(serialized_data):
-        portfolio = Portfolio(weights={})
-        portfolio.plot_marker, \
-        portfolio.plot_always, \
+    def deserialize(serialized_data, assets: list[str]):
+        portfolio = Portfolio(assets=assets, weights=[])
         portfolio.stat_gain, \
         portfolio.stat_stdev, \
         portfolio.stat_cagr, \
@@ -46,86 +42,49 @@ class Portfolio:
         return portfolio
 
     def serialize(self):
-        return pickle.dumps((
-            self.plot_marker,
-            self.plot_always,
+        return pickle.dumps([
             self.stat_gain,
             self.stat_stdev,
             self.stat_cagr,
             self.stat_var,
             self.stat_sharpe,
             self.weights,
-        ))
-        # 1300k/s
-        # return pickle.dumps([
-        #     self.plot_marker,
-        #     self.plot_always,
-        #     self.stat_gain,
-        #     self.stat_stdev,
-        #     self.stat_cagr,
-        #     self.stat_var,
-        #     self.stat_sharpe,
-        #     self.weights,
-        # ])
-        # 909k/s
-        # return pickle.dumps({
-        #     'plot_marker': self.plot_marker,
-        #     'plot_always': self.plot_always,
-        #     'weights': self.weights,
-        #     'stat_gain': self.stat_gain,
-        #     'stat_stdev': self.stat_stdev,
-        #     'stat_cagr': self.stat_cagr,
-        #     'stat_var': self.stat_var,
-        #     'stat_sharpe': self.stat_sharpe,
-        # })
-        # 1150k/s
-        # return pickle.dumps(self.stats)
-        # 603k/s
-        # return pickle.dumps(self.__dict__)
-        # 422k/s
-        # return pickle.dumps(self)
-        # 102k/s
-        # return json.dumps(self.__dict__)
+        ])
 
     def number_of_assets(self):
         '''
         Number of asset weights that are not zero
         '''
-        return len(list(weight for weight in self.weights.values() if weight!= 0))
+        return len(list(filter(lambda weight: weight != 0, self.weights)))
 
-    def asset_allocation_error(self, market_tickers: list):
-        if (not all(ticker in market_tickers for ticker, _ in self.weights.items())):
-            return f'some tickers in portfolio are not in market data: {set(self.weights.keys()) - set(market_tickers)}'
-        if (sum(value for _, value in self.weights.items()) != 100):
-            return f'sum of weights is not 100: {sum(self.weights.values())}'
-        if (not all(ticker in RGB_COLOR_MAP.keys() for ticker, _ in self.weights.items())):
-            return f'some tickers have no color defined, add them to asset_colors.py: {set(self.weights.keys()) - set(RGB_COLOR_MAP.keys())}'
+    def asset_allocation_error(self, market_assets: list):
+        if (not all(asset in market_assets for asset in self.assets)):
+            return f'some tickers in portfolio are not in market data: {set(self.assets) - set(market_assets)}'
+        if (sum(value for value in self.weights) != 100):
+            return f'sum of weights is not 100: {sum(self.weights)}'
+        if (not all(asset in RGB_COLOR_MAP.keys() for asset in self.assets)):
+            return f'some tickers have no color defined, add them to asset_colors.py: {set(self.assets) - set(RGB_COLOR_MAP.keys())}'
         return ''
 
-    def simulate(self, ticker_revenue_per_year):
+    def simulate(self, asset_revenue_per_year):
+        annual_gains = {}
+        annual_capital = {}
         capital = 1
-        self.annual_capital[list(ticker_revenue_per_year.keys())[0] - 1] = 1
-        for year in ticker_revenue_per_year.keys():
-            proportional_gains = sum(map(lambda sw: sw[1] * ticker_revenue_per_year[year][sw[0]], self.weights.items()))
+        annual_capital[list(asset_revenue_per_year.keys())[0] - 1] = 1
+        for year in asset_revenue_per_year.keys():
+            gain_func = lambda index_weight: index_weight[1] * asset_revenue_per_year[year][index_weight[0]]
+            proportional_gains = sum(map(gain_func, enumerate(self.weights)))
             new_capital = capital * proportional_gains / 100
             if capital != 0:
-                self.annual_gains[year] = new_capital / capital
+                annual_gains[year] = new_capital / capital
             capital = new_capital
-            self.annual_capital[year] = new_capital
+            annual_capital[year] = new_capital
 
-        self.stat_gain = math_prod(self.annual_gains.values())
-        self.stat_stdev = statistics_stdev(self.annual_gains.values())
-        self.stat_cagr = self.stat_gain**(1 / len(self.annual_gains.values())) - 1
-        self.stat_var = sum(map(lambda ag: (ag - self.stat_cagr - 1) ** 2, self.annual_gains.values())) / (len(self.annual_gains) - 1)
+        self.stat_gain = math_prod(annual_gains.values())
+        self.stat_stdev = statistics_stdev(annual_gains.values())
+        self.stat_cagr = self.stat_gain**(1 / len(annual_gains.values())) - 1
+        self.stat_var = sum(map(lambda ag: (ag - self.stat_cagr - 1) ** 2, annual_gains.values())) / (len(annual_gains) - 1)
         self.stat_sharpe = self.stat_cagr / self.stat_stdev
-        self.stats = {
-            'Gain(x)': self.stat_gain,
-            'CAGR(%)': self.stat_cagr * 100,
-            'Sharpe': self.stat_sharpe,
-            'Variance': self.stat_var,
-            'Stdev': self.stat_stdev,
-            'weights': self.weights,
-        }
         return self
 
     def get_stat(self, stat_name: str):
@@ -156,7 +115,7 @@ class Portfolio:
 
     def __weights_without_zeros(self):
         weights_without_zeros = []
-        for ticker, weight in self.weights.items():
+        for ticker, weight in zip(self.assets, self.weights):
             if weight == 0:
                 continue
             weights_without_zeros.append(f'{ticker}: {weight}%')
@@ -175,13 +134,11 @@ class Portfolio:
         return '\n'.join(self.__weights_without_zeros())
 
     def plot_title(self):
-        if self.tags:
-            return f'«{", ".join(self.tags)}»'
         return f'«{", ".join(self.__weights_without_zeros())}»'
 
     def plot_color(self, color_map):
         color = [0, 0, 0, 1]
-        for ticker, weight in self.weights.items():
+        for ticker, weight in zip(self.assets, self.weights):
             if ticker in color_map:
                 color[0] = color[0] + color_map[ticker][0] * weight / 100
                 color[1] = color[1] + color_map[ticker][1] * weight / 100
@@ -189,3 +146,8 @@ class Portfolio:
             else:
                 raise RuntimeError(f'color map does not contain asset "{ticker}", add it to asset_colors.py')
         return (color[0] / max(color), color[1] / max(color), color[2] / max(color))
+
+
+class UserPortfolio(Portfolio):
+    def __init__(self, asset_allocation: dict[str, int]):
+        super().__init__(assets=list(asset_allocation.keys()), weights=list(asset_allocation.values()), plot_always=True, plot_marker='X')

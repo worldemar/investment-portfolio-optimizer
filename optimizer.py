@@ -105,11 +105,11 @@ def main(argv):
         return
 
     static_portfolios_simulated = list(map(
-        functools.partial(Portfolio.simulate, ticker_revenue_per_year=yearly_revenue_multiplier),
+        functools.partial(Portfolio.simulate, asset_revenue_per_year=yearly_revenue_multiplier),
         STATIC_PORTFOLIOS))
     logger.info(f'{len(static_portfolios_simulated)} static portfolios will be plotted on all graphs')
     edge_portfolios_simulated = list(map(
-        functools.partial(data_source.allocation_simulate, ticker_revenue_per_year=yearly_revenue_multiplier),
+        functools.partial(data_source.allocation_simulate, assets=tickers_to_test, asset_revenue_per_year=yearly_revenue_multiplier),
         data_source.all_possible_allocations(tickers_to_test, 100)))
     logger.info(f'{len(edge_portfolios_simulated)} edge portfolios will be plotted on all graphs')
 
@@ -120,7 +120,7 @@ def main(argv):
         kwargs={
             'assets': tickers_to_test,
             'percentage_step': cmdline_args.precision,
-            'ticker_revenue_per_year': yearly_revenue_multiplier,
+            'asset_revenue_per_year': yearly_revenue_multiplier,
             'sink': portfolios_simulated_sink,
         }
     ))
@@ -138,6 +138,7 @@ def main(argv):
         process_wait_list.append(multiprocessing.Process(
             target=data_output.plot_data,
             kwargs={
+                'assets': tickers_to_test,
                 'source': coord_tuple_queues[coord_pair]['source'],
                 'persistent_portfolios': edge_portfolios_simulated + static_portfolios_simulated,
                 'coord_pair': coord_pair,

@@ -2,6 +2,7 @@
 
 import csv
 import time
+import config.asset_colors
 from modules.data_types import Portfolio
 import logging
 import concurrent.futures
@@ -12,50 +13,50 @@ import modules.data_types as data_types
 import itertools
 import collections
 from config.config import CHUNK_SIZE
+import config
 import pickle
 
-def allocation_simulate(asset_allocation, ticker_revenue_per_year):
-    portfolio = Portfolio(asset_allocation)
-    portfolio.simulate(ticker_revenue_per_year)
+def allocation_simulate(asset_allocation, assets, asset_revenue_per_year):
+    portfolio = Portfolio(assets=assets, weights=asset_allocation)
+    portfolio.simulate(asset_revenue_per_year)
     return portfolio
 
-def allocation_simulate_serialize(asset_allocation, ticker_revenue_per_year):
-    portfolio = Portfolio(asset_allocation)
-    portfolio.simulate(ticker_revenue_per_year)
+def allocation_simulate_serialize(asset_allocation, assets, asset_revenue_per_year):
+    portfolio = Portfolio(assets=assets, weights=asset_allocation)
+    portfolio.simulate(asset_revenue_per_year)
     return portfolio.serialize()
 
 def all_possible_allocations(assets: list, step: int):
     def _allocations_recursive(
             assets: list, step: int,
             asset_idx: int = 0, asset_idx_max: int = 0,
-            allocation: dict[str, int] = {},
+            allocation: list[int] = (),
             allocation_sum: int = 0):
-        asset_name = assets[asset_idx]
         if asset_idx == asset_idx_max:
-            allocation[asset_name] = 100 - allocation_sum
-            yield allocation.copy()
-            allocation[asset_name] = 0
+            allocation[asset_idx] = 100 - allocation_sum
+            yield allocation.copy() # dict(zip(assets, allocation))
+            allocation[asset_idx] = 0
         else:
             for next_asset_percent in range(0, 100 - allocation_sum + 1, step):
-                allocation[asset_name] = next_asset_percent
+                allocation[asset_idx] = next_asset_percent
                 yield from _allocations_recursive(
                     assets, step,
                     asset_idx + 1, asset_idx_max,
                     allocation,
                     allocation_sum + next_asset_percent)
-                allocation[asset_name] = 0
+                allocation[asset_idx] = 0
     if 100 % step != 0:
         raise ValueError(f'cannot use step={step}, must be a divisor of 100')
     yield from _allocations_recursive(
         assets = assets, step = step,
         asset_idx = 0, asset_idx_max = len(assets) - 1,
-        allocation = {a:0 for a in assets},
+        allocation = [0] * len(assets),
         allocation_sum = 0)
 
 def simulated_q(
         assets: list = None,
         percentage_step: int = None,
-        ticker_revenue_per_year: dict[str, dict[str, float]] = None,
+        asset_revenue_per_year: dict[str, dict[str, float]] = None,
         sink: multiprocessing.connection.Connection = None):
     logger = logging.getLogger(__name__)
     process_pool = multiprocessing.Pool()
@@ -87,11 +88,11 @@ def read_capitalgain_csv_data(filename):
     with open(filename, "r", encoding="utf-8") as csv_file:
         csv_reader = csv.reader(csv_file)
         rows = list(csv_reader)
-    tickers = rows[0][1:]
+    assets = rows[0][1:]
     for row in rows[1:]:
         if row[0] not in yearly_revenue_multiplier:
-            yearly_revenue_multiplier[int(row[0])] = {}
+            yearly_revenue_multiplier[int(row[0])] = [0] * len(assets)
         for i in range(1, len(row)):
-            yearly_revenue_multiplier[int(row[0])][tickers[i - 1]] = \
+            yearly_revenue_multiplier[int(row[0])][i - 1] = \
                 float(row[i].replace('%', '')) / 100 + 1
-    return tickers, yearly_revenue_multiplier
+    return assets, yearly_revenue_multiplier

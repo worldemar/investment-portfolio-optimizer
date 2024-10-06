@@ -19,6 +19,7 @@ from itertools import chain
 from config.asset_colors import RGB_COLOR_MAP
 import importlib
 import pickle
+import functools
 
 from modules.data_types import Portfolio
 
@@ -41,6 +42,7 @@ def compose_plot_data(portfolios: Iterable[data_types.Portfolio], field_x: str, 
 
 
 def plot_data(
+        assets: list[str],
         source: multiprocessing.connection.Connection = None,
         coord_pair: tuple[str, str] = None,
         hull_layers: int = None,
@@ -52,7 +54,7 @@ def plot_data(
         if bytes == data_stream_end_pickle:
             break
         portfolios_batch = pickle.loads(bytes)
-        deserialized_portfolios = list(map(Portfolio.deserialize, portfolios_batch))
+        deserialized_portfolios = list(map(functools.partial(Portfolio.deserialize, assets=assets), portfolios_batch))
         batch_xy_points = data_filter.portfolios_xy_points(deserialized_portfolios, coord_pair)
         batches_hulls_points.extend(multilayer_convex_hull(batch_xy_points, hull_layers))
     simulated_hull_points = multilayer_convex_hull(batches_hulls_points, hull_layers)
