@@ -71,31 +71,28 @@ class PortfolioXYPoint():
         self.x = portfolio.stats[coord_pair[0]]
         self.y = portfolio.stats[coord_pair[1]]
 
-def multigon_filter(portfolio_batch: list, coord_pair: tuple[str, str], depth: int = 1, sparse: int = 0, gons: int = 32):
-    octagons = []
-    for portfolio in portfolio_batch:
-        octagons.append(PortfolioXYPoint(portfolio, coord_pair))
-    selected_octagons = []
-    xs = list(o.x for o in octagons)
+def multigon_filter(xy_point_batch: tuple, depth: int = 1, sparse: int = 0, gons: int = 32):
+    xy_point_batch_list = list(xy_point_batch)
+    xs = list(point.x for point in xy_point_batch_list)
     xscale = max(xs) - min(xs)
-    ys = list(o.y for o in octagons)
+    ys = list(point.y for point in xy_point_batch_list)
     yscale = max(ys) - min(ys)
-    for o in octagons:
+    selected_points = []
+    for o in xy_point_batch_list:
         o.x = o.x / xscale
         o.y = o.y / yscale
     for i in range(gons):
         rads = math.pi*i/gons
         _x = math.cos(rads)
         _y = math.sin(rads)
-        octagons.sort(key=lambda o: o.x*_x + o.y*_y)
-        selected_octagons.extend(octagons[:depth])
-        selected_octagons.extend(octagons[-depth:])
+        xy_point_batch_list.sort(key = lambda point: point.x * _x + point.y * _y)
+        selected_points.extend(xy_point_batch_list[:depth])
+        selected_points.extend(xy_point_batch_list[-depth:])
 
     if sparse > 0:
-        octagons.sort(key=lambda o: o.x)
-        selected_octagons.extend(octagons[::int(len(octagons)/sparse)])
-        octagons.sort(key=lambda o: o.y)
-        selected_octagons.extend(octagons[::int(len(octagons)/sparse)])
+        xy_point_batch_list.sort(key=lambda o: o.x)
+        selected_points.extend(xy_point_batch_list[::int(len(xy_point_batch_list)/sparse)])
+        xy_point_batch_list.sort(key=lambda o: o.y)
+        selected_points.extend(xy_point_batch_list[::int(len(xy_point_batch_list)/sparse)])
 
-    portfolios = [octagon.portfolio for octagon in selected_octagons]
-    return list(set(portfolios))
+    return list(set(selected_points))
