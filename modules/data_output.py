@@ -239,6 +239,15 @@ def draw_circles_with_tooltips(
     element_tree.ElementTree(tree).write(os_path_join(directory, filename + ' new.svg'))
     logger.info(f'Plot ready: {os_path_join(directory, filename + " new.svg")}')
 
+def report_errors_in_static_portfolios(portfolios: List[Portfolio], tickers_to_test: List[str]):
+    logger = logging.getLogger(__name__)
+    num_errors = 0
+    for static_portfolio in STATIC_PORTFOLIOS:
+        error = static_portfolio.asset_allocation_error(tickers_to_test)
+        if error:
+            num_errors += 1
+            logger.error(f'Static portfolio {static_portfolio}\nhas invalid allocation: {error}')
+    return num_errors
 
 if __name__ == '__main__':
     from math import sin, cos
@@ -269,14 +278,3 @@ if __name__ == '__main__':
         directory='result',
         filename='plot_demo'
     )
-
-
-def report_errors_in_static_portfolios(portfolios: List[Portfolio], tickers_to_test: List[str]):
-    logger = logging.getLogger(__name__)
-    num_errors = 0
-    for static_portfolio in STATIC_PORTFOLIOS:
-        error = static_portfolio.asset_allocation_error(tickers_to_test)
-        if error:
-            num_errors += 1
-            logger.error(f'Static portfolio {static_portfolio}\nhas invalid allocation: {error}')
-    return num_errors
