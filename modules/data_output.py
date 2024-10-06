@@ -179,8 +179,8 @@ def draw_circles_with_tooltips(
             zorder=2
         )
 
-    plt.savefig(os_path_join(directory, filename + ' new.png'), format="png", dpi=300)
-    logger.info(f'Plot ready: {os_path_join(directory, filename + " new.png")}')
+    plt.savefig(os_path_join(directory, filename + '.png'), format="png", dpi=300)
+    logger.info(f'Plot ready: {os_path_join(directory, filename + ".png")}')
 
     for index, circle in enumerate(all_circles):
         axes.annotate(
@@ -236,8 +236,8 @@ def draw_circles_with_tooltips(
         """
 
     tree.insert(0, element_tree.XML(script))
-    element_tree.ElementTree(tree).write(os_path_join(directory, filename + ' new.svg'))
-    logger.info(f'Plot ready: {os_path_join(directory, filename + " new.svg")}')
+    element_tree.ElementTree(tree).write(os_path_join(directory, filename + '.svg'))
+    logger.info(f'Plot ready: {os_path_join(directory, filename + ".svg")}')
 
 def report_errors_in_static_portfolios(portfolios: List[Portfolio], tickers_to_test: List[str]):
     logger = logging.getLogger(__name__)
