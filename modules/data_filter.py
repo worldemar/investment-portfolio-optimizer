@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import math
 import importlib
 import functools
 from collections.abc import Iterable
@@ -63,3 +64,40 @@ def multilayer_convex_hull(point_batch: list[data_types.ConvexHullPoint], layers
         else:
             hull_layers_points.extend(self_hull_points)
     return hull_layers_points
+
+
+class OctagonCoordinates():
+    def __init__(self, portfolio: data_types.Portfolio, coord_pair: tuple[str, str]):
+        self.portfolio = portfolio
+        self.x = portfolio.get_stat(coord_pair[0])
+        self.y = portfolio.get_stat(coord_pair[1])
+
+def multigon_filter(portfolio_batch: list, coord_pair: tuple[str, str]):
+    octagons = []
+    for portfolio in portfolio_batch:
+       if isinstance(portfolio, OctagonCoordinates):
+         octagons.append(portfolio)
+       else:
+         octagons.append(OctagonCoordinates(portfolio, coord_pair))
+    selected_octagons = []
+    depth = 5
+    sparse = 100
+    gons = 64
+    xs = list(o.x for o in octagons)
+    xscale = max(xs) - min(xs)
+    ys = list(o.y for o in octagons)
+    yscale = max(ys) - min(ys)
+    for i in range(gons):
+        _x = math.cos(2*math.pi*i/gons)
+        _y = math.sin(2*math.pi*i/gons)
+        octagons.sort(key=lambda o: o.x*_x/xscale + o.y*_y/yscale)
+        selected_octagons.extend(octagons[:depth])
+        selected_octagons.extend(octagons[-depth:])
+
+    octagons.sort(key=lambda o: o.x)
+    selected_octagons.extend(octagons[::int(len(octagons)/sparse)])
+    octagons.sort(key=lambda o: o.y)
+    selected_octagons.extend(octagons[::int(len(octagons)/sparse)])
+
+    portfolios = [octagon.portfolio for octagon in selected_octagons]
+    return list(set(portfolios))

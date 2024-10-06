@@ -14,7 +14,7 @@ import modules.data_filter as data_filter
 import modules.data_types as data_types
 import multiprocessing
 import multiprocessing.connection
-from modules.data_filter import multilayer_convex_hull
+from modules.data_filter import multilayer_convex_hull, multigon_filter
 from itertools import chain
 from config.asset_colors import RGB_COLOR_MAP
 import importlib
@@ -40,14 +40,14 @@ def compose_plot_data(portfolios: Iterable[data_types.Portfolio], field_x: str, 
             }] for portfolio in portfolios
             ]
 
-
 def plot_data(
         assets: list[str],
         source: multiprocessing.connection.Connection = None,
         coord_pair: tuple[str, str] = None,
         hull_layers: int = None,
         persistent_portfolios: list[data_types.Portfolio] = None):
-    batches_hulls_points = []
+    logger = logging.getLogger(__name__)
+    batches_oct_portfolios = []
     data_stream_end_pickle = pickle.dumps(data_types.DataStreamFinished())
     while True:
         bytes = source.recv_bytes()
@@ -55,11 +55,10 @@ def plot_data(
             break
         portfolios_batch = pickle.loads(bytes)
         deserialized_portfolios = list(map(functools.partial(Portfolio.deserialize, assets=assets), portfolios_batch))
-        batch_xy_points = data_filter.portfolios_xy_points(deserialized_portfolios, coord_pair)
-        batches_hulls_points.extend(multilayer_convex_hull(batch_xy_points, hull_layers))
-    simulated_hull_points = multilayer_convex_hull(batches_hulls_points, hull_layers)
-    persistent_portfolios_points = data_filter.portfolios_xy_points(persistent_portfolios, coord_pair)
-    portfolios_for_plot = list(map(lambda x: x.portfolio(), chain(simulated_hull_points, persistent_portfolios_points)))
+        batches_oct_portfolios.extend(multigon_filter(deserialized_portfolios, coord_pair))
+    oct_portfolios = multigon_filter(batches_oct_portfolios, coord_pair)
+    portfolios_for_plot = list(chain(oct_portfolios, persistent_portfolios))
+    logger.info(f'Plotting {len(portfolios_for_plot)} portfolios')
     portfolios_for_plot.sort(key=lambda x: -x.number_of_assets())
     plot_data = compose_plot_data(portfolios_for_plot, field_x=coord_pair[1], field_y=coord_pair[0])
     draw_circles_with_tooltips(
