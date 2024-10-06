@@ -85,6 +85,13 @@ class Portfolio:
         self.stat_cagr = self.stat_gain**(1 / len(annual_gains.values())) - 1
         self.stat_var = sum(map(lambda ag: (ag - self.stat_cagr - 1) ** 2, annual_gains.values())) / (len(annual_gains) - 1)
         self.stat_sharpe = self.stat_cagr / self.stat_stdev
+        self.stats = {
+            'Gain(x)': self.stat_gain,
+            'CAGR(%)': self.stat_cagr * 100,
+            'Sharpe': self.stat_sharpe,
+            'Variance': self.stat_var,
+            'Stdev': self.stat_stdev,
+        }
         return self
 
     def get_stat(self, stat_name: str):
