@@ -71,28 +71,27 @@ class PortfolioXYPoint():
         self.x = portfolio.stats[coord_pair[0]]
         self.y = portfolio.stats[coord_pair[1]]
 
-def multigon_filter(xy_point_batch: tuple, depth: int = 1, sparse: int = 0, gons: int = 32):
-    xy_point_batch_list = list(xy_point_batch)
-    xs = list(point.x for point in xy_point_batch_list)
+def multigon_filter(xy_point_batch: list, depth: int = 1, sparse: int = 0, gons: int = 64):
+    xs = list(point.x for point in xy_point_batch)
     xscale = max(xs) - min(xs)
-    ys = list(point.y for point in xy_point_batch_list)
+    ys = list(point.y for point in xy_point_batch)
     yscale = max(ys) - min(ys)
     selected_points = []
-    for o in xy_point_batch_list:
+    for o in xy_point_batch:
         o.x = o.x / xscale
         o.y = o.y / yscale
-    for i in range(gons):
+    for i in range(0,gons,2):  # half of the gons since we use top and bottom of sorted list
         rads = math.pi*i/gons
         _x = math.cos(rads)
         _y = math.sin(rads)
-        xy_point_batch_list.sort(key = lambda point: point.x * _x + point.y * _y)
-        selected_points.extend(xy_point_batch_list[:depth])
-        selected_points.extend(xy_point_batch_list[-depth:])
+        xy_point_batch.sort(key = lambda point: point.x * _x + point.y * _y)
+        selected_points.extend(xy_point_batch[:depth])
+        selected_points.extend(xy_point_batch[-depth:])
 
     if sparse > 0:
-        xy_point_batch_list.sort(key=lambda o: o.x)
-        selected_points.extend(xy_point_batch_list[::int(len(xy_point_batch_list)/sparse)])
-        xy_point_batch_list.sort(key=lambda o: o.y)
-        selected_points.extend(xy_point_batch_list[::int(len(xy_point_batch_list)/sparse)])
+        xy_point_batch.sort(key=lambda o: o.x)
+        selected_points.extend(xy_point_batch[::int(len(xy_point_batch)/sparse)])
+        xy_point_batch.sort(key=lambda o: o.y)
+        selected_points.extend(xy_point_batch[::int(len(xy_point_batch)/sparse)])
 
     return list(set(selected_points))
