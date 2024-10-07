@@ -9,6 +9,8 @@ import multiprocessing
 import multiprocessing.connection
 from modules import data_types
 import pickle
+from typing import Callable
+import itertools
 
 class PortfolioXYFieldsPoint(data_types.ConvexHullPoint):
     def __new__(cls, portfolio: data_types.Portfolio, varname_x: str, varname_y: str):
@@ -95,3 +97,133 @@ def multigon_filter(xy_point_batch: list, depth: int = 1, sparse: int = 0, gons:
         selected_points.extend(xy_point_batch[::int(len(xy_point_batch)/sparse)])
 
     return list(set(selected_points))
+
+
+def top_n_filter_1(items: list, n: int, predicate: Callable):
+    return sorted(items, key=predicate, reverse=True)[:n]
+
+def top_n_filter_2(items: list, n: int, predicate: Callable):
+    top = []
+    for _ in range(n):
+        top.append(max(items, key=predicate))
+        items.remove(top[-1])
+    return top
+
+def top_n_filter_3(items: list, n: int, predicate: Callable):
+    top = []
+    topmin = min(items, key=predicate)
+    top.append(topmin)
+    for item in items:
+        if item >= topmin:
+            top.append(item)
+        if len(top) > n:
+            top.remove(topmin)
+            topmin = min(top, key=predicate)
+    return top
+
+def top_n_filter_4(items: list, n: int, predicate: Callable):
+    '''
+    faster equivalent of
+    sorted(items, key=predicate, reverse=True)[:n]
+    '''
+    top = []
+    top = items[:n]
+    topmin = min(top, key=predicate)
+    for item in items[n:]:
+        if predicate(item) >= topmin:
+            top.append(item)
+        if len(top) > n:
+            top.remove(topmin)
+            topmin = min(top, key=predicate)
+    return top
+
+def top_n_filter_5(items: list, n: int, predicate: Callable):
+    top = []
+    top = items[:n]
+    topmin = min(top, key=predicate)
+    for item_idx in range(n, len(items)):
+        if predicate(items[item_idx]) >= topmin:
+            top.append(items[item_idx])
+        if len(top) > n:
+            top.remove(topmin)
+            topmin = min(top, key=predicate)
+    return top
+
+def convex_hull_filter_(xy_point_batch: list):
+    '''
+    this function calculates convex hull of the points and returns the points that are part of the hull.
+    this function does not use any external libraries to save memory.
+    '''
+    def angle(point1, point2):
+        return math.atan2(point1.y - point2.y, point1.x - point2.x)
+    hull_points = []
+    leftmost_point = min(xy_point_batch, key=lambda o: o.x)
+    hull_points.append(leftmost_point)
+    second_point = max(xy_point_batch, key=lambda point: angle(leftmost_point, point))
+    hull_points.append(second_point)
+    while True:
+        current_direction = angle(hull_points[-2], hull_points[-1])
+        next_point_closest_to_direction = min(xy_point_batch, key=lambda point: angle(hull_points[-1], point) - current_direction)
+        if next_point_closest_to_direction in hull_points:
+            break
+        hull_points.append(next_point_closest_to_direction)
+    return hull_points
+
+def convex_hull_filter1(xy_point_batch: list):
+    def points_orientation(point1, point2, point3):
+        val = (point2.y - point1.y) * (point3.x - point2.x) - (point2.x - point1.x) * (point3.y - point2.y)
+        if val == 0:
+            # collinear
+            return 0
+        elif val > 0:
+            # counterclockwise
+            return 1
+        else:
+            # clockwise
+            return 2
+    def convexHull(points, n):
+        if n < 3:
+            return
+        l = min(range(n), key = lambda i: points[i].x)
+        p = l
+        q = 0
+        hull = []
+        while True:
+            hull.append(points[p])
+            q = (p + 1) % n
+            for r in range(n):
+                if (points_orientation(points[p], points[q], points[r]) == 2):
+                    q = r
+            p = q
+            if (p == l):
+                break
+        return hull
+    return convexHull(xy_point_batch, len(xy_point_batch))
+
+def convex_hull(points: list[PortfolioXYPoint]):
+    points_n = len(points)
+    if points_n <= 3:
+        return points
+    leftmost_point_idx = min(range(points_n), key = lambda i: points[i].x)
+    point_1_index = leftmost_point_idx
+    point_2_index = 0
+    hull_points = []
+    while True:
+        hull_points.append(points[point_1_index])
+        point_2_index = (point_1_index + 1) % points_n
+        for point_3_index in range(points_n):
+            point_1 = points[point_1_index]
+            point_2 = points[point_2_index]
+            point_3 = points[point_3_index]
+            cross_product = (point_2.y - point_1.y) * (point_3.x - point_2.x) - (point_2.x - point_1.x) * (point_3.y - point_2.y)
+            if (cross_product < 0):
+                point_2_index = point_3_index
+        point_1_index = point_2_index
+        if (point_1_index == leftmost_point_idx):
+            break
+    return hull_points
+
+def multiprocess_convex_hull(pool, xy_point_batch: list[PortfolioXYPoint]):
+    batches = itertools.batched(xy_point_batch, len(xy_point_batch)//multiprocessing.cpu_count() + 1)
+    mapped = pool.imap(convex_hull, batches)
+    return convex_hull([point for batch in mapped for point in batch])

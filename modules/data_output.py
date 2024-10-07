@@ -15,7 +15,7 @@ import modules.data_filter as data_filter
 import modules.data_types as data_types
 import multiprocessing
 import multiprocessing.connection
-from modules.data_filter import multilayer_convex_hull, multigon_filter
+from modules.data_filter import multilayer_convex_hull, multigon_filter, multiprocess_convex_hull
 from itertools import chain
 from config.asset_colors import RGB_COLOR_MAP
 import importlib
@@ -43,28 +43,31 @@ def compose_plot_data(portfolios: Iterable[data_types.Portfolio], field_x: str, 
             ]
 
 def plot_data(
-        assets: list[str],
+        pool = None,
+        assets: list[str] = [],
         source: multiprocessing.connection.Connection = None,
         coord_pair: tuple[str, str] = None,
         hull_layers: int = None,
         persistent_portfolios: list[data_types.Portfolio] = None):
     logger = logging.getLogger(__name__)
-    all_xy_points = []
-    data_stream_end_pickle = pickle.dumps(data_types.DataStreamFinished())
-    while True:
-        bytes = source.recv_bytes()
-        if bytes == data_stream_end_pickle:
-            break
-        portfolios_batch = pickle.loads(bytes)
-        deserialized_portfolios = map(functools.partial(Portfolio.deserialize, assets=assets), portfolios_batch)
-        portfolio_xy_points = list(map(functools.partial(data_filter.PortfolioXYPoint, coord_pair=coord_pair), deserialized_portfolios))
-        if len(all_xy_points) > config.config.CHUNK_SIZE:
-            all_xy_points = multigon_filter(all_xy_points, depth=100, sparse=0, gons=64)
-        all_xy_points.extend(multigon_filter(portfolio_xy_points, depth=100, sparse=0, gons=64))
-        logger.info(f'ALL={len(all_xy_points)} points')
-    logger.info(f'Refining {len(all_xy_points)} points')
-    final_points = multigon_filter(all_xy_points, depth=100, sparse=0, gons=64)
-    logger.info(f'Refined to {len(final_points)} points')
+    with multiprocessing.Pool() as pool:
+        all_xy_points = []
+        data_stream_end_pickle = pickle.dumps(data_types.DataStreamFinished())
+        while True:
+            bytes = source.recv_bytes()
+            if bytes == data_stream_end_pickle:
+                break
+            portfolios_batch = pickle.loads(bytes)
+            deserialized_portfolios = map(functools.partial(Portfolio.deserialize, assets=assets), portfolios_batch)
+            portfolio_xy_points = list(map(functools.partial(data_filter.PortfolioXYPoint, coord_pair=coord_pair), deserialized_portfolios))
+            all_xy_points.extend(portfolio_xy_points)
+            if len(all_xy_points) > config.config.CHUNK_SIZE * multiprocessing.cpu_count():
+                # logger.info(f'{coord_pair}: Compacting {len(all_xy_points)} points')
+                all_xy_points = multiprocess_convex_hull(pool, all_xy_points)
+                # logger.info(f'{coord_pair}: Compacted to {len(all_xy_points)} points')
+        # logger.info(f'Refining {len(all_xy_points)} points')
+        final_points = multiprocess_convex_hull(pool, all_xy_points)
+    # logger.info(f'Refined to {len(final_points)} points')
     final_portfolios = map(lambda point: point.portfolio, final_points)
     portfolios_for_plot = list(chain(final_portfolios, persistent_portfolios))
     logger.info(f'Plotting {len(portfolios_for_plot)} portfolios')

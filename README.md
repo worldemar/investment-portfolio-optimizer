@@ -152,4 +152,22 @@ precision=5 hull=3:
 2024-10-07 01:42:01 :: INFO :: Plot ready: result\Sharpe - Stdev - Multigon.png
 2024-10-07 01:42:01 :: INFO :: Plot ready: result\Sharpe - Variance - Multigon.png
 2024-10-07 01:42:01 :: INFO :: Plot ready: result\CAGR(%) - Stdev - Multigon.png
-2024-10-07 01:42:01 :: INFO :: +266.18s :: graphs read
+2024-10-07 01:42:01 :: INFO :: +266.18s :: graphs ready
+
+2024-10-08 01:55:36 :: INFO :: 7 static portfolios will be plotted on all graphs
+2024-10-08 01:55:36 :: INFO :: 10 edge portfolios will be plotted on all graphs
+2024-10-08 01:55:36 :: INFO :: +0.00s :: preparing portfolio simulation data pipeline...
+2024-10-08 01:55:36 :: INFO :: +0.00s :: data pipeline prepared
+2024-10-08 01:55:37 :: INFO :: +1.03s :: all processes started
+2024-10-08 01:57:41 :: INFO :: Simulated 10015005 portfolios, rate: 80522/s
+2024-10-08 01:58:00 :: INFO :: Plotting 42 portfolios
+2024-10-08 01:58:00 :: INFO :: Plotting 70 portfolios
+2024-10-08 01:58:00 :: INFO :: Plotting 42 portfolios
+2024-10-08 01:58:00 :: INFO :: Plotting 34 portfolios
+2024-10-08 01:58:00 :: INFO :: Plotting 81 portfolios
+2024-10-08 01:58:01 :: INFO :: Plot ready: result\Sharpe - Variance - Multigon.png
+2024-10-08 01:58:01 :: INFO :: Plot ready: result\CAGR(%) - Variance - Multigon.png
+2024-10-08 01:58:01 :: INFO :: Plot ready: result\CAGR(%) - Sharpe - Multigon.png
+2024-10-08 01:58:01 :: INFO :: Plot ready: result\Sharpe - Stdev - Multigon.png
+2024-10-08 01:58:01 :: INFO :: Plot ready: result\CAGR(%) - Stdev - Multigon.png
+2024-10-08 01:58:02 :: INFO :: +145.94s :: graphs ready

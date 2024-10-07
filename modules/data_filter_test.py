@@ -3,17 +3,30 @@
 import random
 from typing import List
 import pytest
-from modules.data_types import ConvexHullPoint
-from modules.data_filter import multilayer_convex_hull
+import modules.data_types as data_types
+import modules.data_filter as data_filter
+import multiprocessing
 
 
-class PointMock(ConvexHullPoint):
+class PointMock(data_types.ConvexHullPoint):
     def __new__(cls, x, y, payload):
         return super().__new__(cls, (x, y))
 
     def __init__(self, x, y, payload):
         self.payload = payload
 
+class PortfolioXYPointMock:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+    def __lt__(self, other):
+        if self.x < other.x:
+            return True
+        elif self.x > other.x:
+            return False
+        else:
+            return self.y < other.y
+        
 
 def mod_list(_list: List) -> List:
     return _list[:]
@@ -175,10 +188,42 @@ def mod_sort_reverse(_list: List) -> List:
         ],
     ]
 )
-def test_multilayer_hull(points, hull_layers, modifier):
-    points_shuffled = modifier(points)
-    expected_points = [point for layer in hull_layers for point in layer]
-    hull_points = multilayer_convex_hull(points_shuffled, layers=len(hull_layers))
-    expected_points.sort()
-    hull_points.sort()
-    assert hull_points == expected_points
+class TestConvexHullFilters:
+    def test_multilayer_hull(self, points, hull_layers, modifier):
+        points_shuffled = modifier(points)
+        expected_points = [point for layer in hull_layers for point in layer]
+        hull_points = data_filter.multilayer_convex_hull(points_shuffled, layers=len(hull_layers))
+        expected_points.sort()
+        hull_points.sort()
+        assert hull_points == expected_points
+
+    def test_convex_hull_filter(self, points, hull_layers, modifier):
+        points_shuffled = modifier(points)
+        expected_points = [point for point in hull_layers[0]]
+        points_shuffled_xy = list(map(lambda point: PortfolioXYPointMock(point[0],point[1]), points_shuffled))
+        hull_xy_points = data_filter.convex_hull_filter1(points_shuffled_xy)
+        hull_points = list([point.x, point.y] for point in hull_xy_points)
+        expected_points.sort()
+        hull_points.sort()
+        assert hull_points == expected_points
+
+    def test_convex_hull(self, points, hull_layers, modifier):
+        points_shuffled = modifier(points)
+        expected_points = [point for point in hull_layers[0]]
+        points_shuffled_xy = list(map(lambda point: PortfolioXYPointMock(point[0],point[1]), points_shuffled))
+        hull_xy_points = data_filter.convex_hull(points_shuffled_xy)
+        hull_points = list([point.x, point.y] for point in hull_xy_points)
+        expected_points.sort()
+        hull_points.sort()
+        assert hull_points == expected_points
+
+    def test_multiprocess_convex_hull(self, points, hull_layers, modifier):
+        points_shuffled = modifier(points)
+        expected_points = [point for point in hull_layers[0]]
+        points_shuffled_xy = list(map(lambda point: PortfolioXYPointMock(point[0],point[1]), points_shuffled))
+        with multiprocessing.Pool() as pool:
+            hull_xy_points = data_filter.multiprocess_convex_hull(pool, points_shuffled_xy)
+        hull_points = list([point.x, point.y] for point in hull_xy_points)
+        expected_points.sort()
+        hull_points.sort()
+        assert hull_points == expected_points
