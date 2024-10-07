@@ -9,6 +9,7 @@ from os import makedirs
 import logging
 from io import StringIO
 from typing import List
+import config.config
 from config.static_portfolios import STATIC_PORTFOLIOS
 import modules.data_filter as data_filter
 import modules.data_types as data_types
@@ -20,6 +21,7 @@ from config.asset_colors import RGB_COLOR_MAP
 import importlib
 import pickle
 import functools
+import config
 
 from modules.data_types import Portfolio
 
@@ -47,17 +49,24 @@ def plot_data(
         hull_layers: int = None,
         persistent_portfolios: list[data_types.Portfolio] = None):
     logger = logging.getLogger(__name__)
-    batches_oct_portfolios = []
+    all_xy_points = []
     data_stream_end_pickle = pickle.dumps(data_types.DataStreamFinished())
     while True:
         bytes = source.recv_bytes()
         if bytes == data_stream_end_pickle:
             break
         portfolios_batch = pickle.loads(bytes)
-        deserialized_portfolios = list(map(functools.partial(Portfolio.deserialize, assets=assets), portfolios_batch))
-        batches_oct_portfolios.extend(multigon_filter(deserialized_portfolios, coord_pair))
-    oct_portfolios = multigon_filter(batches_oct_portfolios, coord_pair)
-    portfolios_for_plot = list(chain(oct_portfolios, persistent_portfolios))
+        deserialized_portfolios = map(functools.partial(Portfolio.deserialize, assets=assets), portfolios_batch)
+        portfolio_xy_points = list(map(functools.partial(data_filter.PortfolioXYPoint, coord_pair=coord_pair), deserialized_portfolios))
+        if len(all_xy_points) > config.config.CHUNK_SIZE:
+            all_xy_points = multigon_filter(all_xy_points, depth=100, sparse=0, gons=64)
+        all_xy_points.extend(multigon_filter(portfolio_xy_points, depth=100, sparse=0, gons=64))
+        logger.info(f'ALL={len(all_xy_points)} points')
+    logger.info(f'Refining {len(all_xy_points)} points')
+    final_points = multigon_filter(all_xy_points, depth=100, sparse=0, gons=64)
+    logger.info(f'Refined to {len(final_points)} points')
+    final_portfolios = map(lambda point: point.portfolio, final_points)
+    portfolios_for_plot = list(chain(final_portfolios, persistent_portfolios))
     logger.info(f'Plotting {len(portfolios_for_plot)} portfolios')
     portfolios_for_plot.sort(key=lambda x: -x.number_of_assets())
     plot_data = compose_plot_data(portfolios_for_plot, field_x=coord_pair[1], field_y=coord_pair[0])
@@ -67,10 +76,9 @@ def plot_data(
         ylabel=coord_pair[0],
         title=f'{coord_pair[0]} vs {coord_pair[1]}',
         directory='result',
-        filename=f'{coord_pair[0]} - {coord_pair[1]}',
+        filename=f'{coord_pair[0]} - {coord_pair[1]} - Multigon',
         asset_color_map=dict(RGB_COLOR_MAP),
     )
-
 
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-locals
@@ -180,6 +188,8 @@ def draw_circles_with_tooltips(
 
     plt.savefig(os_path_join(directory, filename + '.png'), format="png", dpi=300)
     logger.info(f'Plot ready: {os_path_join(directory, filename + ".png")}')
+
+    return
 
     for index, circle in enumerate(all_circles):
         axes.annotate(

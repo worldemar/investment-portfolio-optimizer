@@ -39,6 +39,13 @@ class Portfolio:
         portfolio.stat_var, \
         portfolio.stat_sharpe, \
         portfolio.weights = pickle.loads(serialized_data)
+        portfolio.stats = {
+            'Gain(x)': portfolio.stat_gain,
+            'CAGR(%)': portfolio.stat_cagr * 100,
+            'Sharpe': portfolio.stat_sharpe,
+            'Variance': portfolio.stat_var,
+            'Stdev': portfolio.stat_stdev,
+        }
         return portfolio
 
     def serialize(self):
