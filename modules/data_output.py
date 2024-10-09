@@ -22,6 +22,7 @@ import importlib
 import pickle
 import functools
 import config
+import time
 
 from modules.data_types import Portfolio
 
@@ -42,8 +43,28 @@ def compose_plot_data(portfolios: Iterable[data_types.Portfolio], field_x: str, 
             }] for portfolio in portfolios
             ]
 
+def save_data(
+        assets: list[str] = [],
+        source: multiprocessing.connection.Connection = None,
+        coord_pair: tuple[str, str] = None,
+        hull_layers: int = None,
+        persistent_portfolios: list[data_types.Portfolio] = None):
+    logger = logging.getLogger(__name__)
+    data_stream_end_pickle = pickle.dumps(data_types.DataStreamFinished())
+    total_bytes = 0
+    t1 = time.time()
+    with open('portfolios.dat', 'wb') as f:
+        while True:
+            bytes = source.recv_bytes()
+            if bytes == data_stream_end_pickle:
+                break
+            f.write(f'{len(bytes)}'.encode('utf-8'))
+            f.write(bytes)
+            total_bytes += len(bytes)
+            logger.info(f'Received {total_bytes} bytes, rate: {total_bytes / (time.time() - t1) // 1024 // 1024} MB/sec')
+
+
 def plot_data(
-        pool = None,
         assets: list[str] = [],
         source: multiprocessing.connection.Connection = None,
         coord_pair: tuple[str, str] = None,
