@@ -108,7 +108,7 @@ def plot_data(
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
 def draw_circles_with_tooltips(
-        circle_lines=None,
+        circles=None,
         xlabel=None, ylabel=None, title=None,
         directory='.', filename='plot',
         asset_color_map=None, portfolio_legend=None):
@@ -124,12 +124,12 @@ def draw_circles_with_tooltips(
     _, axes = plt.subplots(figsize=(9, 6))
 
     padding_percent = 15
-    xlim_min = min(c['x'] for line in circle_lines for c in line)
-    xlim_max = max(c['x'] for line in circle_lines for c in line)
+    xlim_min = min(c['x'] for c in circles)
+    xlim_max = max(c['x'] for c in circles)
     xlim_min_padded = xlim_min - padding_percent * (xlim_max - xlim_min) / 100
     xlim_max_padded = xlim_max + padding_percent * (xlim_max - xlim_min) / 100
-    ylim_min = min(c['y'] for line in circle_lines for c in line)
-    ylim_max = max(c['y'] for line in circle_lines for c in line)
+    ylim_min = min(c['y'] for c in circles)
+    ylim_max = max(c['y'] for c in circles)
     ylim_min_padded = ylim_min - padding_percent * (ylim_max - ylim_min) / 100
     ylim_max_padded = ylim_max + padding_percent * (ylim_max - ylim_min) / 100
     axes.set_xlim(xlim_min_padded, xlim_max_padded)
@@ -179,25 +179,7 @@ def draw_circles_with_tooltips(
                 framealpha=1
             ).set_zorder(1)
 
-    all_circles = [circle for line in circle_lines for circle in line]
-
-    for line in circle_lines:
-        if len(line) > 1:
-            prev_circle = line[0]
-            for circle in line[1:]:
-                axes.plot(
-                    [prev_circle['x'], circle['x']],
-                    [prev_circle['y'], circle['y']],
-                    color=(
-                        (prev_circle['color'][0] + circle['color'][0]) / 2,
-                        (prev_circle['color'][1] + circle['color'][1]) / 2,
-                        (prev_circle['color'][2] + circle['color'][2]) / 2
-                    ),
-                    zorder=1
-                )
-                prev_circle = circle
-
-    for index, circle in enumerate(all_circles):
+    for index, circle in enumerate(circles):
         axes.scatter(
             x=circle['x'],
             y=circle['y'],
