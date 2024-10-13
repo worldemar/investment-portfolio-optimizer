@@ -47,26 +47,6 @@ def queue_multiplexer(
     for sink in sinks:
         sink.send_bytes(bytes)
 
-
-
-def multilayer_convex_hull(point_batch: list[data_types.ConvexHullPoint], layers: int = 1):
-    pyhull_convex_hull = importlib.import_module('pyhull.convex_hull').ConvexHull
-    hull_layers_points = []
-    self_hull_points = list(point_batch)
-    for _ in range(layers):
-        if len(self_hull_points) == 0:
-            break
-        hull = pyhull_convex_hull(self_hull_points)
-        hull_vertexes = set(vertex for hull_vertex in hull.vertices for vertex in hull_vertex)
-        hull_points = list(self_hull_points[vertex] for vertex in hull_vertexes)
-        if len(hull_points) > 0:
-            for hull_point in hull_points:
-                self_hull_points.remove(hull_point)
-                hull_layers_points.append(hull_point)
-        else:
-            hull_layers_points.extend(self_hull_points)
-    return hull_layers_points
-
 class PortfolioXYPoint():
     def __init__(self, portfolio: data_types.Portfolio, coord_pair: tuple[str, str]):
         self.portfolio = portfolio
@@ -223,7 +203,7 @@ def convex_hull(points: list[PortfolioXYPoint]):
             break
     return hull_points
 
-def multiprocess_convex_hull(pool, xy_point_batch: list[PortfolioXYPoint]):
+def multiprocess_convex_hull(pool, xy_point_batch: list[PortfolioXYPoint], layers=None):
     batches = itertools.batched(xy_point_batch, len(xy_point_batch)//multiprocessing.cpu_count() + 1)
     mapped = pool.imap(convex_hull, batches)
     return convex_hull([point for batch in mapped for point in batch])

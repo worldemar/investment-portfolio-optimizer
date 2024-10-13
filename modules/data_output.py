@@ -23,6 +23,9 @@ import pickle
 import functools
 import config
 import time
+import concurrent.futures
+import struct
+import modules.data_processors as data_processors
 
 from modules.data_types import Portfolio
 
@@ -63,14 +66,30 @@ def save_data(
             total_bytes += len(bytes)
             logger.info(f'Received {total_bytes} bytes, rate: {total_bytes / (time.time() - t1) // 1024 // 1024} MB/sec')
 
-
 def plot_data(
+        thread_pool: concurrent.futures.Executor = None,
+        packed_portfolio_size: int = None,
+
         assets: list[str] = [],
-        source: multiprocessing.connection.Connection = None,
+        source_file: str = None,
         coord_pair: tuple[str, str] = None,
         hull_layers: int = None,
-        persistent_portfolios: list[data_types.Portfolio] = None):
+        persistent_portfolios: list[bytes] = None):
     logger = logging.getLogger(__name__)
+    read_chunk_size = config.config.CHUNK_SIZE * packed_portfolio_size
+    read_future = None
+    with open(source_file, 'rb') as source:
+        read_chunk = None
+        if read_future is not None:
+            read_chunk = read_future.result()
+        read_future = thread_pool.submit(source.read, read_chunk_size)
+        deserialized_portfolios = []
+        for seek_idx in range(0, len(read_chunk), step=read_chunk_size):
+            deserialized_portfolios.extend(struct.unpack(f'{len(assets) + len(data_processors.simulate_stat_order)}d', read_chunk[seek_idx:seek_idx + read_chunk_size]))
+        
+
+
+
     with multiprocessing.Pool() as pool:
         all_xy_points = []
         data_stream_end_pickle = pickle.dumps(data_types.DataStreamFinished())

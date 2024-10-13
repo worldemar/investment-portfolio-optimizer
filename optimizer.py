@@ -1,26 +1,31 @@
 #!/usr/bin/env python3
 
+import os
 import sys
 import argparse
-# import multiprocessing
+import modules.pipeline as pipeline
 import functools
+import struct
+import multiprocessing
+# import functools
 import time
-import random
-from modules.data_output import report_errors_in_static_portfolios
-import modules.data_source as data_source
-import modules.data_filter as data_filter
-import modules.data_output as data_output
-import modules.data_generators as data_generators
-import modules.data_processors as data_processors
-from collections import deque
+# import random
+# from modules.data_output import report_errors_in_static_portfolios
+# import modules.data_source as data_source
+# import modules.data_filter as data_filter
+# import modules.data_output as data_output
+# import modules.data_generators as data_generators
+# import modules.data_processors as data_processors
+# from collections import deque
 import itertools
-from modules.data_types import Portfolio
-from config.asset_colors import RGB_COLOR_MAP
-from config.static_portfolios import STATIC_PORTFOLIOS
+# from modules.data_types import Portfolio
+# from config.asset_colors import RGB_COLOR_MAP
+# from config.static_portfolios import STATIC_PORTFOLIOS
 from config.config import CHUNK_SIZE
-import pickle
+from config.asset_colors import RGB_COLOR_MAP
+# import pickle
 import concurrent.futures as concurrent
-import json
+# import json
 
 import logging
 
@@ -199,56 +204,125 @@ def main(argv):
     logger = logging.getLogger(__name__)
     cmdline_args = _parse_args(argv)
 
-    process_pool = concurrent.ProcessPoolExecutor()
-    thread_pool = concurrent.ThreadPoolExecutor()
-    
     time_start = time.time()
+    time_last = time_start
 
-    tickers_to_test, asset_revenue_per_year = data_source.read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
-    possible_allocations_gen = data_generators.all_possible_allocations(len(tickers_to_test), cmdline_args.precision)
-    simulate_and_pack_func = functools.partial(data_processors.simulate_and_pack, asset_revenue_per_year=asset_revenue_per_year)
+    # process_pool = concurrent.ProcessPoolExecutor(os.cpu_count())
+    process_pool = multiprocessing.Pool(processes=os.cpu_count())
+    thread_pool = concurrent.ThreadPoolExecutor()
 
-    validate_func = functools.partial(data_processors.validate_dict_allocation, market_assets=tickers_to_test)
-    errors = []
-    for static_portfolio in STATIC_PORTFOLIOS:
-        error = validate_func(static_portfolio)
-    if len(errors) > 0:
-        logger.error(f'Found {len(errors)} invalid static portfolios: {"\n".join(errors)}')
-        return
+    time_now = time.time()
+    logger.info(f'+{time_now - time_last:.2f}s : pools ready')
+    time_last = time.time()
 
-    to_list_allocation_func = functools.partial(data_processors.dict_allocation_to_list_allocation, market_assets=tickers_to_test)
-    static_portfolios_as_lists = map(to_list_allocation_func, STATIC_PORTFOLIOS)
-    static_portfolios_stats_packed = map(simulate_and_pack_func, static_portfolios_as_lists)
+
+    asset_names, asset_revenue_per_year = pipeline.read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
+    gen_possible_allocations = pipeline.all_possible_allocations(len(asset_names), cmdline_args.precision)
+    # gen_possible_allocations  = itertools.islice(gen_possible_allocations, 1000000)
+    func_simulate_and_pack = functools.partial(pipeline.simulate_and_pack, asset_revenue_per_year=asset_revenue_per_year)
+    portfolios_saved = 0
+    writing_request = None
+    with open('simulated.dat', 'wb') as file:
+        for allocation_batch in itertools.batched(gen_possible_allocations, CHUNK_SIZE):
+            packed_batch = list(process_pool.map(func_simulate_and_pack, allocation_batch, chunksize=CHUNK_SIZE//os.cpu_count()))
+            if writing_request is not None:
+                writing_request.result()
+            writing_request = thread_pool.submit(file.writelines, packed_batch)
+            portfolios_saved += len(packed_batch)
+        writing_request.result()
+
+    time_now = time.time()
+    logger.info(f'+{time_now - time_last:.2f}s : {portfolios_saved} portfolios saved, rate: {int(portfolios_saved/(time_now-time_last)/1000):d}k/s')
+    time_last = time_now
+
+    pack_size = len(packed_batch[-1])
+    # pack_size = 60
+    func_deserialize = functools.partial(pipeline.deserialize_bytes, record_size=pack_size, format=f'{len(asset_names)+5}f')
+    # func_allocation_to_xy_point = functools.partial(pipeline.convex_hull_tuple_points, x_name='CAGR(%)', y_name='Stddev', assets_n=len(asset_names))
+    func_allocation_to_plot_data = functools.partial(pipeline.compose_plot_data,
+        assets=asset_names,
+        marker='o',
+        plot_always=False,
+        field_x='Stddev',
+        field_y='CAGR(%)')
+    portfolios_read = 0
+    reading_request = None
+    plot_points = []
+    with open('simulated.dat', 'rb') as file:
+        while True:
+            read_chunk = b''
+            if reading_request:
+                read_chunk = reading_request.result()
+                if read_chunk == b'':
+                    break
+            reading_request = thread_pool.submit(file.read, pack_size * CHUNK_SIZE)
+            portfolios = list(struct.iter_unpack(f'{len(asset_names)+5}f', read_chunk))
+            # portfolios_points = list(map(func_allocation_to_xy_point, portfolios))
+            # portfolios_points = pipeline.convex_hull_tuple_points(portfolios, x_name='Stddev', y_name='CAGR(%)', assets_n=len(asset_names))
+            portfolios_points = pipeline.portfolios_xy_points(portfolios, coord_pair=('Stddev', 'CAGR(%)'), assets_n=len(asset_names))
+            # hull_points = pipeline.multiprocess_convex_hull(process_pool, xy_point_batch=list(portfolios_points), layers=cmdline_args.hull)
+            hull_points = pipeline.multiprocess_convex_hull(process_pool, xy_point_batch=list(portfolios_points), layers=cmdline_args.hull)
+            plot_points.extend(hull_points)
+            portfolios_read += len(portfolios)
+    logger.info(f'Plot points before hull: {len(plot_points)}')
+    # plot_points = pipeline.multiprocess_convex_hull(process_pool, xy_point_batch=plot_points, layers=cmdline_args.hull)
+    plot_points = pipeline.multiprocess_convex_hull(process_pool, xy_point_batch=plot_points, layers=cmdline_args.hull)
+    logger.info(f'Plot points after hull: {len(plot_points)}')
+    plot_allocations = [x.allocation_with_stats for x in plot_points]
+    plot_datas = list(map(func_allocation_to_plot_data, plot_allocations))
+    logger.info(f'Plot datas: {len(plot_datas)}')
+    pipeline.draw_circles_with_tooltips(
+        circles=plot_datas,
+        xlabel='Stddev',
+        ylabel='CAGR(%)',
+        title='The title',
+        directory='result',
+        filename='plot_data_noqhull',
+        asset_color_map=dict(RGB_COLOR_MAP.items()),
+        portfolio_legend=False)
+    time_now = time.time()
+    logger.info(f'+{time_now - time_last:.2f}s : {portfolios_read} portfolios read, rate: {int(portfolios_read/(time_now-time_last)/1000):d}k/s')
+    time_last = time_now
+
+    # func_dict_allocation_to_list = functools.partial(pipeline.dict_allocation_to_list_allocation, market_assets=tickers_to_test)
+
+    # errors = data_processors.validate_dict_allocations(dict_allocations=STATIC_PORTFOLIOS, market_assets=tickers_to_test)
+    # if len(errors) > 0:
+    #     logger.error(f'Found {len(errors)} invalid static portfolios: {"\n".join(errors)}')
+    #     return
+
+    # static_portfolios_as_lists = map(func_dict_allocation_to_list, STATIC_PORTFOLIOS)
+    # static_portfolios_stats_packed = map(func_simulate_list_and_pack, static_portfolios_as_lists)
 
     # for s in static_portfolios_stats_packed:
-    #     print(s)
+    #     print(len(s),s)
         # print(list(zip(data_processors.simulate_stat_order,s)))
 
-    deserialized_static_portfolios = map(functools.partial(data_processors.deserialize, assets_n=len(tickers_to_test)), static_portfolios_stats_packed)
+    # deserialized_static_portfolios = map(functools.partial(data_processors.deserialize, assets_n=len(tickers_to_test)), static_portfolios_stats_packed)
 
     # for s in deserialized_static_portfolios:
     #     print(s)
         # print(list(zip(data_processors.simulate_stat_order,s)))
 
-    plot_data = map(functools.partial(
-            data_processors.compose_plot_data,
-            assets=tickers_to_test,
-            marker='X', plot_always=True,
-            field_x='CAGR(%)', field_y='Stddev'),
-        deserialized_static_portfolios)
+    # plot_data = map(functools.partial(
+    #         data_processors.compose_plot_data,
+    #         assets=tickers_to_test,
+    #         marker='X', plot_always=True,
+    #         field_x='CAGR(%)', field_y='Stddev'),
+    #     deserialized_static_portfolios)
 
     # for pd in plot_data:
     #     print(json.dumps(pd, indent=4))
     
-    data_output.draw_circles_with_tooltips(
-        circles=list(plot_data),
-        xlabel='CAGR(%)',
-        ylabel='Stddev',
-        title=f'{'CAGR(%)'} vs {'Stddev'}',
-        directory='result',
-        filename=f'CAGR - STDEV - DIRECT',
-        asset_color_map=dict(RGB_COLOR_MAP),
-    )
+    # data_output.draw_circles_with_tooltips(
+    #     circles=list(plot_data),
+    #     xlabel='CAGR(%)',
+    #     ylabel='Stddev',
+    #     title=f'{'CAGR(%)'} vs {'Stddev'}',
+    #     directory='result',
+    #     filename=f'CAGR - STDEV - DIRECT',
+    #     asset_color_map=dict(RGB_COLOR_MAP),
+    # )
 
 
     # data pipeline below

@@ -6,48 +6,19 @@ import struct
 import typing
 from config.asset_colors import RGB_COLOR_MAP
 
-simulate_stat_order = ['Gain(x)', 'CAGR(%)', 'Sharpe', 'Variance', 'Stddev']
-def simulate_and_pack(allocation: list[int], asset_revenue_per_year) -> list[float]:
-    annual_gains = {}
-    annual_capital = {}
-    capital = 1
-    annual_capital[list(asset_revenue_per_year.keys())[0] - 1] = 1
-    for year in asset_revenue_per_year.keys():
-        gain_func = lambda index_weight: index_weight[1] * asset_revenue_per_year[year][index_weight[0]]
-        proportional_gains = sum(map(gain_func, enumerate(allocation)))
-        new_capital = capital * proportional_gains / 100
-        if capital != 0:
-            annual_gains[year] = new_capital / capital
-        capital = new_capital
-        annual_capital[year] = new_capital
-
-    gain = math.prod(annual_gains.values())
-    cagr_percent = gain**(1 / len(annual_gains.values())) - 1
-    stddev = statistics.stdev(annual_gains.values())
-    variance = sum(map(lambda ag: (ag - cagr_percent - 1) ** 2, annual_gains.values())) / (len(annual_gains) - 1)
-    sharpe = cagr_percent / stddev
-    return serialize(allocation, [gain, cagr_percent * 100, sharpe, variance, stddev])
-
-def serialize(allocation: list[float], simulation_result: list[float]):
-    return struct.pack(
-        f'{len(allocation) + len(simulation_result)}f',
-        *allocation,
-        *simulation_result
-    )
-
 def deserialize(allocation_and_simulation_result: bytes, assets_n:int):
     return struct.unpack(f'{assets_n + len(simulate_stat_order)}f', allocation_and_simulation_result)
 
-    
-
-def validate_dict_allocation(dict_allocation: dict[str, float], market_assets: list[str]):
-    if (not all(asset in market_assets for asset in dict_allocation.keys())):
-        return f'some tickers in portfolio are not in market data: {set(dict_allocation.keys()) - set(market_assets)}'
-    if (sum(value for value in dict_allocation.values()) != 100):
-        return f'sum of weights is not 100: {sum(dict_allocation.values())}'
-    if (not all(asset in RGB_COLOR_MAP.keys() for asset in dict_allocation.keys())):
-        return f'some tickers have no color defined, add them to asset_colors.py: {set(dict_allocation.keys()) - set(RGB_COLOR_MAP.keys())}'
-    return ''
+def validate_dict_allocations(dict_allocations: list[dict[str, float]], market_assets: list[str]):
+    errors = []
+    for dict_allocation in dict_allocations:
+        if (not all(asset in market_assets for asset in dict_allocation.keys())):
+            errors.append(f'some tickers in portfolio are not in market data: {set(dict_allocation.keys()) - set(market_assets)}')
+        if (sum(value for value in dict_allocation.values()) != 100):
+            errors.append(f'sum of weights is not 100: {sum(dict_allocation.values())}')
+        if (not all(asset in RGB_COLOR_MAP.keys() for asset in dict_allocation.keys())):
+            errors.append(f'some tickers have no color defined, add them to asset_colors.py: {set(dict_allocation.keys()) - set(RGB_COLOR_MAP.keys())}')
+    return errors
 
 def dict_allocation_to_list_allocation(dict_allocation: dict[str, float], market_assets: list[str]):
     return [dict_allocation.get(asset,0) for asset in market_assets]
