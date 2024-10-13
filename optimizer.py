@@ -218,7 +218,7 @@ def main(argv):
 
     asset_names, asset_revenue_per_year = pipeline.read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
     gen_possible_allocations = pipeline.all_possible_allocations(len(asset_names), cmdline_args.precision)
-    # gen_possible_allocations  = itertools.islice(gen_possible_allocations, 1000000)
+    gen_possible_allocations  = itertools.islice(gen_possible_allocations, 1000000)
     func_simulate_and_pack = functools.partial(pipeline.simulate_and_pack, asset_revenue_per_year=asset_revenue_per_year)
     portfolios_saved = 0
     writing_request = None
@@ -235,54 +235,20 @@ def main(argv):
     logger.info(f'+{time_now - time_last:.2f}s : {portfolios_saved} portfolios saved, rate: {int(portfolios_saved/(time_now-time_last)/1000):d}k/s')
     time_last = time_now
 
-    pack_size = len(packed_batch[-1])
     # pack_size = 60
-    func_deserialize = functools.partial(pipeline.deserialize_bytes, record_size=pack_size, format=f'{len(asset_names)+5}f')
+    # func_deserialize = functools.partial(pipeline.deserialize_bytes, record_size=pack_size, format=f'{len(asset_names)+5}f')
     # func_allocation_to_xy_point = functools.partial(pipeline.convex_hull_tuple_points, x_name='CAGR(%)', y_name='Stddev', assets_n=len(asset_names))
-    func_allocation_to_plot_data = functools.partial(pipeline.compose_plot_data,
-        assets=asset_names,
-        marker='o',
-        plot_always=False,
-        field_x='Stddev',
-        field_y='CAGR(%)')
-    portfolios_read = 0
-    reading_request = None
-    plot_points = []
-    with open('simulated.dat', 'rb') as file:
-        while True:
-            read_chunk = b''
-            if reading_request:
-                read_chunk = reading_request.result()
-                if read_chunk == b'':
-                    break
-            reading_request = thread_pool.submit(file.read, pack_size * CHUNK_SIZE)
-            portfolios = list(struct.iter_unpack(f'{len(asset_names)+5}f', read_chunk))
-            # portfolios_points = list(map(func_allocation_to_xy_point, portfolios))
-            # portfolios_points = pipeline.convex_hull_tuple_points(portfolios, x_name='Stddev', y_name='CAGR(%)', assets_n=len(asset_names))
-            portfolios_points = pipeline.portfolios_xy_points(portfolios, coord_pair=('Stddev', 'CAGR(%)'), assets_n=len(asset_names))
-            # hull_points = pipeline.multiprocess_convex_hull(process_pool, xy_point_batch=list(portfolios_points), layers=cmdline_args.hull)
-            hull_points = pipeline.multiprocess_convex_hull(process_pool, xy_point_batch=list(portfolios_points), layers=cmdline_args.hull)
-            plot_points.extend(hull_points)
-            portfolios_read += len(portfolios)
-    logger.info(f'Plot points before hull: {len(plot_points)}')
-    # plot_points = pipeline.multiprocess_convex_hull(process_pool, xy_point_batch=plot_points, layers=cmdline_args.hull)
-    plot_points = pipeline.multiprocess_convex_hull(process_pool, xy_point_batch=plot_points, layers=cmdline_args.hull)
-    logger.info(f'Plot points after hull: {len(plot_points)}')
-    plot_allocations = [x.allocation_with_stats for x in plot_points]
-    plot_datas = list(map(func_allocation_to_plot_data, plot_allocations))
-    logger.info(f'Plot datas: {len(plot_datas)}')
-    pipeline.draw_circles_with_tooltips(
-        circles=plot_datas,
-        xlabel='Stddev',
-        ylabel='CAGR(%)',
-        title='The title',
-        directory='result',
-        filename='plot_data_noqhull',
-        asset_color_map=dict(RGB_COLOR_MAP.items()),
-        portfolio_legend=False)
-    time_now = time.time()
-    logger.info(f'+{time_now - time_last:.2f}s : {portfolios_read} portfolios read, rate: {int(portfolios_read/(time_now-time_last)/1000):d}k/s')
-    time_last = time_now
+
+    pipeline.plot_simulation_to_file(
+        asset_names=asset_names,
+        pack_size=len(packed_batch[-1]),
+        thread_pool=thread_pool,
+        process_pool=process_pool,
+        hull=cmdline_args.hull)
+
+    # time_now = time.time()
+    # logger.info(f'+{time_now - time_last:.2f}s : {portfolios_read} portfolios read, rate: {int(portfolios_read/(time_now-time_last)/1000):d}k/s')
+    # time_last = time_now
 
     # func_dict_allocation_to_list = functools.partial(pipeline.dict_allocation_to_list_allocation, market_assets=tickers_to_test)
 

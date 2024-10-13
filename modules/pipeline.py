@@ -178,6 +178,57 @@ def compose_plot_data(allocation_stats: list[float], assets: str, marker: str, p
     }
 
 
+def plot_simulation_to_file(
+        asset_names: list[str],
+        pack_size: int,
+        thread_pool,
+        process_pool,
+        hull: int = 1,
+        ):
+    logger = logging.getLogger(__name__)
+    func_allocation_to_plot_data = functools.partial(compose_plot_data,
+        assets=asset_names,
+        marker='o',
+        plot_always=False,
+        field_x='Stddev',
+        field_y='CAGR(%)')
+    portfolios_read = 0
+    reading_request = None
+    plot_points = []
+    with open('simulated.dat', 'rb') as file:
+        while True:
+            read_chunk = b''
+            if reading_request:
+                read_chunk = reading_request.result()
+                if read_chunk == b'':
+                    break
+            reading_request = thread_pool.submit(file.read, pack_size * config.config.CHUNK_SIZE)
+            portfolios = list(struct.iter_unpack(f'{len(asset_names)+5}f', read_chunk))
+            # portfolios_points = list(map(func_allocation_to_xy_point, portfolios))
+            # portfolios_points = pipeline.convex_hull_tuple_points(portfolios, x_name='Stddev', y_name='CAGR(%)', assets_n=len(asset_names))
+            portfolios_points = portfolios_xy_points(portfolios, coord_pair=('Stddev', 'CAGR(%)'), assets_n=len(asset_names))
+            # hull_points = pipeline.multiprocess_convex_hull(process_pool, xy_point_batch=list(portfolios_points), layers=cmdline_args.hull)
+            hull_points = multiprocess_convex_hull(process_pool, xy_point_batch=list(portfolios_points), layers=hull)
+            plot_points.extend(hull_points)
+            portfolios_read += len(portfolios)
+    logger.info(f'Plot points before hull: {len(plot_points)}')
+    # plot_points = pipeline.multiprocess_convex_hull(process_pool, xy_point_batch=plot_points, layers=cmdline_args.hull)
+    plot_points = multiprocess_convex_hull(process_pool, xy_point_batch=plot_points, layers=hull)
+    logger.info(f'Plot points after hull: {len(plot_points)}')
+    plot_allocations = [x.allocation_with_stats for x in plot_points]
+    plot_datas = list(map(func_allocation_to_plot_data, plot_allocations))
+    logger.info(f'Plot datas: {len(plot_datas)}')
+    draw_circles_with_tooltips(
+        circles=plot_datas,
+        xlabel='Stddev',
+        ylabel='CAGR(%)',
+        title='The title',
+        directory='result',
+        filename='plot_data_noqhull',
+        asset_color_map=dict(config.asset_colors.RGB_COLOR_MAP.items()),
+        portfolio_legend=False)
+
+
 def draw_circles_with_tooltips(
         circles=None,
         xlabel=None, ylabel=None, title=None,
