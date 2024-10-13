@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import multiprocessing.process
 import os
 import sys
 import argparse
@@ -223,13 +224,14 @@ def main(argv):
         asset_names=asset_names,
         asset_revenue_per_year=asset_revenue_per_year,
         precision=cmdline_args.precision)
+    # time.sleep(1)
+    # portfolios_saved = 10000000
+    # packed_batch_size = 60
 
     time_now = time.time()
     logger.info(f'+{time_now - time_last:.2f}s : {portfolios_saved} portfolios simulated, rate: {int(portfolios_saved/(time_now-time_last)/1000):d}k/s')
     time_last = time_now
 
-    # portfolios_saved = 10000000
-    # packed_batch_size = 60
 
     # pack_size = 60
     # func_deserialize = functools.partial(pipeline.deserialize_bytes, record_size=pack_size, format=f'{len(asset_names)+5}f')
@@ -263,19 +265,26 @@ def main(argv):
             stat_x=stat_x,
             stat_y=stat_y,
         ))
+    plots = []
     for idx, plot_data in enumerate(plot_data_future):
         plot_datas = plot_data.result()
         stat_x = coords_tuples[idx][1]
         stat_y = coords_tuples[idx][0]
-        pipeline.draw_circles_with_tooltips(
-            circles=plot_datas,
-            xlabel=stat_x,
-            ylabel=stat_y,
-            title=f'{stat_y} vs {stat_x}',
-            directory='result',
-            filename=f'{stat_y} - {stat_x}',
-            asset_color_map=dict(RGB_COLOR_MAP.items()),
-            portfolio_legend=False)
+        plots.append(multiprocessing.Process(None,
+            pipeline.draw_circles_with_tooltips,
+            args=(
+                plot_datas,
+                stat_x, stat_y, f'{stat_y} vs {stat_x}',
+                'result', f'{stat_y} - {stat_x}',
+                dict(RGB_COLOR_MAP.items()), False
+            )
+        ))
+    logger.info(f'Plotting {len(plots)} plots')
+    for plot in plots:
+        plot.start()
+    logger.info(f'Waiting for {len(plots)} plots to finish')
+    for plot in plots:
+        plot.join()
 
     time_now = time.time()
     logger.info(f'+{time_now - time_last:.2f}s : {portfolios_saved} portfolios processed, rate: {int(portfolios_saved/(time_now-time_last)/1000):d}k/s')
