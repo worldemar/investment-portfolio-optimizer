@@ -224,6 +224,10 @@ def main(argv):
         asset_revenue_per_year=asset_revenue_per_year,
         precision=cmdline_args.precision)
 
+    time_now = time.time()
+    logger.info(f'+{time_now - time_last:.2f}s : {portfolios_saved} portfolios simulated, rate: {int(portfolios_saved/(time_now-time_last)/1000):d}k/s')
+    time_last = time_now
+
     # portfolios_saved = 10000000
     # packed_batch_size = 60
 
@@ -244,8 +248,13 @@ def main(argv):
         # ('Sharpe', 'Gain(x)'),
         # ('Sharpe', 'CAGR(%)'),
     ]
+    # coords_tuples = [
+    #     # Y, X
+    #     ('CAGR(%)', 'Stddev'),
+    # ]
+    plot_data_future = []
     for stat_y, stat_x in coords_tuples:
-        pipeline.plot_simulation_to_file(
+        plot_data_future.append(thread_pool.submit(pipeline.calculate_plot_data_from_file_cache,
             asset_names=asset_names,
             pack_size=packed_batch_size,
             thread_pool=thread_pool,
@@ -253,10 +262,23 @@ def main(argv):
             hull=cmdline_args.hull,
             stat_x=stat_x,
             stat_y=stat_y,
-        )
+        ))
+    for idx, plot_data in enumerate(plot_data_future):
+        plot_datas = plot_data.result()
+        stat_x = coords_tuples[idx][1]
+        stat_y = coords_tuples[idx][0]
+        pipeline.draw_circles_with_tooltips(
+            circles=plot_datas,
+            xlabel=stat_x,
+            ylabel=stat_y,
+            title=f'{stat_y} vs {stat_x}',
+            directory='result',
+            filename=f'{stat_y} - {stat_x}',
+            asset_color_map=dict(RGB_COLOR_MAP.items()),
+            portfolio_legend=False)
 
     time_now = time.time()
-    logger.info(f'+{time_now - time_last:.2f}s : {portfolios_saved} portfolios read, rate: {int(portfolios_saved/(time_now-time_last)/1000):d}k/s')
+    logger.info(f'+{time_now - time_last:.2f}s : {portfolios_saved} portfolios processed, rate: {int(portfolios_saved/(time_now-time_last)/1000):d}k/s')
     time_last = time_now
 
     # func_dict_allocation_to_list = functools.partial(pipeline.dict_allocation_to_list_allocation, market_assets=tickers_to_test)

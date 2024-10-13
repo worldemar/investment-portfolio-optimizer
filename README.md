@@ -171,3 +171,45 @@ precision=5 hull=3:
 2024-10-08 01:58:01 :: INFO :: Plot ready: result\Sharpe - Stdev - Multigon.png
 2024-10-08 01:58:01 :: INFO :: Plot ready: result\CAGR(%) - Stdev - Multigon.png
 2024-10-08 01:58:02 :: INFO :: +145.94s :: graphs ready
+
+2024-10-13 20:32:44 :: INFO :: +0.11s : pools ready
+2024-10-13 20:34:11 :: INFO :: Plot points before hull: 1882
+2024-10-13 20:34:11 :: INFO :: Plot points after hull: 64
+2024-10-13 20:34:11 :: INFO :: Plot datas: 64
+2024-10-13 20:34:12 :: INFO :: Plot ready: result\CAGR(%) - Variance.png
+2024-10-13 20:34:42 :: INFO :: Plot points before hull: 1662
+2024-10-13 20:34:42 :: INFO :: Plot points after hull: 53
+2024-10-13 20:34:42 :: INFO :: Plot datas: 53
+2024-10-13 20:34:42 :: INFO :: Plot ready: result\CAGR(%) - Stddev.png
+2024-10-13 20:35:08 :: INFO :: Plot points before hull: 928
+2024-10-13 20:35:08 :: INFO :: Plot points after hull: 17
+2024-10-13 20:35:08 :: INFO :: Plot datas: 17
+2024-10-13 20:35:08 :: INFO :: Plot ready: result\CAGR(%) - Sharpe.png
+2024-10-13 20:35:35 :: INFO :: Plot points before hull: 917
+2024-10-13 20:35:35 :: INFO :: Plot points after hull: 25
+2024-10-13 20:35:35 :: INFO :: Plot datas: 25
+2024-10-13 20:35:35 :: INFO :: Plot ready: result\Sharpe - Stddev.png
+2024-10-13 20:36:02 :: INFO :: Plot points before hull: 994
+2024-10-13 20:36:02 :: INFO :: Plot points after hull: 25
+2024-10-13 20:36:02 :: INFO :: Plot datas: 25
+2024-10-13 20:36:03 :: INFO :: Plot ready: result\Sharpe - Variance.png
+2024-10-13 20:36:03 :: INFO :: +198.71s : 10015005 portfolios read, rate: 50k/s
+
+2024-10-13 23:17:25 :: INFO :: +0.15s : pools ready
+2024-10-13 23:18:18 :: INFO :: +52.71s : 10015005 portfolios simulated, rate: 190k/s
+2024-10-13 23:20:18 :: INFO :: Sharpe(Stddev): 25 plot points from 10015005 portfolios in 119.78 seconds, rate: 83.61 k/s
+2024-10-13 23:20:18 :: INFO :: CAGR(%)(Sharpe): 17 plot points from 10015005 portfolios in 119.81 seconds, rate: 83.59 k/s
+2024-10-13 23:20:18 :: INFO :: CAGR(%)(Variance): 64 plot points from 10015005 portfolios in 119.84 seconds, rate: 83.57 k/s
+2024-10-13 23:20:18 :: INFO :: CAGR(%)(Stddev): 53 plot points from 10015005 portfolios in 119.86 seconds, rate: 83.55 k/s
+2024-10-13 23:20:18 :: INFO :: Sharpe(Variance): 25 plot points from 10015005 portfolios in 119.88 seconds, rate: 83.54 k/s
+2024-10-13 23:20:19 :: INFO :: Plot ready: result\CAGR(%) - Variance.png
+2024-10-13 23:20:19 :: INFO :: Plot ready: result\CAGR(%) - Variance.svg
+2024-10-13 23:20:19 :: INFO :: Plot ready: result\CAGR(%) - Stddev.png
+2024-10-13 23:20:20 :: INFO :: Plot ready: result\CAGR(%) - Stddev.svg
+2024-10-13 23:20:20 :: INFO :: Plot ready: result\CAGR(%) - Sharpe.png
+2024-10-13 23:20:20 :: INFO :: Plot ready: result\CAGR(%) - Sharpe.svg
+2024-10-13 23:20:21 :: INFO :: Plot ready: result\Sharpe - Stddev.png
+2024-10-13 23:20:21 :: INFO :: Plot ready: result\Sharpe - Stddev.svg
+2024-10-13 23:20:21 :: INFO :: Plot ready: result\Sharpe - Variance.png
+2024-10-13 23:20:21 :: INFO :: Plot ready: result\Sharpe - Variance.svg
+2024-10-13 23:20:21 :: INFO :: +123.38s : 10015005 portfolios processed, rate: 81k/s

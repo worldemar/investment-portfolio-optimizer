@@ -4,4 +4,3 @@
 # lower values require less RAM but (usually) slower
 # find the sweet spot for you
 CHUNK_SIZE = 2**16
-CHUNK_SIZE = 2**18

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import io
+import time
 import logging
 import os
 import csv
@@ -197,7 +199,7 @@ def compose_plot_data(allocation_stats: list[float], assets: str, marker: str, p
     }
 
 
-def plot_simulation_to_file(
+def calculate_plot_data_from_file_cache(
         asset_names: list[str],
         pack_size: int,
         thread_pool,
@@ -207,13 +209,9 @@ def plot_simulation_to_file(
         stat_y: str,
         ):
     logger = logging.getLogger(__name__)
-    func_allocation_to_plot_data = functools.partial(compose_plot_data,
-        assets=asset_names,
-        marker='o',
-        plot_always=False,
-        field_x=stat_x,
-        field_y=stat_y)
-    portfolios_read = 0
+    _t1 = time.time()
+    _portfolios_read = 0
+
     reading_request = None
     plot_points = []
     with open('simulated.dat', 'rb') as file:
@@ -228,23 +226,19 @@ def plot_simulation_to_file(
             portfolios_points = portfolios_xy_points(portfolios, coord_pair=(stat_x, stat_y), assets_n=len(asset_names))
             hull_points = multiprocess_convex_hull(process_pool, xy_point_batch=list(portfolios_points), layers=hull)
             plot_points.extend(hull_points)
-            portfolios_read += len(portfolios)
-    logger.info(f'Plot points before hull: {len(plot_points)}')
+            _portfolios_read += len(portfolios)
     plot_points = multiprocess_convex_hull(process_pool, xy_point_batch=plot_points, layers=hull)
-    logger.info(f'Plot points after hull: {len(plot_points)}')
     plot_allocations = [x.allocation_with_stats for x in plot_points]
-    plot_datas = list(map(func_allocation_to_plot_data, plot_allocations))
-    logger.info(f'Plot datas: {len(plot_datas)}')
-    draw_circles_with_tooltips(
-        circles=plot_datas,
-        xlabel=stat_x,
-        ylabel=stat_y,
-        title=f'{stat_y} vs {stat_x}',
-        directory='result',
-        filename=f'{stat_y} - {stat_x}',
-        asset_color_map=dict(config.asset_colors.RGB_COLOR_MAP.items()),
-        portfolio_legend=False)
-
+    plot_datas = list(map(functools.partial(compose_plot_data,
+        assets=asset_names,
+        marker='o',
+        plot_always=False,
+        field_x=stat_x,
+        field_y=stat_y)
+        , plot_allocations))
+    _t2 = time.time()
+    logger.info(f'{stat_y}({stat_x}): {len(plot_datas)} plot points from {_portfolios_read} portfolios in {_t2-_t1:.2f} seconds, rate: {_portfolios_read/(1000*(_t2-_t1)):.2f} k/s')
+    return plot_datas
 
 def draw_circles_with_tooltips(
         circles=None,
@@ -252,9 +246,6 @@ def draw_circles_with_tooltips(
         directory='.', filename='plot',
         asset_color_map=None, portfolio_legend=None):
     logger = logging.getLogger(__name__)
-
-    if not exists(directory):
-        makedirs(directory)
 
     plt = importlib.import_module('matplotlib.pyplot')
     pltlines = importlib.import_module('matplotlib.lines')
@@ -334,9 +325,7 @@ def draw_circles_with_tooltips(
     plt.savefig(os_path_join(directory, filename + '.png'), format="png", dpi=300)
     logger.info(f'Plot ready: {os_path_join(directory, filename + ".png")}')
 
-    return
-
-    for index, circle in enumerate(all_circles):
+    for index, circle in enumerate(circles):
         axes.annotate(
             gid=f'tooltip_{index: 08d}',
             text=circle['text'],
@@ -354,7 +343,7 @@ def draw_circles_with_tooltips(
                 'zorder': 3,
             },
         )
-    virtual_file = StringIO()
+    virtual_file = io.StringIO()
     plt.savefig(virtual_file, format="svg")
 
     # XML trickery for interactive tooltips
@@ -364,11 +353,11 @@ def draw_circles_with_tooltips(
     tree, xmlid = element_tree.XMLID(virtual_file.getvalue())
     tree.set('onload', 'init(evt)')
 
-    for index, circle in enumerate(all_circles):
+    for index, circle in enumerate(circles):
         element = xmlid[f'tooltip_{index: 08d}']
         element.set('visibility', 'hidden')
 
-    for index, circle in enumerate(all_circles):
+    for index, circle in enumerate(circles):
         element = xmlid[f'patch_{index: 08d}']
         element.set('onmouseover', f"ShowTooltip('tooltip_{index: 08d}')")
         element.set('onmouseout', f"HideTooltip('tooltip_{index: 08d}')")
