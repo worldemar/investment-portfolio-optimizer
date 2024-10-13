@@ -217,38 +217,47 @@ def main(argv):
 
 
     asset_names, asset_revenue_per_year = pipeline.read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
-    gen_possible_allocations = pipeline.all_possible_allocations(len(asset_names), cmdline_args.precision)
-    gen_possible_allocations  = itertools.islice(gen_possible_allocations, 1000000)
-    func_simulate_and_pack = functools.partial(pipeline.simulate_and_pack, asset_revenue_per_year=asset_revenue_per_year)
-    portfolios_saved = 0
-    writing_request = None
-    with open('simulated.dat', 'wb') as file:
-        for allocation_batch in itertools.batched(gen_possible_allocations, CHUNK_SIZE):
-            packed_batch = list(process_pool.map(func_simulate_and_pack, allocation_batch, chunksize=CHUNK_SIZE//os.cpu_count()))
-            if writing_request is not None:
-                writing_request.result()
-            writing_request = thread_pool.submit(file.writelines, packed_batch)
-            portfolios_saved += len(packed_batch)
-        writing_request.result()
+    portfolios_saved, packed_batch_size = pipeline.simulate_and_save_to_file(
+        thread_pool=thread_pool,
+        process_pool=process_pool,
+        asset_names=asset_names,
+        asset_revenue_per_year=asset_revenue_per_year,
+        precision=cmdline_args.precision)
 
-    time_now = time.time()
-    logger.info(f'+{time_now - time_last:.2f}s : {portfolios_saved} portfolios saved, rate: {int(portfolios_saved/(time_now-time_last)/1000):d}k/s')
-    time_last = time_now
+    # portfolios_saved = 10000000
+    # packed_batch_size = 60
 
     # pack_size = 60
     # func_deserialize = functools.partial(pipeline.deserialize_bytes, record_size=pack_size, format=f'{len(asset_names)+5}f')
     # func_allocation_to_xy_point = functools.partial(pipeline.convex_hull_tuple_points, x_name='CAGR(%)', y_name='Stddev', assets_n=len(asset_names))
 
-    pipeline.plot_simulation_to_file(
-        asset_names=asset_names,
-        pack_size=len(packed_batch[-1]),
-        thread_pool=thread_pool,
-        process_pool=process_pool,
-        hull=cmdline_args.hull)
+    coords_tuples = [
+        # Y, X
+        ('CAGR(%)', 'Variance'),
+        ('CAGR(%)', 'Stddev'),
+        ('CAGR(%)', 'Sharpe'),
+        # ('Gain(x)', 'Variance'),
+        # ('Gain(x)', 'Stdev'),
+        # ('Gain(x)', 'Sharpe'),
+        ('Sharpe', 'Stddev'),
+        ('Sharpe', 'Variance'),
+        # ('Sharpe', 'Gain(x)'),
+        # ('Sharpe', 'CAGR(%)'),
+    ]
+    for stat_y, stat_x in coords_tuples:
+        pipeline.plot_simulation_to_file(
+            asset_names=asset_names,
+            pack_size=packed_batch_size,
+            thread_pool=thread_pool,
+            process_pool=process_pool,
+            hull=cmdline_args.hull,
+            stat_x=stat_x,
+            stat_y=stat_y,
+        )
 
-    # time_now = time.time()
-    # logger.info(f'+{time_now - time_last:.2f}s : {portfolios_read} portfolios read, rate: {int(portfolios_read/(time_now-time_last)/1000):d}k/s')
-    # time_last = time_now
+    time_now = time.time()
+    logger.info(f'+{time_now - time_last:.2f}s : {portfolios_saved} portfolios read, rate: {int(portfolios_saved/(time_now-time_last)/1000):d}k/s')
+    time_last = time_now
 
     # func_dict_allocation_to_list = functools.partial(pipeline.dict_allocation_to_list_allocation, market_assets=tickers_to_test)
 

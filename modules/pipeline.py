@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import logging
+import os
 import csv
 import struct
 import math
@@ -80,6 +81,24 @@ def simulate_and_pack(allocation: list[int], asset_revenue_per_year) -> list[flo
     sharpe = cagr_percent / stddev
     return struct.pack(f'{len(allocation)+len(simulate_stat_order)}f',
                        *allocation, gain, cagr_percent, sharpe, variance, stddev)
+
+
+def simulate_and_save_to_file(thread_pool = None, process_pool = None, asset_names: list[str] = None, asset_revenue_per_year: dict[int, dict[str, float]] = None, precision: int=20):
+    gen_possible_allocations = all_possible_allocations(len(asset_names), precision)
+    # gen_possible_allocations  = itertools.islice(gen_possible_allocations, 1000000)
+    func_simulate_and_pack = functools.partial(simulate_and_pack, asset_revenue_per_year=asset_revenue_per_year)
+    portfolios_saved = 0
+    writing_request = None
+    with open('simulated.dat', 'wb') as file:
+        for allocation_batch in itertools.batched(gen_possible_allocations, config.config.CHUNK_SIZE):
+            packed_batch = list(process_pool.map(func_simulate_and_pack, allocation_batch, chunksize=config.config.CHUNK_SIZE//os.cpu_count()))
+            if writing_request is not None:
+                writing_request.result()
+            writing_request = thread_pool.submit(file.writelines, packed_batch)
+            portfolios_saved += len(packed_batch)
+        writing_request.result()
+    return portfolios_saved, len(packed_batch[-1])
+
 
 def deserialize_iterable(iterable: typing.Iterable[bytes], record_size: int, format: str):
     for chunk in iterable:
@@ -183,15 +202,17 @@ def plot_simulation_to_file(
         pack_size: int,
         thread_pool,
         process_pool,
-        hull: int = 1,
+        hull: int,
+        stat_x: str,
+        stat_y: str,
         ):
     logger = logging.getLogger(__name__)
     func_allocation_to_plot_data = functools.partial(compose_plot_data,
         assets=asset_names,
         marker='o',
         plot_always=False,
-        field_x='Stddev',
-        field_y='CAGR(%)')
+        field_x=stat_x,
+        field_y=stat_y)
     portfolios_read = 0
     reading_request = None
     plot_points = []
@@ -204,15 +225,11 @@ def plot_simulation_to_file(
                     break
             reading_request = thread_pool.submit(file.read, pack_size * config.config.CHUNK_SIZE)
             portfolios = list(struct.iter_unpack(f'{len(asset_names)+5}f', read_chunk))
-            # portfolios_points = list(map(func_allocation_to_xy_point, portfolios))
-            # portfolios_points = pipeline.convex_hull_tuple_points(portfolios, x_name='Stddev', y_name='CAGR(%)', assets_n=len(asset_names))
-            portfolios_points = portfolios_xy_points(portfolios, coord_pair=('Stddev', 'CAGR(%)'), assets_n=len(asset_names))
-            # hull_points = pipeline.multiprocess_convex_hull(process_pool, xy_point_batch=list(portfolios_points), layers=cmdline_args.hull)
+            portfolios_points = portfolios_xy_points(portfolios, coord_pair=(stat_x, stat_y), assets_n=len(asset_names))
             hull_points = multiprocess_convex_hull(process_pool, xy_point_batch=list(portfolios_points), layers=hull)
             plot_points.extend(hull_points)
             portfolios_read += len(portfolios)
     logger.info(f'Plot points before hull: {len(plot_points)}')
-    # plot_points = pipeline.multiprocess_convex_hull(process_pool, xy_point_batch=plot_points, layers=cmdline_args.hull)
     plot_points = multiprocess_convex_hull(process_pool, xy_point_batch=plot_points, layers=hull)
     logger.info(f'Plot points after hull: {len(plot_points)}')
     plot_allocations = [x.allocation_with_stats for x in plot_points]
@@ -220,11 +237,11 @@ def plot_simulation_to_file(
     logger.info(f'Plot datas: {len(plot_datas)}')
     draw_circles_with_tooltips(
         circles=plot_datas,
-        xlabel='Stddev',
-        ylabel='CAGR(%)',
-        title='The title',
+        xlabel=stat_x,
+        ylabel=stat_y,
+        title=f'{stat_y} vs {stat_x}',
         directory='result',
-        filename='plot_data_noqhull',
+        filename=f'{stat_y} - {stat_x}',
         asset_color_map=dict(config.asset_colors.RGB_COLOR_MAP.items()),
         portfolio_legend=False)
 
