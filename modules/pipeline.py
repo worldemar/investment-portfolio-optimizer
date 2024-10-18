@@ -330,7 +330,7 @@ def calculate_plot_data_from_file_cache(
         field_x=stat_x,
         field_y=stat_y)
         , hull_allocations))
-    print(f'hull calculated from {sum(hull_point_counts_per_core)} allocations')
+    print(f'hull {stat_y}({stat_x}) calculated from {sum(hull_point_counts_per_core)} allocations and contains {len(plot_datas)} points')
     # for chunks_n in range(100):
     #     hulls = gen_file_slice_hulls(
     #         file_name='simulated.dat',

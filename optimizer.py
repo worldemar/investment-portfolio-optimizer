@@ -218,7 +218,7 @@ def main(argv):
 
     time_now = time.time()
     logger.info(f'+{time_now - time_last:.2f}s : pools ready')
-    time_last = time.time()
+    # time_last = time_now
 
     all_allocs = pipeline.all_possible_allocations(assets_num=len(asset_names), step=cmdline_args.precision)
     total_allocations = sum(1 for _ in all_allocs)
@@ -307,7 +307,7 @@ def main(argv):
 
     time_now = time.time()
     logger.info(f'+{time_now - time_last:.2f}s : {portfolios_saved} portfolios processed, rate: {int(portfolios_saved/(time_now-time_last)/1000):d}k/s')
-    time_last = time_now
+    # time_last = time_now
 
     # func_dict_allocation_to_list = functools.partial(pipeline.dict_allocation_to_list_allocation, market_assets=tickers_to_test)
 

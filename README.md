@@ -215,3 +215,25 @@ precision=5 hull=3:
 2024-10-13 23:56:36 :: INFO :: Plot ready: result\CAGR(%) - Stddev.svg
 2024-10-13 23:56:36 :: INFO :: Plot ready: result\CAGR(%) - Variance.svg
 2024-10-13 23:56:36 :: INFO :: +121.79s : 10015005 portfolios processed, rate: 82k/s
+
+2024-10-19 02:47:08 :: INFO :: +0.14s : pools ready
+2024-10-19 02:47:12 :: INFO :: +4.57s : 10015005 allocations counted, rate: 2189k/s
+2024-10-19 02:48:04 :: INFO :: +56.26s : 10015005.0 portfolios simulated, rate: 178k/s
+hull CAGR(%)(Variance) calculated from 10015005 allocations and contains 64 points
+hull CAGR(%)(Stddev) calculated from 10015005 allocations and contains 53 points
+hull CAGR(%)(Sharpe) calculated from 10015005 allocations and contains 17 points
+hull Sharpe(Stddev) calculated from 10015005 allocations and contains 25 points
+hull Sharpe(Variance) calculated from 10015005 allocations and contains 25 points
+2024-10-19 02:48:38 :: INFO :: Plotting 5 plots
+2024-10-19 02:48:38 :: INFO :: Waiting for 5 plots to finish
+2024-10-19 02:48:38 :: INFO :: Plot ready: result\CAGR(%) - Variance.png
+2024-10-19 02:48:38 :: INFO :: Plot ready: result\CAGR(%) - Stddev.png
+2024-10-19 02:48:38 :: INFO :: Plot ready: result\CAGR(%) - Sharpe.png
+2024-10-19 02:48:39 :: INFO :: Plot ready: result\Sharpe - Stddev.png
+2024-10-19 02:48:39 :: INFO :: Plot ready: result\Sharpe - Variance.png
+2024-10-19 02:48:39 :: INFO :: Plot ready: result\CAGR(%) - Sharpe.svg
+2024-10-19 02:48:39 :: INFO :: Plot ready: result\Sharpe - Variance.svg
+2024-10-19 02:48:39 :: INFO :: Plot ready: result\Sharpe - Stddev.svg
+2024-10-19 02:48:39 :: INFO :: Plot ready: result\CAGR(%) - Stddev.svg
+2024-10-19 02:48:39 :: INFO :: Plot ready: result\CAGR(%) - Variance.svg
+2024-10-19 02:48:39 :: INFO :: +91.62s : 10015005.0 portfolios processed, rate: 109k/s
