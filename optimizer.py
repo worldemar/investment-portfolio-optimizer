@@ -212,12 +212,19 @@ def main(argv):
     process_pool = multiprocessing.Pool(processes=os.cpu_count())
     thread_pool = concurrent.ThreadPoolExecutor()
 
+    asset_names, asset_revenue_per_year = pipeline.read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
+
     time_now = time.time()
     logger.info(f'+{time_now - time_last:.2f}s : pools ready')
     time_last = time.time()
 
+    all_allocs = pipeline.all_possible_allocations(assets_num=len(asset_names), step=cmdline_args.precision)
+    total_allocations = sum(1 for _ in all_allocs)
 
-    asset_names, asset_revenue_per_year = pipeline.read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
+    time_now = time.time()
+    logger.info(f'+{time_now - time_last:.2f}s : {total_allocations} allocations counted, rate: {int(total_allocations/(time_now-time_last)/1000):d}k/s')
+    # time_last = time_now
+
     portfolios_saved, packed_batch_size = pipeline.simulate_and_save_to_file(
         thread_pool=thread_pool,
         process_pool=process_pool,
@@ -230,7 +237,7 @@ def main(argv):
 
     time_now = time.time()
     logger.info(f'+{time_now - time_last:.2f}s : {portfolios_saved} portfolios simulated, rate: {int(portfolios_saved/(time_now-time_last)/1000):d}k/s')
-    time_last = time_now
+    # time_last = time_now
 
 
     # pack_size = 60

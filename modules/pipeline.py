@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import concurrent.futures
 import io
 import time
 import logging
@@ -15,6 +16,7 @@ import config.asset_colors
 import importlib
 import functools
 import multiprocessing
+import concurrent
 from os.path import exists, join as os_path_join
 
 def read_capitalgain_csv_data(filename):
@@ -33,7 +35,7 @@ def read_capitalgain_csv_data(filename):
                 float(row[i].replace('%', '')) / 100 + 1
     return assets, yearly_revenue_multiplier
 
-def all_possible_allocations(assets_num: list, step: int):
+def all_possible_allocations(assets_num: int, step: int):
     def _allocations_recursive(
             assets_num: list, step: int,
             asset_idx: int = 0, asset_idx_max: int = 0,
@@ -123,7 +125,7 @@ def portfolios_xy_points(portfolios: typing.Iterable, coord_pair: tuple[str, str
     xy_func = functools.partial(PortfolioXYPoint, coord_pair=coord_pair, assets_n = assets_n)
     return map(xy_func, portfolios)
 
-def convex_hull(points: list[PortfolioXYPoint]):
+def convex_hull_from_xypoints(points: list[PortfolioXYPoint]):
     points_n = len(points)
     if points_n <= 3:
         return points
@@ -146,10 +148,16 @@ def convex_hull(points: list[PortfolioXYPoint]):
             break
     return hull_points
 
-def multiprocess_convex_hull(pool, xy_point_batch: list[PortfolioXYPoint], layers=None):
-    batches = itertools.batched(xy_point_batch, len(xy_point_batch)//multiprocessing.cpu_count() + 1)
-    mapped = pool.imap(convex_hull, batches)
-    return convex_hull([point for batch in mapped for point in batch])
+def multiprocess_xypoint_batch_to_convex_hull(pool, xy_point_batch: list[PortfolioXYPoint], layers=None):
+    batches = itertools.batched(xy_point_batch, config.config.CHUNK_SIZE//multiprocessing.cpu_count() + 1)
+    mapped = pool.imap(convex_hull_from_xypoints, batches)
+    return convex_hull_from_xypoints([point for batch in mapped for point in batch])
+
+def multiprocess_allocation_batch_to_convex_hull(
+        allocation_batch: list[tuple], coord_pair=None, assets_n=None, layers=None):
+    process_pool = multiprocessing.Pool()
+    xy_points = portfolios_xy_points(allocation_batch, coord_pair=coord_pair, assets_n=assets_n)
+    return multiprocess_xypoint_batch_to_convex_hull(process_pool, xy_points, layers=layers)
 
 
 def compose_plot_data(allocation_stats: list[float], assets: str, marker: str, plot_always: bool, field_x: str, field_y: str):
@@ -199,6 +207,52 @@ def compose_plot_data(allocation_stats: list[float], assets: str, marker: str, p
     }
 
 
+def gen_file_slice_unpacked_chunks(file_name: str=None, pack_size: int=None, seek: int = None, size: int = None, asset_n: int = None, thread_pool=None):
+    with open(file_name, 'rb') as file:
+        file.seek(seek)
+        unpack_format = f'{asset_n+len(simulate_stat_order)}f'
+        bytes_read = 0
+        reading_request = None
+        while True:
+            read_chunk = b''
+            if reading_request:
+                read_chunk = reading_request.result()
+                if read_chunk == b'':
+                    break
+            bytes_read += len(read_chunk)
+            if bytes_read < size:
+                reading_request = thread_pool.submit(file.read, pack_size * config.config.CHUNK_SIZE)
+            unpacked_data = list(struct.iter_unpack(unpack_format, read_chunk))
+            yield unpacked_data
+            if bytes_read == size:
+                break
+            if bytes_read > size:
+                raise OverflowError('chunk size misalignment')
+
+def gen_file_slice_hulls(
+    seek: int = None,
+    file_name: str=None,
+    pack_size: int=None, size: int = None,
+    asset_n: int=None, coord_pair=None):
+    total_points = 0
+    slice_points = []
+    with concurrent.futures.ThreadPoolExecutor() as thread_pool:
+        generator = gen_file_slice_unpacked_chunks(
+            file_name=file_name,
+            pack_size=pack_size,
+            seek=seek,
+            size=size,
+            asset_n=asset_n,
+            thread_pool=thread_pool)
+        for chunk in generator:
+            total_points += len(chunk)
+            xy_func = functools.partial(PortfolioXYPoint, coord_pair=coord_pair, assets_n = asset_n)
+            xy_points = list(map(xy_func, chunk))
+            slice_points.extend(convex_hull_from_xypoints(xy_points))
+            if len(slice_points) >= config.config.CHUNK_SIZE:
+                slice_points = convex_hull_from_xypoints(slice_points)
+    return convex_hull_from_xypoints(slice_points), total_points
+
 def calculate_plot_data_from_file_cache(
         asset_names: list[str],
         pack_size: int,
@@ -212,32 +266,84 @@ def calculate_plot_data_from_file_cache(
     _t1 = time.time()
     _portfolios_read = 0
 
-    reading_request = None
-    plot_points = []
-    with open('simulated.dat', 'rb') as file:
-        while True:
-            read_chunk = b''
-            if reading_request:
-                read_chunk = reading_request.result()
-                if read_chunk == b'':
-                    break
-            reading_request = thread_pool.submit(file.read, pack_size * config.config.CHUNK_SIZE)
-            portfolios = list(struct.iter_unpack(f'{len(asset_names)+5}f', read_chunk))
-            portfolios_points = portfolios_xy_points(portfolios, coord_pair=(stat_x, stat_y), assets_n=len(asset_names))
-            hull_points = multiprocess_convex_hull(process_pool, xy_point_batch=list(portfolios_points), layers=hull)
-            plot_points.extend(hull_points)
-            _portfolios_read += len(portfolios)
-    plot_points = multiprocess_convex_hull(process_pool, xy_point_batch=plot_points, layers=hull)
-    plot_allocations = [x.allocation_with_stats for x in plot_points]
+    # gen_chunks = gen_file_slice_unpacked_chunks(
+    #     file_name='simulated.dat',
+    #     pack_size=pack_size,
+    #     seek=pack_size * config.config.CHUNK_SIZE * 5,
+    #     size=pack_size * config.config.CHUNK_SIZE * 10,
+    #     asset_n=len(asset_names),
+    #     thread_pool=thread_pool)
+    simulated_file_size = os.stat('simulated.dat').st_size
+    if simulated_file_size % pack_size != 0:
+        raise RuntimeError(f'file size={simulated_file_size} is not divisible by pack_size={pack_size}')
+    allocations_in_file = simulated_file_size // pack_size
+    allocation_chunks_per_core = allocations_in_file // multiprocessing.cpu_count() // config.config.CHUNK_SIZE + 1
+
+    gen_file_slice_hulls_results = process_pool.map(
+        functools.partial(gen_file_slice_hulls,
+            file_name='simulated.dat',
+            pack_size=pack_size,
+            size=pack_size * allocation_chunks_per_core * config.config.CHUNK_SIZE,
+            asset_n=len(asset_names),
+            coord_pair=(stat_x, stat_y)),
+        range(0, simulated_file_size, allocation_chunks_per_core * config.config.CHUNK_SIZE * pack_size))
+    hull_point_batches_per_core = [x[0] for x in gen_file_slice_hulls_results]
+    hull_point_counts_per_core = [x[1] for x in gen_file_slice_hulls_results]
+    hull_points = [point for core_batch in hull_point_batches_per_core for point in core_batch]
+    hull_points = convex_hull_from_xypoints(hull_points)
+    hull_allocations = [point.allocation_with_stats for point in hull_points]
     plot_datas = list(map(functools.partial(compose_plot_data,
         assets=asset_names,
         marker='o',
         plot_always=False,
         field_x=stat_x,
         field_y=stat_y)
-        , plot_allocations))
-    _t2 = time.time()
-    logger.info(f'{stat_y}({stat_x}): {len(plot_datas)} plot points from {_portfolios_read} portfolios in {_t2-_t1:.2f} seconds, rate: {_portfolios_read/(1000*(_t2-_t1)):.2f} k/s')
+        , hull_allocations))
+    print(f'hull calculated from {sum(hull_point_counts_per_core)} allocations')
+    # for chunks_n in range(100):
+    #     hulls = gen_file_slice_hulls(
+    #         file_name='simulated.dat',
+    #         pack_size=pack_size,
+    #         seek=0,
+    #         size=pack_size * config.config.CHUNK_SIZE * chunks_n,
+    #         asset_n=len(asset_names),
+    #         coord_pair=(stat_x, stat_y))
+    #     print(f'chunks={chunks_n} hull points={len(hulls)}')
+        # for point in hulls:
+        #     print(point.x,point.y,point.allocation_with_stats)
+        # hulls = process_pool.imap(
+        #     functools.partial(multiprocess_allocation_batch_to_convex_hull,
+        #                       coord_pair=(stat_x, stat_y),
+        #                       assets_n=len(asset_names)),
+        #                       gen_chunks)
+
+
+    # reading_request = None
+    # plot_points = []
+    # with open('simulated.dat', 'rb') as file:
+    #     while True:
+    #         read_chunk = b''
+    #         if reading_request:
+    #             read_chunk = reading_request.result()
+    #             if read_chunk == b'':
+    #                 break
+    #         reading_request = thread_pool.submit(file.read, pack_size * config.config.CHUNK_SIZE)
+    #         portfolios = list(struct.iter_unpack(f'{len(asset_names)+5}f', read_chunk))
+    #         portfolios_points = portfolios_xy_points(portfolios, coord_pair=(stat_x, stat_y), assets_n=len(asset_names))
+    #         hull_points = multiprocess_convex_hull(process_pool, xy_point_batch=list(portfolios_points), layers=hull)
+    #         plot_points.extend(hull_points)
+    #         _portfolios_read += len(portfolios)
+    # plot_points = multiprocess_convex_hull(process_pool, xy_point_batch=plot_points, layers=hull)
+    # plot_allocations = [x.allocation_with_stats for x in plot_points]
+    # plot_datas = list(map(functools.partial(compose_plot_data,
+    #     assets=asset_names,
+    #     marker='o',
+    #     plot_always=False,
+    #     field_x=stat_x,
+    #     field_y=stat_y)
+    #     , plot_allocations))
+    # _t2 = time.time()
+    # logger.info(f'{stat_y}({stat_x}): {len(plot_datas)} plot points from {_portfolios_read} portfolios in {_t2-_t1:.2f} seconds, rate: {_portfolios_read/(1000*(_t2-_t1)):.2f} k/s')
     return plot_datas
 
 def draw_circles_with_tooltips(
