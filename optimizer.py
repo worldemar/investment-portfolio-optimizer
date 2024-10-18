@@ -4,9 +4,11 @@ import multiprocessing.process
 import os
 import sys
 import argparse
+import config.config
 import modules.pipeline as pipeline
 import functools
 import struct
+import config
 import multiprocessing
 # import functools
 import time
@@ -225,12 +227,23 @@ def main(argv):
     logger.info(f'+{time_now - time_last:.2f}s : {total_allocations} allocations counted, rate: {int(total_allocations/(time_now-time_last)/1000):d}k/s')
     # time_last = time_now
 
-    portfolios_saved, packed_batch_size = pipeline.simulate_and_save_to_file(
-        thread_pool=thread_pool,
+    # (167+163+158)/3 = 162k/s # CHUNK/cores
+    # (149+156+154)/3 = 153k/s  # CHUNK * cores
+    # portfolios_saved, packed_batch_size = pipeline.simulate_and_save_to_file(
+    #     thread_pool=thread_pool,
+    #     process_pool=process_pool,
+    #     asset_names=asset_names,
+    #     asset_revenue_per_year=asset_revenue_per_year,
+    #     precision=cmdline_args.precision)
+
+    # (179+177+173)/3 = 176k/s
+    portfolios_saved, packed_batch_size = pipeline.simulate_and_save_to_file_slices(
         process_pool=process_pool,
-        asset_names=asset_names,
+        allocations_n=total_allocations,
+        assets_n=len(asset_names),
         asset_revenue_per_year=asset_revenue_per_year,
         precision=cmdline_args.precision)
+
     # time.sleep(1)
     # portfolios_saved = 10000000
     # packed_batch_size = 60
@@ -238,7 +251,6 @@ def main(argv):
     time_now = time.time()
     logger.info(f'+{time_now - time_last:.2f}s : {portfolios_saved} portfolios simulated, rate: {int(portfolios_saved/(time_now-time_last)/1000):d}k/s')
     # time_last = time_now
-
 
     # pack_size = 60
     # func_deserialize = functools.partial(pipeline.deserialize_bytes, record_size=pack_size, format=f'{len(asset_names)+5}f')

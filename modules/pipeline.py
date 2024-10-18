@@ -86,6 +86,37 @@ def simulate_and_pack(allocation: list[int], asset_revenue_per_year) -> list[flo
     return struct.pack(f'{len(allocation)+len(simulate_stat_order)}f',
                        *allocation, gain, cagr_percent, sharpe, variance, stddev)
 
+def simulate_and_save_to_file_slice(slice_idx: int, slice_size: int, assets_n: int, precision: int, pack_size: int, asset_revenue_per_year: dict[int, dict[str, float]] = None):
+    gen_possible_allocations = all_possible_allocations(assets_num=assets_n, step=precision)
+    gen_my_allocations_slice = itertools.islice(gen_possible_allocations, slice_idx * slice_size, (slice_idx + 1) * slice_size)
+    func_simulate_and_pack = functools.partial(simulate_and_pack, asset_revenue_per_year=asset_revenue_per_year)
+    total_written = 0
+    write_request = None
+    with open('simulated.dat', 'wb') as file:
+        pos_start = slice_idx * slice_size * pack_size
+        file.seek(pos_start)
+        for allocation_batch in itertools.batched(gen_my_allocations_slice, config.config.CHUNK_SIZE):
+            packed_batch = b''.join(map(func_simulate_and_pack, allocation_batch))
+            # data size is small enough to be written without threading
+            file.write(packed_batch)
+            total_written += len(packed_batch) / pack_size
+        pos_end = file.tell()
+    # print(f'Slice {slice_idx} wrote {total_written} allocations at {pos_start} - {pos_end}')
+    return total_written
+
+def simulate_and_save_to_file_slices(
+        process_pool = None, 
+        allocations_n: int = None, assets_n: int = None, precision: int = None, asset_revenue_per_year: dict[int, dict[str, float]] = None):
+    slice_size=allocations_n // os.cpu_count() + 1
+    slice_func = functools.partial(
+        simulate_and_save_to_file_slice,
+        pack_size=struct.calcsize(f'{assets_n+len(simulate_stat_order)}f'),
+        slice_size=slice_size,
+        assets_n=assets_n,
+        precision=precision,
+        asset_revenue_per_year=asset_revenue_per_year)
+    written = process_pool.map(slice_func, range(os.cpu_count()))
+    return sum(written), struct.calcsize(f'{assets_n+len(simulate_stat_order)}f')
 
 def simulate_and_save_to_file(thread_pool = None, process_pool = None, asset_names: list[str] = None, asset_revenue_per_year: dict[int, dict[str, float]] = None, precision: int=20):
     gen_possible_allocations = all_possible_allocations(len(asset_names), precision)
@@ -94,8 +125,8 @@ def simulate_and_save_to_file(thread_pool = None, process_pool = None, asset_nam
     portfolios_saved = 0
     writing_request = None
     with open('simulated.dat', 'wb') as file:
-        for allocation_batch in itertools.batched(gen_possible_allocations, config.config.CHUNK_SIZE):
-            packed_batch = list(process_pool.map(func_simulate_and_pack, allocation_batch, chunksize=config.config.CHUNK_SIZE//os.cpu_count()))
+        for allocation_batch in itertools.batched(gen_possible_allocations, config.config.CHUNK_SIZE*os.cpu_count()):
+            packed_batch = list(process_pool.map(func_simulate_and_pack, allocation_batch, chunksize=config.config.CHUNK_SIZE))
             if writing_request is not None:
                 writing_request.result()
             writing_request = thread_pool.submit(file.writelines, packed_batch)
