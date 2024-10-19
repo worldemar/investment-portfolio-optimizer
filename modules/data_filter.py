@@ -10,14 +10,16 @@ from modules import data_types
 import pickle
 
 class PortfolioXYFieldsPoint(data_types.ConvexHullPoint):
-    def __new__(cls, portfolio: data_types.Portfolio, varname_x: str, varname_y: str):
+    def __new__(cls, portfolio: data_types.Portfolio, varname_x: str = None, varname_y: str = None):
         try:
+            if varname_x is None or varname_y is None:
+                return super().__new__(cls, (0,0))
             return super().__new__(cls, (portfolio.get_stat(varname_x), portfolio.get_stat(varname_y)))
         except Exception as e:
             print(f'PortfolioXYFieldsPoint > {e}')
             return None
 
-    def __init__(self, portfolio: data_types.Portfolio, varname_x: str, varname_y: str):
+    def __init__(self, portfolio: data_types.Portfolio, varname_x: str = None, varname_y: str = None):
         self._portfolio = portfolio
         self._varname_x = varname_x
         self._varname_y = varname_y
