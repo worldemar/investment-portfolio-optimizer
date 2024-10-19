@@ -21,11 +21,11 @@ def test_all_possible_allocations(assets_n: int, step: int):
     assets = list('abcdefghijkl'[i] for i in range(assets_n))
 
     expected_allocations_gen = _expected_allocations(assets, step)
-    expected_allocations = list(tuple(i for i in a.items()) for a in expected_allocations_gen)
+    expected_allocations = list(tuple(a) for a in expected_allocations_gen)
     expected_allocations.sort()
 
     test_allocations_gen = data_source.all_possible_allocations(assets, step)
-    test_allocations = list(tuple(i for i in a.items()) for a in test_allocations_gen)
+    test_allocations = list(tuple(a) for a in test_allocations_gen)
     test_allocations.sort()
 
     assert test_allocations == expected_allocations
@@ -34,4 +34,4 @@ def test_all_possible_allocations(assets_n: int, step: int):
 def _expected_allocations(assets: list, step: int):
     asset_values = filter(lambda x: sum(x) == 100, itertools.product(range(0,101,step), repeat=len(assets)))
     for asset_values in asset_values:
-        yield dict(zip(assets, asset_values))
+        yield asset_values
