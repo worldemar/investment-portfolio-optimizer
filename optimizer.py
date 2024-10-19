@@ -111,7 +111,7 @@ def main(argv):
         STATIC_PORTFOLIOS))
     logger.info(f'{len(static_portfolios_simulated)} static portfolios will be plotted on all graphs')
 
-    gen_edge_allocations = data_source.all_possible_allocations(tickers_to_test, 100)
+    gen_edge_allocations = data_source.all_possible_allocations(len(tickers_to_test), 100)
     gen_edge_portfolios = map(
         functools.partial(Portfolio, assets=tickers_to_test), gen_edge_allocations)
     list_edge_simulateds = list(map(functools.partial(Portfolio.simulated, asset_revenue_per_year=yearly_revenue_multiplier), gen_edge_portfolios))
@@ -126,6 +126,7 @@ def main(argv):
             'percentage_step': cmdline_args.precision,
             'asset_revenue_per_year': yearly_revenue_multiplier,
             'sink': portfolios_simulated_sink,
+            'chunk_size': CHUNK_SIZE,
         }
     ))
     coord_tuple_queues = {

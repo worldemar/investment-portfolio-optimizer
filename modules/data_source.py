@@ -1,36 +1,19 @@
 #!/usr/bin/env python3
 
 import csv
-from modules.Portfolio import Portfolio
-import concurrent.futures
 from functools import partial
-import itertools
-from config.config import CHUNK_SIZE
-import queue
+from itertools import islice
+from itertools import batched
+from concurrent.futures import ThreadPoolExecutor
+from modules.Portfolio import Portfolio
 
-
-def allocation_simulate_serialize_slice_to_sink(slice_idx, slice_size, assets, percentage_step, asset_revenue_per_year, sink):
-    portfolios_sent = 0
-    with concurrent.futures.ThreadPoolExecutor() as thread_executor:
-        possible_allocations_gen = all_possible_allocations(assets, percentage_step)
-        gen_slice_allocations = itertools.islice(possible_allocations_gen, slice_idx * slice_size, (slice_idx + 1) * slice_size)
-        gen_portfolios = map(partial(Portfolio, assets=assets), gen_slice_allocations)
-        gen_simulateds = map(partial(Portfolio.simulated, asset_revenue_per_year=asset_revenue_per_year), gen_portfolios)
-        gen_serializations = map(Portfolio.serialize, gen_simulateds)
-        send_task = None
-        for batch in itertools.batched(gen_serializations, CHUNK_SIZE):
-            if send_task is not None:
-                send_task.result()
-            send_task = thread_executor.submit(sink.send_bytes, b''.join(batch))
-            portfolios_sent += len(batch)
-        if send_task is not None:
-            send_task.result()
-    return portfolios_sent
-
-
-def all_possible_allocations(assets: list, step: int):
+def all_possible_allocations(assets_n: int, step: int):
+    """
+    equivalent to filter(lambda x: sum(x) == 100, itertools.product(range(0,101,step), repeat=len(assets)))
+    but considerably faster
+    """
     def _allocations_recursive(
-            assets: list, step: int,
+            assets_n: int, step: int,
             asset_idx: int = 0, asset_idx_max: int = 0,
             allocation: list[int] = (),
             allocation_sum: int = 0):
@@ -42,7 +25,7 @@ def all_possible_allocations(assets: list, step: int):
             for next_asset_percent in range(0, 100 - allocation_sum + 1, step):
                 allocation[asset_idx] = next_asset_percent
                 yield from _allocations_recursive(
-                    assets, step,
+                    assets_n, step,
                     asset_idx + 1, asset_idx_max,
                     allocation,
                     allocation_sum + next_asset_percent)
@@ -50,10 +33,29 @@ def all_possible_allocations(assets: list, step: int):
     if 100 % step != 0:
         raise ValueError(f'cannot use step={step}, must be a divisor of 100')
     yield from _allocations_recursive(
-        assets = assets, step = step,
-        asset_idx = 0, asset_idx_max = len(assets) - 1,
-        allocation = [0] * len(assets),
+        assets_n = assets_n, step = step,
+        asset_idx = 0, asset_idx_max = assets_n - 1,
+        allocation = [0] * assets_n,
         allocation_sum = 0)
+
+
+def allocation_slice_simulate_and_feed_to_sink(slice_idx, slice_size, assets, percentage_step, asset_revenue_per_year, sink, chunk_size):
+    portfolios_sent = 0
+    with ThreadPoolExecutor() as thread_executor:
+        possible_allocations_gen = all_possible_allocations(len(assets), percentage_step)
+        gen_slice_allocations = islice(possible_allocations_gen, slice_idx * slice_size, (slice_idx + 1) * slice_size)
+        gen_portfolios = map(partial(Portfolio, assets=assets), gen_slice_allocations)
+        gen_simulateds = map(partial(Portfolio.simulated, asset_revenue_per_year=asset_revenue_per_year), gen_portfolios)
+        gen_serializations = map(Portfolio.serialize, gen_simulateds)
+        send_task = None
+        for batch in batched(gen_serializations, chunk_size):
+            if send_task is not None:
+                send_task.result()
+            send_task = thread_executor.submit(sink.send_bytes, b''.join(batch))
+            portfolios_sent += len(batch)
+        if send_task is not None:
+            send_task.result()
+    return portfolios_sent
 
 
 def read_capitalgain_csv_data(filename):
