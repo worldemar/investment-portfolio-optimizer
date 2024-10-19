@@ -8,15 +8,17 @@ import time
 from modules.data_output import report_errors_in_static_portfolios
 import modules.data_source as data_source
 import modules.data_filter as data_filter
-import modules.data_output as data_output
+import modules.plotter as data_output
 from collections import deque
 import itertools
-from modules.data_types import Portfolio
+from modules.Portfolio import Portfolio
 from config.asset_colors import RGB_COLOR_MAP
 from config.static_portfolios import STATIC_PORTFOLIOS
 from config.config import CHUNK_SIZE
 
 import logging
+
+import modules.simulator
 
 
 logging.basicConfig(
@@ -116,7 +118,7 @@ def main(argv):
     logger.info(f'+{time.time() - time_start:.2f}s :: preparing portfolio simulation data pipeline...')
     portfolios_simulated_source, portfolios_simulated_sink = multiprocessing.Pipe(duplex=False)
     process_wait_list.append(multiprocessing.Process(
-        target=data_source.simulated_q,
+        target=modules.simulator.simulator_process_func,
         kwargs={
             'assets': tickers_to_test,
             'percentage_step': cmdline_args.precision,
@@ -136,7 +138,7 @@ def main(argv):
     ))
     for coord_pair in coords_tuples:
         process_wait_list.append(multiprocessing.Process(
-            target=data_output.plot_data,
+            target=data_output.plotter_process_func,
             kwargs={
                 'assets': tickers_to_test,
                 'source': coord_tuple_queues[coord_pair]['source'],

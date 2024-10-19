@@ -1,21 +1,11 @@
 #!/usr/bin/env python3
 
-import os
 import csv
-import time
-import config.asset_colors
-from modules.data_types import Portfolio
-import logging
+from modules.Portfolio import Portfolio
 import concurrent.futures
 from functools import partial
-import multiprocessing
-import multiprocessing.connection
-import modules.data_types as data_types
 import itertools
-import collections
 from config.config import CHUNK_SIZE
-import config
-import pickle
 import queue
 
 def allocation_simulate(asset_allocation, assets, asset_revenue_per_year):
@@ -88,33 +78,6 @@ def queue_batched(future, source: queue.Queue, batch_size: int):
     if len(chunk) > 0:
         yield chunk
 
-def simulated_q(
-        assets: list = None,
-        percentage_step: int = None,
-        asset_revenue_per_year: dict[str, dict[str, float]] = None,
-        sink: multiprocessing.connection.Connection = None):
-    logger = logging.getLogger(__name__)
-    process_pool = concurrent.futures.ProcessPoolExecutor()
-    thread_pool = concurrent.futures.ThreadPoolExecutor()
-
-    possible_allocations_gen = all_possible_allocations(assets, percentage_step)
-    total_possible_allocations = sum(1 for _ in possible_allocations_gen)
-
-    time_start = time.time()
-    allocations_per_core = total_possible_allocations // os.cpu_count() + 1
-    slice_sender = partial(
-        allocation_simulate_serialize_slice_to_sink,
-        slice_size=allocations_per_core,
-        assets=assets,
-        percentage_step=percentage_step,
-        asset_revenue_per_year=asset_revenue_per_year,
-        sink=sink)
-    portfolios_sent_per_core = process_pool.map(slice_sender, range(0, os.cpu_count()))
-    process_pool.shutdown()
-    time_end = time.time()
-    logger.info(f'Simulated {sum(portfolios_sent_per_core)} portfolios, rate: {int(total_possible_allocations / (time_end - time_start))}/s')
-    sink.send(data_types.DataStreamFinished())
-
     # # allocation_limit = 10*1000*1000
     # # allocation_limit = 1000*1000
     # # allocation_limit = 200*1000
@@ -155,3 +118,7 @@ def read_capitalgain_csv_data(filename):
             yearly_revenue_multiplier[int(row[0])][i - 1] = \
                 float(row[i].replace('%', '')) / 100 + 1
     return assets, yearly_revenue_multiplier
+
+
+class DataStreamFinished:
+    pass

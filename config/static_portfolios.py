@@ -1,4 +1,4 @@
-from modules.data_types import Portfolio
+from modules.Portfolio import Portfolio
 
 STATIC_PORTFOLIOS = [
     # Portfolio(plot_always=True, plot_marker='X', weights={

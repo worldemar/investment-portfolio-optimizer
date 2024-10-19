@@ -9,8 +9,11 @@ import multiprocessing.connection
 from modules import data_types
 import pickle
 
-class PortfolioXYFieldsPoint(data_types.ConvexHullPoint):
-    def __new__(cls, portfolio: data_types.Portfolio, varname_x: str = None, varname_y: str = None):
+import modules.Portfolio
+import modules.data_source
+
+class PortfolioXYFieldsPoint(tuple):
+    def __new__(cls, portfolio: modules.Portfolio.Portfolio, varname_x: str = None, varname_y: str = None):
         try:
             if varname_x is None or varname_y is None:
                 return super().__new__(cls, (0,0))
@@ -19,7 +22,7 @@ class PortfolioXYFieldsPoint(data_types.ConvexHullPoint):
             print(f'PortfolioXYFieldsPoint > {e}')
             return None
 
-    def __init__(self, portfolio: data_types.Portfolio, varname_x: str = None, varname_y: str = None):
+    def __init__(self, portfolio: modules.Portfolio.Portfolio, varname_x: str = None, varname_y: str = None):
         self._portfolio = portfolio
         self._varname_x = varname_x
         self._varname_y = varname_y
@@ -27,15 +30,14 @@ class PortfolioXYFieldsPoint(data_types.ConvexHullPoint):
     def portfolio(self):
         return self._portfolio
 
-
-def portfolios_xy_points(portfolios: Iterable[data_types.Portfolio], coord_pair: tuple[str, str]):
+def portfolios_xy_points(portfolios: Iterable[modules.Portfolio.Portfolio], coord_pair: tuple[str, str]):
     xy_func = functools.partial(PortfolioXYFieldsPoint, varname_x=coord_pair[1], varname_y=coord_pair[0])
     return map(xy_func, portfolios)
 
 def queue_multiplexer(
         source: multiprocessing.connection.Connection,
         sinks: list[multiprocessing.connection.Connection]):
-    data_stream_end_pickle = pickle.dumps(data_types.DataStreamFinished())
+    data_stream_end_pickle = pickle.dumps(modules.data_source.DataStreamFinished())
     def send_task(sink, bytes, pool):
         return pool.submit(sink.send_bytes, bytes)
     with concurrent.futures.ThreadPoolExecutor() as thread_pool:
@@ -49,8 +51,7 @@ def queue_multiplexer(
         sink.send_bytes(bytes)
 
 
-
-def multilayer_convex_hull(point_batch: list[data_types.ConvexHullPoint], layers: int = 1):
+def multilayer_convex_hull(point_batch: list, layers: int = 1):
     pyhull_convex_hull = importlib.import_module('pyhull.convex_hull').ConvexHull
     hull_layers_points = []
     self_hull_points = list(point_batch)

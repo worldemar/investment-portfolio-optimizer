@@ -10,18 +10,14 @@ import logging
 from io import StringIO
 from typing import List
 from config.static_portfolios import STATIC_PORTFOLIOS
-import modules.data_filter as data_filter
-import modules.data_types as data_types
+import modules.Portfolio as data_types
 import multiprocessing
 import multiprocessing.connection
-from modules.data_filter import multilayer_convex_hull
-from itertools import chain
 from config.asset_colors import RGB_COLOR_MAP
 import importlib
-import pickle
 import functools
 
-from modules.data_types import Portfolio
+from modules.Portfolio import Portfolio
 
 
 def compose_plot_data(portfolios: Iterable[data_types.Portfolio], field_x: str, field_y: str):
@@ -39,37 +35,6 @@ def compose_plot_data(portfolios: Iterable[data_types.Portfolio], field_x: str, 
             'linewidth': 0.5 if portfolio.plot_always else 1 / portfolio.number_of_assets(),
             }] for portfolio in portfolios
             ]
-
-
-def plot_data(
-        assets: list[str],
-        source: multiprocessing.connection.Connection = None,
-        coord_pair: tuple[str, str] = None,
-        hull_layers: int = None,
-        persistent_portfolios: list[data_types.Portfolio] = None):
-    batches_hulls_points = []
-    data_stream_end_pickle = pickle.dumps(data_types.DataStreamFinished())
-    while True:
-        bytes = source.recv_bytes()
-        if bytes == data_stream_end_pickle:
-            break
-        deserialized_portfolios = Portfolio.deserialize_iter(bytes, assets=assets)
-        batch_xy_points = data_filter.portfolios_xy_points(deserialized_portfolios, coord_pair)
-        batches_hulls_points.extend(multilayer_convex_hull(batch_xy_points, hull_layers))
-    simulated_hull_points = multilayer_convex_hull(batches_hulls_points, hull_layers)
-    persistent_portfolios_points = data_filter.portfolios_xy_points(persistent_portfolios, coord_pair)
-    portfolios_for_plot = list(map(lambda x: x.portfolio(), chain(simulated_hull_points, persistent_portfolios_points)))
-    portfolios_for_plot.sort(key=lambda x: -x.number_of_assets())
-    plot_data = compose_plot_data(portfolios_for_plot, field_x=coord_pair[1], field_y=coord_pair[0])
-    draw_circles_with_tooltips(
-        circle_lines=plot_data,
-        xlabel=coord_pair[1],
-        ylabel=coord_pair[0],
-        title=f'{coord_pair[0]} vs {coord_pair[1]}',
-        directory='result',
-        filename=f'{coord_pair[0]} - {coord_pair[1]}',
-        asset_color_map=dict(RGB_COLOR_MAP),
-    )
 
 
 # pylint: disable=too-many-arguments

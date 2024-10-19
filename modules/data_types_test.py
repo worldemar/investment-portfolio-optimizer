@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import modules.data_types as data_types
+import modules.Portfolio as data_types
 
 
 def test_portfolio_serialize():

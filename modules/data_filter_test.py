@@ -3,11 +3,10 @@
 import random
 from typing import List
 import pytest
-from modules.data_types import ConvexHullPoint
 from modules.data_filter import multilayer_convex_hull
 
 
-class PointMock(ConvexHullPoint):
+class PointMock(tuple):
     def __new__(cls, x, y, payload):
         return super().__new__(cls, (x, y))
 
