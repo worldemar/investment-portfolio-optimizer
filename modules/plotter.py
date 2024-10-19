@@ -2,7 +2,7 @@
 
 import modules.Portfolio
 import modules.data_filter as data_filter
-import modules.data_source as data_types
+import modules.data_source as data_source
 from config.asset_colors import RGB_COLOR_MAP
 from modules.data_filter import multilayer_convex_hull
 from modules.data_output import draw_circles_with_tooltips
@@ -23,7 +23,7 @@ def plotter_process_func(
         color_map: dict[str, tuple[int, int, int]] = None):
     
     batches_hulls_points = []
-    data_stream_end_pickle = pickle.dumps(data_types.DataStreamFinished())
+    data_stream_end_pickle = pickle.dumps(data_source.DataStreamFinished())
     while True:
         bytes = source.recv_bytes()
         if bytes == data_stream_end_pickle:
