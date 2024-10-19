@@ -38,9 +38,9 @@ def plotter_process_func(
     portfolios_for_plot.extend(persistent_portfolios)
     portfolios_for_plot.sort(key=lambda x: -x.number_of_assets())
     # plot_data = data_filter.compose_plot_data(portfolios_for_plot, field_x=coord_pair[1], field_y=coord_pair[0])
-    plot_circles = map(functools.partial(Portfolio.plot_circle_data, coord_pair=coord_pair), portfolios_for_plot)
+    plot_circles = list(map(functools.partial(Portfolio.plot_circle_data, coord_pair=coord_pair), portfolios_for_plot))
     draw_circles_with_tooltips(
-        circle_lines=[[circle] for circle in plot_circles],
+        circles=plot_circles,
         xlabel=coord_pair[1],
         ylabel=coord_pair[0],
         title=f'{coord_pair[0]} vs {coord_pair[1]}',
