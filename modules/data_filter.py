@@ -36,13 +36,15 @@ def queue_multiplexer(
         source: multiprocessing.connection.Connection,
         sinks: list[multiprocessing.connection.Connection]):
     data_stream_end_pickle = pickle.dumps(data_types.DataStreamFinished())
+    def send_task(sink, bytes, pool):
+        return pool.submit(sink.send_bytes, bytes)
     with concurrent.futures.ThreadPoolExecutor() as thread_pool:
         while True:
             bytes = source.recv_bytes()
             if bytes == data_stream_end_pickle:
-                break # make sure all threads are finished
-            for sink in sinks:
-                sink.send_bytes(bytes)
+                break # make sure all threads are finished before sending the end signal
+            send_tasks = map(functools.partial(send_task, pool=thread_pool, bytes=bytes), sinks)
+            concurrent.futures.wait(send_tasks)
     for sink in sinks:
         sink.send_bytes(bytes)
 
