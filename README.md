@@ -100,38 +100,21 @@ precision=5 hull=3:
 2024-09-30 10:59:48 :: INFO :: Plot ready: result\CAGR(%) - Variance new.svg
 2024-09-30 10:59:48 :: INFO :: +179.32s :: graphs ready
 
-2024-10-06 11:28:49 :: INFO :: 7 static portfolios will be plotted on all graphs
-2024-10-06 11:28:49 :: INFO :: 10 edge portfolios will be plotted on all graphs
-2024-10-06 11:28:49 :: INFO :: +0.00s :: preparing portfolio simulation data pipeline...
-2024-10-06 11:28:49 :: INFO :: +0.00s :: data pipeline prepared
-2024-10-06 11:28:49 :: INFO :: +0.05s :: all processes started
-2024-10-06 11:30:03 :: INFO :: Simulated 10015005 portfolios, rate: 137205/s
-2024-10-06 11:30:14 :: INFO :: Plot ready: result\CAGR(%) - Sharpe - ConvexHull1.png
-2024-10-06 11:30:14 :: INFO :: Plot ready: result\Sharpe - Stdev - ConvexHull1.png
-2024-10-06 11:30:14 :: INFO :: Plot ready: result\Sharpe - Variance - ConvexHull1.png
-2024-10-06 11:30:14 :: INFO :: Plot ready: result\CAGR(%) - Stdev - ConvexHull1.png
-2024-10-06 11:30:14 :: INFO :: Plot ready: result\CAGR(%) - Variance - ConvexHull1.png
-2024-10-06 11:30:14 :: INFO :: Plot ready: result\CAGR(%) - Sharpe - ConvexHull1 new.svg
-2024-10-06 11:30:14 :: INFO :: Plot ready: result\Sharpe - Stdev - ConvexHull1 new.svg
-2024-10-06 11:30:14 :: INFO :: Plot ready: result\Sharpe - Variance - ConvexHull1 new.svg
-2024-10-06 11:30:14 :: INFO :: Plot ready: result\CAGR(%) - Stdev - ConvexHull1 new.svg
-2024-10-06 11:30:15 :: INFO :: Plot ready: result\CAGR(%) - Variance - ConvexHull1 new.svg
-2024-10-06 11:30:15 :: INFO :: +85.55s :: graphs ready
-
-2024-10-06 11:31:06 :: INFO :: 7 static portfolios will be plotted on all graphs
-2024-10-06 11:31:06 :: INFO :: 10 edge portfolios will be plotted on all graphs
-2024-10-06 11:31:06 :: INFO :: +0.00s :: preparing portfolio simulation data pipeline...
-2024-10-06 11:31:06 :: INFO :: +0.00s :: data pipeline prepared
-2024-10-06 11:31:06 :: INFO :: +0.04s :: all processes started
-2024-10-06 11:32:19 :: INFO :: Simulated 10015005 portfolios, rate: 137309/s
-2024-10-06 11:34:10 :: INFO :: Plot ready: result\CAGR(%) - Sharpe - ConvexHull5.png
-2024-10-06 11:34:10 :: INFO :: Plot ready: result\Sharpe - Stdev - ConvexHull5.png
-2024-10-06 11:34:10 :: INFO :: Plot ready: result\Sharpe - Variance - ConvexHull5.png
-2024-10-06 11:34:10 :: INFO :: Plot ready: result\CAGR(%) - Stdev - ConvexHull5.png
-2024-10-06 11:34:11 :: INFO :: Plot ready: result\CAGR(%) - Sharpe - ConvexHull5 new.svg
-2024-10-06 11:34:11 :: INFO :: Plot ready: result\CAGR(%) - Variance - ConvexHull5.png
-2024-10-06 11:34:12 :: INFO :: Plot ready: result\Sharpe - Stdev - ConvexHull5 new.svg
-2024-10-06 11:34:12 :: INFO :: Plot ready: result\Sharpe - Variance - ConvexHull5 new.svg
-2024-10-06 11:34:13 :: INFO :: Plot ready: result\CAGR(%) - Stdev - ConvexHull5 new.svg
-2024-10-06 11:34:15 :: INFO :: Plot ready: result\CAGR(%) - Variance - ConvexHull5 new.svg
-2024-10-06 11:34:15 :: INFO :: +188.67s :: graphs ready
+pipe-pipeline
+2024-10-19 03:19:06 :: INFO :: 0 static portfolios will be plotted on all graphs
+2024-10-19 03:19:06 :: INFO :: 10 edge portfolios will be plotted on all graphs
+2024-10-19 03:19:06 :: INFO :: +0.00s :: preparing portfolio simulation data pipeline...
+2024-10-19 03:19:06 :: INFO :: +0.00s :: data pipeline prepared
+2024-10-19 03:19:06 :: INFO :: +0.04s :: all processes started
+2024-10-19 03:20:23 :: INFO :: Simulated 10015005 portfolios, rate: 129584/s
+2024-10-19 03:20:35 :: INFO :: Plot ready: result\Sharpe - Stdev new.png
+2024-10-19 03:20:35 :: INFO :: Plot ready: result\CAGR(%) - Sharpe new.png
+2024-10-19 03:20:35 :: INFO :: Plot ready: result\Sharpe - Variance new.png
+2024-10-19 03:20:35 :: INFO :: Plot ready: result\CAGR(%) - Stdev new.png
+2024-10-19 03:20:35 :: INFO :: Plot ready: result\CAGR(%) - Sharpe new.svg
+2024-10-19 03:20:35 :: INFO :: Plot ready: result\CAGR(%) - Variance new.png
+2024-10-19 03:20:35 :: INFO :: Plot ready: result\Sharpe - Variance new.svg
+2024-10-19 03:20:35 :: INFO :: Plot ready: result\Sharpe - Stdev new.svg
+2024-10-19 03:20:35 :: INFO :: Plot ready: result\CAGR(%) - Stdev new.svg
+2024-10-19 03:20:36 :: INFO :: Plot ready: result\CAGR(%) - Variance new.svg
+2024-10-19 03:20:36 :: INFO :: +90.28s :: graphs ready
