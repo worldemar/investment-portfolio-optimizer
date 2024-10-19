@@ -30,5 +30,5 @@ def simulator_process_func(
             chunk_size=chunk_size)
         portfolios_sent_per_core = process_pool.map(slice_sender, range(0, os.cpu_count()))
     time_end = time.time()
-    logging.info(f'Simulated {sum(portfolios_sent_per_core)} portfolios, rate: {possible_allocations // int(time_end - time_start) // 1000}k/s')
+    logging.info(f'Simulated {sum(portfolios_sent_per_core)} portfolios, rate: {possible_allocations // (int(time_end - time_start) + 1) // 1000}k/s')
     sink.send(data_source.DataStreamFinished())
