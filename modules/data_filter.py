@@ -28,7 +28,8 @@ def multilayer_convex_hull(point_batch: list[PortfolioXYTuplePoint] = None, laye
     hull_layers_points = []
     self_hull_points = list(point_batch)
     for _ in range(layers):
-        if len(self_hull_points) == 0:
+        if len(self_hull_points) <= 3:
+            hull_layers_points.extend(self_hull_points)
             break
         hull = pyhull_convex_hull(self_hull_points)
         hull_vertexes = set(vertex for hull_vertex in hull.vertices for vertex in hull_vertex)
