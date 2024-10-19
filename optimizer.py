@@ -48,13 +48,11 @@ def main(argv):
         ('CAGR(%)', 'Variance'),
         ('CAGR(%)', 'Stdev'),
         ('CAGR(%)', 'Sharpe'),
-        # ('Gain(x)', 'Variance'),
-        # ('Gain(x)', 'Stdev'),
-        # ('Gain(x)', 'Sharpe'),
+        ('Gain(x)', 'Variance'),
+        ('Gain(x)', 'Stdev'),
+        ('Gain(x)', 'Sharpe'),
         ('Sharpe', 'Stdev'),
         ('Sharpe', 'Variance'),
-        # ('Sharpe', 'Gain(x)'),
-        # ('Sharpe', 'CAGR(%)'),
     ]
 
     time_start = time.time()
