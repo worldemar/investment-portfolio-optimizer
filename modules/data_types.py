@@ -8,6 +8,7 @@ import json
 import config
 import config.asset_colors
 import config.config
+import struct
 
 
 class ConvexHullPoint(tuple):
@@ -31,6 +32,17 @@ class Portfolio:
         self.stat_var = -1
         self.stat_sharpe = -1
 
+    def deserialize_iter(serialized_data, assets: list[str]):
+        for portfolio_unpack in struct.iter_unpack(f'5f{len(assets)}i', serialized_data):
+            portfolio = Portfolio(assets=assets, weights=[])
+            portfolio.stat_gain, \
+            portfolio.stat_stdev, \
+            portfolio.stat_cagr, \
+            portfolio.stat_var, \
+            portfolio.stat_sharpe, \
+            *portfolio.weights = portfolio_unpack
+            yield portfolio
+
     def deserialize(serialized_data, assets: list[str]):
         portfolio = Portfolio(assets=assets, weights=[])
         portfolio.stat_gain, \
@@ -38,18 +50,19 @@ class Portfolio:
         portfolio.stat_cagr, \
         portfolio.stat_var, \
         portfolio.stat_sharpe, \
-        portfolio.weights = pickle.loads(serialized_data)
+        *portfolio.weights = struct.unpack(f'5f{len(assets)}i', serialized_data)
         return portfolio
 
     def serialize(self):
-        return pickle.dumps([
+        return struct.pack(
+            f'5f{len(self.assets)}i',
             self.stat_gain,
             self.stat_stdev,
             self.stat_cagr,
             self.stat_var,
             self.stat_sharpe,
-            self.weights,
-        ])
+            *self.weights,
+        )
 
     def number_of_assets(self):
         '''

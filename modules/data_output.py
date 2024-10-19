@@ -53,8 +53,7 @@ def plot_data(
         bytes = source.recv_bytes()
         if bytes == data_stream_end_pickle:
             break
-        portfolios_batch = pickle.loads(bytes)
-        deserialized_portfolios = list(map(functools.partial(Portfolio.deserialize, assets=assets), portfolios_batch))
+        deserialized_portfolios = Portfolio.deserialize_iter(bytes, assets=assets)
         batch_xy_points = data_filter.portfolios_xy_points(deserialized_portfolios, coord_pair)
         batches_hulls_points.extend(multilayer_convex_hull(batch_xy_points, hull_layers))
     simulated_hull_points = multilayer_convex_hull(batches_hulls_points, hull_layers)

@@ -76,7 +76,7 @@ def simulated_q(
     for possible_allocation_batch in itertools.batched(possible_allocations_gen, CHUNK_SIZE):
         simulated_portfolios_batch = list(process_pool.map(simulate_func, possible_allocation_batch))
         total_portfolios += len(simulated_portfolios_batch)
-        bytes = pickle.dumps(simulated_portfolios_batch)
+        bytes = b''.join(simulated_portfolios_batch)
         sink.send_bytes(bytes)
     thread_pool.shutdown()
     sink.send(data_types.DataStreamFinished())
