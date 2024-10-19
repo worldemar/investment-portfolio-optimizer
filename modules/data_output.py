@@ -39,24 +39,30 @@ def draw_circles_with_tooltips(
     pltlines = importlib.import_module('matplotlib.lines')
 
     plt.rcParams["font.family"] = "monospace"
-    plt.rcParams["font.size"] = 14
+    plt.rcParams["font.size"] = 10
     _, axes = plt.subplots(figsize=(12, 9))
 
-    padding_percent = 15
+    padding_percent_x = 20
+    padding_percent_y = 10
     xlim_min = min(circle['x'] for circle in circles)
     xlim_max = max(circle['x'] for circle in circles)
-    xlim_min_padded = xlim_min - padding_percent * (xlim_max - xlim_min) / 100
-    xlim_max_padded = xlim_max + padding_percent * (xlim_max - xlim_min) / 100
+    xlim_min_padded = xlim_min - padding_percent_x * (xlim_max - xlim_min) / 100
+    xlim_max_padded = xlim_max + padding_percent_x * (xlim_max - xlim_min) / 100
     ylim_min = min(circle['y'] for circle in circles)
     ylim_max = max(circle['y'] for circle in circles)
-    ylim_min_padded = ylim_min - padding_percent * (ylim_max - ylim_min) / 100
-    ylim_max_padded = ylim_max + padding_percent * (ylim_max - ylim_min) / 100
+    ylim_min_padded = ylim_min - padding_percent_y * (ylim_max - ylim_min) / 100
+    ylim_max_padded = ylim_max + padding_percent_y * (ylim_max - ylim_min) / 100
     axes.set_xlim(xlim_min_padded, xlim_max_padded)
     axes.set_ylim(ylim_min_padded, ylim_max_padded)
-    axes.tick_params(axis='x', which='minor', bottom=True)
-    axes.tick_params(axis='y', which='minor', left=True)
+    axes.tick_params(axis='x', which='both', bottom=True)
+    axes.tick_params(axis='y', which='both', left=True)
     axes.set_axisbelow(True)
-    plt.grid(visible=True, which='both', axis='both')
+    axes.minorticks_on()
+    axes.tick_params(axis='both', which='major', width=1)
+    axes.tick_params(axis='both', which='minor', width=0.5)
+    plt.grid(axis='both', which='both', visible=True)
+    plt.grid(axis='both', which='major', linewidth=1)
+    plt.grid(axis='both', which='minor', linewidth=0.5, linestyle=':')
     plt.title(title, zorder=0)
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
@@ -74,9 +80,9 @@ def draw_circles_with_tooltips(
         ]
         axes.legend(
             handles=handles,
-            fontsize=10,
+            fontsize=8,
             facecolor='white',
-            framealpha=1
+            framealpha=0.66
         ).set_zorder(1)
 
     for index, circle in enumerate(circles):
