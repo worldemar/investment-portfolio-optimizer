@@ -12,12 +12,10 @@ This simple script will simulate rebalancing portfolios with given set of assets
 - Save market data into [asset_returns.csv](asset_returns.csv) file. Each row is one rebalancing period, each column is revenue from corresponding asset. Look at example file for details.
 - Open [asset_colors.py](asset_colors.py) and edit asset colors to your taste.
 - Run `optimizer.py` with parameters:
-  - `--precision=10` - Precision is specified in percent. Asset allocation will be stepped according to this value.
+  - `--precision=10` - Precision is specified in percent. Asset allocation will be stepped according to this value, i.e. each asset will be allocated by multiple of 10%.
   - `--hull=3` - Use ConvexHull algorithm to select only edge-case portfolios. This considerably speeds up plotting.
-     In most cases these portfolios are most interesting anyway. This settings is 0 by default.
-     Note that in this case ALL portfolios will be drawn on SVG. Your browser might not be able to display it.
-
-Results of edge case portfolios will be displayed in terminal.
+     In most cases these portfolios are most interesting anyway. This settings is 1 by default,
+     which is fastest, but does not plot too deep into portfolio cloud.
 
 Check SVG graphs in `result` folder for all portfolios performances.
 
@@ -35,86 +33,10 @@ Then every portfolio is simulated through market history, rebalancing at every s
 |  15%    |  -5%    | 0.236 + 15% = 0.2714   | 0.944 - 5% = 0.8968    | 0.2714 + 0.8968 = 1.1682   |
 |         |         | 1.1682 * 20% = 0.23364 | 1.1682 * 80% = 0.93456 | 1.1682 = 0.23364 + 0.93456 |
 
-If `--hull` is specified and is not zero, script will use ConvexHull algorithm to select only edge-case portfolios for
-each plot. Edge cases are calculated separately for each plot.
+If `--hull` is specified and is not zero, script will use ConvexHull algorithm to select only edge-case portfolios for each plot. Edge cases are calculated separately for each plot.
 
 ### Demo SVGs
 (You need to download them to enable interactivity)
 
 <img src="./image-demos/cagr_variance.svg" width="50%"><img src="./image-demos/cagr_stdev.svg" width="50%">
 <img src="./image-demos/gain_sharpe.svg" width="50%"><img src="./image-demos/sharpe_variance.svg" width="50%">
-
-main-performance
-precision=5 hull=3:
-processes=16
-DONE :: 888037 portfolios tested in 11.50s, rate: 77k/s
---- Graph ready: CAGR % - Variance --- 1.85s
---- Graph ready: Sharpe - Variance --- 1.06s
---- Graph ready: CAGR % - Stdev --- 1.55s
---- Graph ready: Sharpe - Stdev --- 1.21s
---- Graph ready: CAGR % - Sharpe --- 0.85s
-DONE :: in 60.26s, rate = 14k/s
-
-map-pipeline branch
-precision=5 hull=3:
-2024-09-12 17:28:06 :: INFO :: 7 static portfolios will be plotted on all graphs
-2024-09-12 17:28:09 :: INFO :: +3.07s :: simulated portfolios map ready
-2024-09-12 17:29:25 :: INFO :: +79.49s :: hulls ready
-2024-09-12 17:29:26 :: INFO :: +79.61s :: plot data ready
-2024-09-12 17:29:26 :: INFO :: Plot ready: result\CAGR(%) - Sharpe new.png
-2024-09-12 17:29:26 :: INFO :: Plot ready: result\Gain(x) - Sharpe new.png
-2024-09-12 17:29:26 :: INFO :: Plot ready: result\Sharpe - Stdev new.png
-2024-09-12 17:29:26 :: INFO :: Plot ready: result\Sharpe - Variance new.png
-2024-09-12 17:29:26 :: INFO :: Plot ready: result\CAGR(%) - Stdev new.png
-2024-09-12 17:29:26 :: INFO :: Plot ready: result\Gain(x) - Stdev new.png
-2024-09-12 17:29:26 :: INFO :: Plot ready: result\Gain(x) - Variance new.png
-2024-09-12 17:29:26 :: INFO :: Plot ready: result\CAGR(%) - Variance new.png
-2024-09-12 17:29:27 :: INFO :: Plot ready: result\Gain(x) - Sharpe new.svg
-2024-09-12 17:29:27 :: INFO :: Plot ready: result\CAGR(%) - Sharpe new.svg
-2024-09-12 17:29:27 :: INFO :: Plot ready: result\Sharpe - Gain(x) new.png
-2024-09-12 17:29:27 :: INFO :: Plot ready: result\Sharpe - CAGR(%) new.png
-2024-09-12 17:29:27 :: INFO :: Plot ready: result\Sharpe - Stdev new.svg
-2024-09-12 17:29:27 :: INFO :: Plot ready: result\Sharpe - Variance new.svg
-2024-09-12 17:29:28 :: INFO :: Plot ready: result\Sharpe - Gain(x) new.svg
-2024-09-12 17:29:28 :: INFO :: Plot ready: result\Gain(x) - Stdev new.svg
-2024-09-12 17:29:28 :: INFO :: Plot ready: result\Sharpe - CAGR(%) new.svg
-2024-09-12 17:29:28 :: INFO :: Plot ready: result\CAGR(%) - Stdev new.svg
-2024-09-12 17:29:28 :: INFO :: Plot ready: result\Gain(x) - Variance new.svg
-2024-09-12 17:29:28 :: INFO :: Plot ready: result\CAGR(%) - Variance new.svg
-2024-09-12 17:29:28 :: INFO :: +82.27s :: graphs ready
-
-2024-09-30 10:56:49 :: INFO :: 7 static portfolios will be plotted on all graphs
-2024-09-30 10:56:49 :: INFO :: 10 edge portfolios will be plotted on all graphs
-2024-09-30 10:56:49 :: INFO :: +0.00s :: preparing portfolio simulation data pipeline...
-2024-09-30 10:56:49 :: INFO :: +0.00s :: data pipeline prepared
-2024-09-30 10:56:49 :: INFO :: +0.31s :: all processes started
-2024-09-30 10:59:43 :: INFO :: Plot ready: result\CAGR(%) - Sharpe new.png
-2024-09-30 10:59:44 :: INFO :: Plot ready: result\Sharpe - Stdev new.png
-2024-09-30 10:59:44 :: INFO :: Plot ready: result\Sharpe - Variance new.png
-2024-09-30 10:59:44 :: INFO :: Plot ready: result\CAGR(%) - Variance new.png
-2024-09-30 10:59:44 :: INFO :: Plot ready: result\CAGR(%) - Stdev new.png
-2024-09-30 10:59:45 :: INFO :: Plot ready: result\CAGR(%) - Sharpe new.svg
-2024-09-30 10:59:45 :: INFO :: Plot ready: result\Sharpe - Stdev new.svg
-2024-09-30 10:59:45 :: INFO :: Plot ready: result\Sharpe - Variance new.svg
-2024-09-30 10:59:48 :: INFO :: Plot ready: result\CAGR(%) - Stdev new.svg
-2024-09-30 10:59:48 :: INFO :: Plot ready: result\CAGR(%) - Variance new.svg
-2024-09-30 10:59:48 :: INFO :: +179.32s :: graphs ready
-
-pipe-pipeline
-2024-10-19 03:19:06 :: INFO :: 0 static portfolios will be plotted on all graphs
-2024-10-19 03:19:06 :: INFO :: 10 edge portfolios will be plotted on all graphs
-2024-10-19 03:19:06 :: INFO :: +0.00s :: preparing portfolio simulation data pipeline...
-2024-10-19 03:19:06 :: INFO :: +0.00s :: data pipeline prepared
-2024-10-19 03:19:06 :: INFO :: +0.04s :: all processes started
-2024-10-19 03:20:23 :: INFO :: Simulated 10015005 portfolios, rate: 129584/s
-2024-10-19 03:20:35 :: INFO :: Plot ready: result\Sharpe - Stdev new.png
-2024-10-19 03:20:35 :: INFO :: Plot ready: result\CAGR(%) - Sharpe new.png
-2024-10-19 03:20:35 :: INFO :: Plot ready: result\Sharpe - Variance new.png
-2024-10-19 03:20:35 :: INFO :: Plot ready: result\CAGR(%) - Stdev new.png
-2024-10-19 03:20:35 :: INFO :: Plot ready: result\CAGR(%) - Sharpe new.svg
-2024-10-19 03:20:35 :: INFO :: Plot ready: result\CAGR(%) - Variance new.png
-2024-10-19 03:20:35 :: INFO :: Plot ready: result\Sharpe - Variance new.svg
-2024-10-19 03:20:35 :: INFO :: Plot ready: result\Sharpe - Stdev new.svg
-2024-10-19 03:20:35 :: INFO :: Plot ready: result\CAGR(%) - Stdev new.svg
-2024-10-19 03:20:36 :: INFO :: Plot ready: result\CAGR(%) - Variance new.svg
-2024-10-19 03:20:36 :: INFO :: +90.28s :: graphs ready
