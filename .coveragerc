@@ -1,3 +1,2 @@
 [run]
-omit = static_portfolios.py
-omit = asset_colors.py
+omit = config/*
