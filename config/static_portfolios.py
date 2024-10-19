@@ -1,4 +1,4 @@
-from modules.Portfolio import Portfolio
+from modules.portfolio import Portfolio
 
 STATIC_PORTFOLIOS = [
     Portfolio.static_portfolio({

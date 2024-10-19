@@ -6,7 +6,7 @@ import logging
 from functools import partial
 import multiprocessing.connection
 from concurrent.futures import ProcessPoolExecutor
-import modules.data_source as data_source
+from modules import data_source
 
 
 def simulator_process_func(
@@ -30,5 +30,6 @@ def simulator_process_func(
             chunk_size=chunk_size)
         portfolios_sent_per_core = process_pool.map(slice_sender, range(0, os.cpu_count()))
     time_end = time.time()
-    logging.info(f'Simulated {sum(portfolios_sent_per_core)} portfolios, rate: {possible_allocations // (int(time_end - time_start) + 1) // 1000}k/s')
+    logging.info('Simulated %d portfolios, rate: %dk/s',
+                 sum(portfolios_sent_per_core), possible_allocations // (int(time_end - time_start) + 1) // 1000)
     sink.send(data_source.DataStreamFinished())

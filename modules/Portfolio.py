@@ -3,9 +3,12 @@
 import struct
 from math import prod as math_prod
 from statistics import stdev as statistics_stdev
+from functools import partial
 
 
+# pylint: disable=too-many-instance-attributes
 class Portfolio:
+    @staticmethod
     def static_portfolio(allocation: dict[str, int]):
         assets = list(allocation.keys())
         weights = list(allocation.values())
@@ -24,25 +27,27 @@ class Portfolio:
         self._number_of_assets = None
         self._named_stats = None
 
+    @staticmethod
     def deserialize_iter(serialized_data, assets: list[str]):
         for portfolio_unpack in struct.iter_unpack(f'5f{len(assets)}i', serialized_data):
             portfolio = Portfolio(assets=assets, weights=[])
             portfolio.stat_gain, \
+                portfolio.stat_stdev, \
+                portfolio.stat_cagr, \
+                portfolio.stat_var, \
+                portfolio.stat_sharpe, \
+                *portfolio.weights = portfolio_unpack
+            yield portfolio
+
+    @staticmethod
+    def deserialize(serialized_data, assets: list[str]):
+        portfolio = Portfolio(assets=assets, weights=[])
+        portfolio.stat_gain, \
             portfolio.stat_stdev, \
             portfolio.stat_cagr, \
             portfolio.stat_var, \
             portfolio.stat_sharpe, \
-            *portfolio.weights = portfolio_unpack
-            yield portfolio
-
-    def deserialize(serialized_data, assets: list[str]):
-        portfolio = Portfolio(assets=assets, weights=[])
-        portfolio.stat_gain, \
-        portfolio.stat_stdev, \
-        portfolio.stat_cagr, \
-        portfolio.stat_var, \
-        portfolio.stat_sharpe, \
-        *portfolio.weights = struct.unpack(f'5f{len(assets)}i', serialized_data)
+            *portfolio.weights = struct.unpack(f'5f{len(assets)}i', serialized_data)
         return portfolio
 
     def serialize(self):
@@ -61,25 +66,28 @@ class Portfolio:
         Number of asset weights that are not zero
         '''
         if self._number_of_assets is None:
-            self._number_of_assets = len(list(filter(lambda weight: weight!= 0, self.weights)))
+            self._number_of_assets = len(list(filter(lambda weight: weight != 0, self.weights)))
         return self._number_of_assets
 
     def asset_allocation_error(self, market_assets: list, color_map: dict[str, tuple[int, int, int]]):
-        if (not all(asset in market_assets for asset in self.assets)):
+        if not all(asset in market_assets for asset in self.assets):
             return f'some tickers in portfolio are not in market data: {set(self.assets) - set(market_assets)}'
-        if (sum(value for value in self.weights) != 100):
+        if sum(value for value in self.weights) != 100:
             return f'sum of weights is not 100: {sum(self.weights)}'
-        if (not all(asset in color_map.keys() for asset in self.assets)):
-            return f'some tickers have no color defined, add them to asset_colors.py: {set(self.assets) - set(RGB_COLOR_MAP.keys())}'
+        if not all(asset in color_map.keys() for asset in self.assets):
+            return 'some tickers have no color defined, ' + \
+                f'add them to asset_colors.py: {set(self.assets) - set(color_map.keys())}'
         return ''
 
     def simulate(self, asset_revenue_per_year):
+        def gain(index_weight, asset_revenue, year):
+            return asset_revenue[year][index_weight[0]] * index_weight[1]
         annual_gains = {}
         annual_capital = {}
         capital = 1
         annual_capital[list(asset_revenue_per_year.keys())[0] - 1] = 1
         for year in asset_revenue_per_year.keys():
-            gain_func = lambda index_weight: index_weight[1] * asset_revenue_per_year[year][index_weight[0]]
+            gain_func = partial(gain, asset_revenue=asset_revenue_per_year, year=year)
             proportional_gains = sum(map(gain_func, enumerate(self.weights)))
             new_capital = capital * proportional_gains / 100
             if capital != 0:
@@ -90,7 +98,10 @@ class Portfolio:
         self.stat_gain = math_prod(annual_gains.values())
         self.stat_stdev = statistics_stdev(annual_gains.values())
         self.stat_cagr = self.stat_gain**(1 / len(annual_gains.values())) - 1
-        self.stat_var = sum(map(lambda ag: (ag - self.stat_cagr - 1) ** 2, annual_gains.values())) / (len(annual_gains) - 1)
+        self.stat_var = sum(map(
+            lambda ag: (ag - self.stat_cagr - 1) ** 2,
+            annual_gains.values()))
+        self.stat_var /= len(annual_gains) - 1
         self.stat_sharpe = self.stat_cagr / self.stat_stdev
         return self
 
@@ -118,7 +129,7 @@ class Portfolio:
         str_weights = ' - '.join(weights_without_zeros)
         return ' '.join([
             f'GAIN={self.stat_gain:.3f}',
-            f'CAGR={self.stat_cagr*100:.2f}%',
+            f'CAGR={self.stat_cagr * 100:.2f}%',
             f'VAR={self.stat_var:.3f}',
             f'STDEV={self.stat_stdev:.3f}',
             f'SHARP={self.stat_sharpe:.3f}',
@@ -137,10 +148,10 @@ class Portfolio:
     def plot_circle_tooltip_stats(self):
         return '\n'.join([
             f'GAIN  : {self.stat_gain:.3f}',
-            f'CAGR  : {self.stat_cagr*100:.2f}%',
+            f'CAGR  : {self.stat_cagr * 100:.2f}%',
             f'VAR   : {self.stat_var:.3f}',
             f'STDEV : {self.stat_stdev:.3f}',
-            f'SHARP : {self.stat_sharpe:.3f}'
+            f'SHARP : {self.stat_sharpe:.3f}'  # nopep8
         ])
 
     def plot_circle_tooltip_assets(self):

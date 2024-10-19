@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from modules.Portfolio import Portfolio
+from modules.portfolio import Portfolio
 
 
 def test_portfolio_serialize():
@@ -31,13 +31,13 @@ def test_portfolio_serialize_batch():
     for i in range(100):
         portfolio = Portfolio(
             assets=['AAPL', 'MSFT', 'GOOG'],
-            weights=[100-i, i, 0],
+            weights=[100 - i, i, 0],
         )
-        portfolio.stat_gain = 0.1*i
-        portfolio.stat_stdev = 0.2*i
-        portfolio.stat_cagr = 0.3*i
-        portfolio.stat_var = 0.4*i
-        portfolio.stat_sharpe = 0.5*i
+        portfolio.stat_gain = 0.1 * i
+        portfolio.stat_stdev = 0.2 * i
+        portfolio.stat_cagr = 0.3 * i
+        portfolio.stat_var = 0.4 * i
+        portfolio.stat_sharpe = 0.5 * i
         portfolios.append(portfolio)
 
     serialized = b''.join(p.serialize() for p in portfolios)

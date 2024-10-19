@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 import time
-import pytest
 import itertools
-import modules.data_source as data_source
+import pytest
+from modules import data_source
 
 _divizors_of_100 = [1, 2, 4, 5, 10, 20, 25, 50, 100]
 
@@ -19,14 +19,11 @@ _divizors_of_100 = [1, 2, 4, 5, 10, 20, 25, 50, 100]
     )
 )
 def test_all_possible_allocations(assets_n: int, step: int):
-    assets = list('abcdefghijkl'[i] for i in range(assets_n))
-
     time_e1 = time.time()
     expected_allocations_gen = _expected_allocations(assets_n, step)
     expected_allocations = list(tuple(a) for a in expected_allocations_gen)
     time_e2 = time.time()
     expected_allocations.sort()
-    
 
     time_a1 = time.time()
     test_allocations_gen = data_source.all_possible_allocations(assets_n, step)
@@ -42,6 +39,6 @@ def test_all_possible_allocations(assets_n: int, step: int):
 
 
 def _expected_allocations(assets_n: int, step: int):
-    asset_values = filter(lambda x: sum(x) == 100, itertools.product(range(0,101,step), repeat=assets_n))
-    for asset_values in asset_values:
+    gen_asset_values = filter(lambda x: sum(x) == 100, itertools.product(range(0, 101, step), repeat=assets_n))
+    for asset_values in gen_asset_values:
         yield asset_values

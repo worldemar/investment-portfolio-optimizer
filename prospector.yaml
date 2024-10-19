@@ -4,6 +4,9 @@ test-warnings: true
 pycodestyle:
   disable:
     - E128 # I like it my way
+    - E203 # breaks pep8, see https://github.com/psf/black/issues/354
+    - E503 # breaks pep8, see https://github.com/psf/black/issues/354
+    - E231 # false positive
   options:
     max-line-length: 120
 pylint:

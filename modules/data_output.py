@@ -6,17 +6,21 @@ from os.path import exists
 from os.path import join as os_path_join
 from io import StringIO
 import importlib
-from modules.Portfolio import Portfolio
-from typing import Any
+from modules.portfolio import Portfolio
 
 
-def report_errors_in_portfolios(portfolios: list[Portfolio], tickers_to_test: list[str], color_map: dict[str, tuple[int, int, int]]):
+def report_errors_in_portfolios(
+        portfolios: list[Portfolio],
+        tickers_to_test: list[str],
+        color_map: dict[str, tuple[int, int, int]]):
     num_errors = 0
     for portfolio in portfolios:
         error = portfolio.asset_allocation_error(market_assets=tickers_to_test, color_map=color_map)
         if error != '':
             num_errors += 1
-            logging.error(f'Static portfolio {portfolio}\nhas invalid allocation: {error}')
+            logging.error(
+                'Static portfolio %s\nhas invalid allocation: %s',
+                portfolio, error)
     return num_errors
 
 
@@ -24,7 +28,7 @@ def report_errors_in_portfolios(portfolios: list[Portfolio], tickers_to_test: li
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
 def draw_circles_with_tooltips(
-        circles: list[dict[str, Any]],
+        circles: list[dict[str, dict]],
         xlabel: str = None,
         ylabel: str = None,
         title: str = None,
@@ -99,7 +103,7 @@ def draw_circles_with_tooltips(
         )
 
     plt.savefig(os_path_join(directory, filename + '.png'), format="png", dpi=300)
-    logging.info(f'ready: {os_path_join(directory, filename + ".png")}')
+    logging.info('ready: %s', os_path_join(directory, filename + ".png"))
 
     for index, circle in enumerate(circles):
         axes.annotate(
@@ -156,4 +160,4 @@ def draw_circles_with_tooltips(
 
     tree.insert(0, element_tree.XML(script))
     element_tree.ElementTree(tree).write(os_path_join(directory, filename + '.svg'))
-    logging.info(f'ready: {os_path_join(directory, filename + ".svg")}')
+    logging.info('ready: %s', os_path_join(directory, filename + ".svg"))

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import random
-from typing import List
 import pytest
 from modules.data_filter import multilayer_convex_hull
 
@@ -10,33 +9,34 @@ class PointMock(tuple):
     def __new__(cls, x, y, payload):
         return super().__new__(cls, (x, y))
 
+    # pylint: disable=unused-argument
     def __init__(self, x, y, payload):
         self.payload = payload
 
 
-def mod_list(_list: List) -> List:
+def mod_list(_list: list) -> list:
     return _list[:]
 
 
-def mod_shuffle(_list: List) -> List:
+def mod_shuffle(_list: list) -> list:
     new_list = _list[:]
     random.shuffle(new_list)
     return new_list
 
 
-def mod_reverse(_list: List) -> List:
+def mod_reverse(_list: list) -> list:
     new_list = _list[:]
     new_list.reverse()
     return new_list
 
 
-def mod_sort(_list: List) -> List:
+def mod_sort(_list: list) -> list:
     new_list = _list[:]
     new_list.sort()
     return new_list
 
 
-def mod_sort_reverse(_list: List) -> List:
+def mod_sort_reverse(_list: list) -> list:
     new_list = _list[:]
     new_list.sort(reverse=True)
     return new_list

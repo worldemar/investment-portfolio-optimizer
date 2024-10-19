@@ -3,12 +3,11 @@
 from pickle import dumps
 from importlib import import_module
 from multiprocessing.connection import Connection
-from modules.Portfolio import Portfolio
-from modules.data_source import DataStreamFinished
-from concurrent.futures import ThreadPoolExecutor
 from concurrent.futures import wait as futures_wait
+from concurrent.futures import ThreadPoolExecutor
 from functools import partial
-from config.asset_colors import RGB_COLOR_MAP
+from modules.portfolio import Portfolio
+from modules.data_source import DataStreamFinished
 
 
 class PortfolioXYTuplePoint(tuple):
@@ -18,7 +17,7 @@ class PortfolioXYTuplePoint(tuple):
     def __init__(self, portfolio: Portfolio, coord_pair: tuple[str, str]):
         self._portfolio = portfolio
         self._coord_pair = coord_pair
-    
+
     def portfolio(self):
         return self._portfolio
 
@@ -46,15 +45,17 @@ def multilayer_convex_hull(point_batch: list[PortfolioXYTuplePoint] = None, laye
 def queue_multiplexer(
         source: Connection,
         sinks: list[Connection]):
+
+    def send_task(sink, data, pool):
+        return pool.submit(sink.send_bytes, data)
+
     data_stream_end_pickle = dumps(DataStreamFinished())
-    def send_task(sink, bytes, pool):
-        return pool.submit(sink.send_bytes, bytes)
     with ThreadPoolExecutor() as thread_pool:
         while True:
-            bytes = source.recv_bytes()
-            if bytes == data_stream_end_pickle:
-                break # make sure all threads are finished before sending the end signal
-            send_tasks = map(partial(send_task, pool=thread_pool, bytes=bytes), sinks)
+            bytes_from_pipe = source.recv_bytes()
+            if bytes_from_pipe == data_stream_end_pickle:
+                break  # make sure all threads are finished before sending the end signal
+            send_tasks = map(partial(send_task, pool=thread_pool, data=bytes_from_pipe), sinks)
             futures_wait(send_tasks)
     for sink in sinks:
-        sink.send_bytes(bytes)
+        sink.send_bytes(bytes_from_pipe)
