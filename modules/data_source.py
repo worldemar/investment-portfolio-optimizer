@@ -71,7 +71,7 @@ def simulated_q(
 
     # possible_allocations_gen = itertools.islice(all_possible_allocations(assets, percentage_step), allocation_limit)
     possible_allocations_gen = all_possible_allocations(assets, percentage_step)
-    simulate_func = partial(allocation_simulate_serialize, ticker_revenue_per_year=ticker_revenue_per_year)
+    simulate_func = partial(allocation_simulate_serialize, assets=assets, asset_revenue_per_year=asset_revenue_per_year)
     for possible_allocation_batch in itertools.batched(possible_allocations_gen, CHUNK_SIZE):
         simulated_portfolios_batch = process_pool.map(simulate_func, possible_allocation_batch)
         bytes = pickle.dumps(simulated_portfolios_batch)
