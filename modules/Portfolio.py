@@ -149,3 +149,18 @@ class Portfolio:
             else:
                 raise RuntimeError(f'color map does not contain asset "{ticker}", add it to asset_colors.py')
         return (color[0] / max(color), color[1] / max(color), color[2] / max(color))
+
+    def plot_circle_data(self, coord_pair):
+        return {
+            'x': self.get_stat(coord_pair[1]),
+            'y': self.get_stat(coord_pair[0]),
+            'text': '\n'.join([
+                self.plot_tooltip_assets(),
+                '—' * max(len(x) for x in self.plot_tooltip_assets().split('\n')),
+                self.plot_tooltip_stats(),
+            ]),
+            'marker': self.plot_marker,
+            'color': self.plot_color(dict(RGB_COLOR_MAP.items())),
+            'size': 100 if self.plot_always else 50 / self.number_of_assets(),
+            'linewidth': 0.5 if self.plot_always else 1 / self.number_of_assets(),
+        }
