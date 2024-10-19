@@ -43,7 +43,6 @@ def _parse_args(argv=None):
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
 def main(argv):
-    logger = logging.getLogger(__name__)
     cmdline_args = _parse_args(argv)
     coords_tuples = [
         # Y, X
@@ -64,26 +63,26 @@ def main(argv):
 
     num_errors = data_output.report_errors_in_portfolios(portfolios=STATIC_PORTFOLIOS, tickers_to_test=market_assets, color_map=RGB_COLOR_MAP)
     if num_errors > 0:
-        logger.error(f'Found {num_errors} invalid static portfolios')
+        logging.error(f'Found {num_errors} invalid static portfolios')
         return
     if (not all(ticker in RGB_COLOR_MAP.keys() for ticker in market_assets)):
-        logger.error(f'Some tickers in {cmdline_args.asset_returns_csv} are not in RGB_COLOR_MAP: {set(market_assets) - set(RGB_COLOR_MAP.keys())}')
+        logging.error(f'Some tickers in {cmdline_args.asset_returns_csv} are not in RGB_COLOR_MAP: {set(market_assets) - set(RGB_COLOR_MAP.keys())}')
         return
 
     static_portfolios_simulated = list(map(
         partial(Portfolio.simulate, asset_revenue_per_year=market_yearly_revenue_multiplier),
         STATIC_PORTFOLIOS))
-    logger.info(f'{len(static_portfolios_simulated)} static portfolios will be plotted on all graphs')
+    logging.info(f'{len(static_portfolios_simulated)} static portfolios will be plotted on all graphs')
 
     gen_edge_allocations = data_source.all_possible_allocations(len(market_assets), 100)
     gen_edge_portfolios = map(
         partial(Portfolio, assets=market_assets), gen_edge_allocations)
     list_edge_simulateds = list(map(partial(Portfolio.simulated, asset_revenue_per_year=market_yearly_revenue_multiplier), gen_edge_portfolios))
-    logger.info(f'{len(list_edge_simulateds)} edge portfolios will be plotted on all graphs')
+    logging.info(f'{len(list_edge_simulateds)} edge portfolios will be plotted on all graphs')
 
     process_wait_list = []
 
-    logger.info(f'+{time.time() - time_start:.2f}s :: preparing portfolio simulation data pipeline...')
+    logging.info(f'+{time.time() - time_start:.2f}s :: preparing portfolio simulation data pipeline...')
     simulated_source, simulated_sink = Pipe(duplex=False)
     process_wait_list.append(Process(
         target=simulator_process_func,
@@ -118,13 +117,13 @@ def main(argv):
             }
         ))
 
-    logger.info(f'+{time.time() - time_start:.2f}s :: data pipeline prepared')
+    logging.info(f'+{time.time() - time_start:.2f}s :: data pipeline prepared')
 
     deque(map(Process.start, process_wait_list), 0)
-    logger.info(f'+{time.time() - time_start:.2f}s :: all processes started')
+    logging.info(f'+{time.time() - time_start:.2f}s :: all processes started')
 
     deque(map(Process.join, process_wait_list), 0)
-    logger.info(f'+{time.time() - time_start:.2f}s :: graphs ready')
+    logging.info(f'+{time.time() - time_start:.2f}s :: graphs ready')
 
 
 if __name__ == '__main__':

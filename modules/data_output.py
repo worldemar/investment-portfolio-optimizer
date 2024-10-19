@@ -11,13 +11,12 @@ from typing import Any
 
 
 def report_errors_in_portfolios(portfolios: list[Portfolio], tickers_to_test: list[str], color_map: dict[str, tuple[int, int, int]]):
-    logger = logging.getLogger(__name__)
     num_errors = 0
     for portfolio in portfolios:
         error = portfolio.asset_allocation_error(market_assets=tickers_to_test, color_map=color_map)
         if error != '':
             num_errors += 1
-            logger.error(f'Static portfolio {portfolio}\nhas invalid allocation: {error}')
+            logging.error(f'Static portfolio {portfolio}\nhas invalid allocation: {error}')
     return num_errors
 
 
@@ -32,7 +31,6 @@ def draw_circles_with_tooltips(
         directory: str = '.',
         filename: str = 'plot',
         asset_color_map: dict[str, tuple[int, int, int]] = None):
-    logger = logging.getLogger(__name__)
 
     if not exists(directory):
         makedirs(directory)
@@ -95,7 +93,7 @@ def draw_circles_with_tooltips(
         )
 
     plt.savefig(os_path_join(directory, filename + ' new.png'), format="png", dpi=300)
-    logger.info(f'Plot ready: {os_path_join(directory, filename + " new.png")}')
+    logging.info(f'ready: {os_path_join(directory, filename + " new.png")}')
 
     for index, circle in enumerate(circles):
         axes.annotate(
@@ -152,4 +150,4 @@ def draw_circles_with_tooltips(
 
     tree.insert(0, element_tree.XML(script))
     element_tree.ElementTree(tree).write(os_path_join(directory, filename + ' new.svg'))
-    logger.info(f'Plot ready: {os_path_join(directory, filename + " new.svg")}')
+    logging.info(f'ready: {os_path_join(directory, filename + " new.svg")}')
