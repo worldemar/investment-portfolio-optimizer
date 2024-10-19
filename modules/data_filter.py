@@ -42,7 +42,7 @@ def queue_multiplexer(
             if bytes == data_stream_end_pickle:
                 break # make sure all threads are finished
             for sink in sinks:
-                thread_pool.submit(sink.send_bytes, bytes)
+                sink.send_bytes(bytes)
     for sink in sinks:
         sink.send_bytes(bytes)
 
