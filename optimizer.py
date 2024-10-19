@@ -148,6 +148,7 @@ def main(argv):
                 'persistent_portfolios': list_edge_simulateds + static_portfolios_simulated,
                 'coord_pair': coord_pair,
                 'hull_layers': cmdline_args.hull,
+                'color_map': RGB_COLOR_MAP,
             }
         ))
 

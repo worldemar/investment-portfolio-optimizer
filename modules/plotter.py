@@ -19,7 +19,8 @@ def plotter_process_func(
         source: multiprocessing.connection.Connection = None,
         coord_pair: tuple[str, str] = None,
         hull_layers: int = None,
-        persistent_portfolios: list[modules.Portfolio.Portfolio] = None):
+        persistent_portfolios: list[modules.Portfolio.Portfolio] = None,
+        color_map: dict[str, tuple[int, int, int]] = None):
     
     batches_hulls_points = []
     data_stream_end_pickle = pickle.dumps(data_types.DataStreamFinished())
@@ -38,7 +39,7 @@ def plotter_process_func(
     portfolios_for_plot.extend(persistent_portfolios)
     portfolios_for_plot.sort(key=lambda x: -x.number_of_assets())
     # plot_data = data_filter.compose_plot_data(portfolios_for_plot, field_x=coord_pair[1], field_y=coord_pair[0])
-    plot_circles = list(map(functools.partial(Portfolio.plot_circle_data, coord_pair=coord_pair), portfolios_for_plot))
+    plot_circles = list(map(functools.partial(Portfolio.plot_circle_data, coord_pair=coord_pair, color_map=color_map), portfolios_for_plot))
     draw_circles_with_tooltips(
         circles=plot_circles,
         xlabel=coord_pair[1],

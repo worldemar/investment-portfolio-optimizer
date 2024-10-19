@@ -31,7 +31,7 @@ def draw_circles_with_tooltips(
         title: str = None,
         directory: str = '.',
         filename: str = 'plot',
-        asset_color_map: dict[str, tuple] = None):
+        asset_color_map: dict[str, tuple[int, int, int]] = None):
     logger = logging.getLogger(__name__)
 
     if not exists(directory):

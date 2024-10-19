@@ -1,5 +1,4 @@
-from config.asset_colors import RGB_COLOR_MAP
-
+#!/usr/bin/env python3
 
 import struct
 from math import prod as math_prod
@@ -17,6 +16,8 @@ class Portfolio:
         self.stat_cagr = -1
         self.stat_var = -1
         self.stat_sharpe = -1
+        self._number_of_assets = None
+        self._named_stats = None
 
     def deserialize_iter(serialized_data, assets: list[str]):
         for portfolio_unpack in struct.iter_unpack(f'5f{len(assets)}i', serialized_data):
@@ -54,14 +55,16 @@ class Portfolio:
         '''
         Number of asset weights that are not zero
         '''
-        return len(list(filter(lambda weight: weight != 0, self.weights)))
+        if self._number_of_assets is None:
+            self._number_of_assets = len(list(filter(lambda weight: weight!= 0, self.weights)))
+        return self._number_of_assets
 
-    def asset_allocation_error(self, market_assets: list):
+    def asset_allocation_error(self, market_assets: list, color_map: dict[str, tuple[int, int, int]]):
         if (not all(asset in market_assets for asset in self.assets)):
             return f'some tickers in portfolio are not in market data: {set(self.assets) - set(market_assets)}'
         if (sum(value for value in self.weights) != 100):
             return f'sum of weights is not 100: {sum(self.weights)}'
-        if (not all(asset in RGB_COLOR_MAP.keys() for asset in self.assets)):
+        if (not all(asset in color_map.keys() for asset in self.assets)):
             return f'some tickers have no color defined, add them to asset_colors.py: {set(self.assets) - set(RGB_COLOR_MAP.keys())}'
         return ''
 
@@ -91,13 +94,15 @@ class Portfolio:
         return self
 
     def get_stat(self, stat_name: str):
-        return {
-            'Gain(x)': self.stat_gain,
-            'CAGR(%)': self.stat_cagr * 100,
-            'Sharpe': self.stat_sharpe,
-            'Variance': self.stat_var,
-            'Stdev': self.stat_stdev,
-        }[stat_name]
+        if self._named_stats is None:
+            self._named_stats = {
+                'Gain(x)': self.stat_gain,
+                'CAGR(%)': self.stat_cagr * 100,
+                'Sharpe': self.stat_sharpe,
+                'Variance': self.stat_var,
+                'Stdev': self.stat_stdev,
+            }
+        return self._named_stats[stat_name]
 
     def __repr__(self):
         weights_without_zeros = []
@@ -124,7 +129,7 @@ class Portfolio:
             weights_without_zeros.append(f'{ticker}: {weight}%')
         return weights_without_zeros
 
-    def plot_tooltip_stats(self):
+    def plot_circle_tooltip_stats(self):
         return '\n'.join([
             f'GAIN  : {self.stat_gain:.3f}',
             f'CAGR  : {self.stat_cagr*100:.2f}%',
@@ -133,13 +138,10 @@ class Portfolio:
             f'SHARP : {self.stat_sharpe:.3f}'
         ])
 
-    def plot_tooltip_assets(self):
+    def plot_circle_tooltip_assets(self):
         return '\n'.join(self.__weights_without_zeros())
 
-    def plot_title(self):
-        return f'«{", ".join(self.__weights_without_zeros())}»'
-
-    def plot_color(self, color_map):
+    def plot_circle_color(self, color_map):
         color = [0, 0, 0, 1]
         for ticker, weight in zip(self.assets, self.weights):
             if ticker in color_map:
@@ -150,17 +152,17 @@ class Portfolio:
                 raise RuntimeError(f'color map does not contain asset "{ticker}", add it to asset_colors.py')
         return (color[0] / max(color), color[1] / max(color), color[2] / max(color))
 
-    def plot_circle_data(self, coord_pair):
+    def plot_circle_data(self, coord_pair: tuple[str, str], color_map: dict[str, tuple[int, int, int]]):
         return {
             'x': self.get_stat(coord_pair[1]),
             'y': self.get_stat(coord_pair[0]),
             'text': '\n'.join([
-                self.plot_tooltip_assets(),
-                '—' * max(len(x) for x in self.plot_tooltip_assets().split('\n')),
-                self.plot_tooltip_stats(),
+                self.plot_circle_tooltip_assets(),
+                '—' * max(len(x) for x in self.plot_circle_tooltip_assets().split('\n')),
+                self.plot_circle_tooltip_stats(),
             ]),
             'marker': self.plot_marker,
-            'color': self.plot_color(dict(RGB_COLOR_MAP.items())),
+            'color': self.plot_circle_color(color_map),
             'size': 100 if self.plot_always else 50 / self.number_of_assets(),
             'linewidth': 0.5 if self.plot_always else 1 / self.number_of_assets(),
         }

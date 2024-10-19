@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-import modules.Portfolio as data_types
+from modules.Portfolio import Portfolio
 
 
 def test_portfolio_serialize():
     epsilon = 1e-5
-    portfolio = data_types.Portfolio(
+    portfolio = Portfolio(
         assets=['AAPL', 'MSFT', 'GOOG'],
         weights=[10, 40, 50],
     )
@@ -16,7 +16,7 @@ def test_portfolio_serialize():
     portfolio.stat_sharpe = 0.5
 
     serialized = portfolio.serialize()
-    deserialized = data_types.Portfolio.deserialize(serialized, assets=portfolio.assets)
+    deserialized = Portfolio.deserialize(serialized, assets=portfolio.assets)
     assert portfolio.stat_gain - deserialized.stat_gain < epsilon
     assert portfolio.stat_stdev - deserialized.stat_stdev < epsilon
     assert portfolio.stat_cagr - deserialized.stat_cagr < epsilon
@@ -29,7 +29,7 @@ def test_portfolio_serialize_batch():
     epsilon = 1e-5
     portfolios = []
     for i in range(100):
-        portfolio = data_types.Portfolio(
+        portfolio = Portfolio(
             assets=['AAPL', 'MSFT', 'GOOG'],
             weights=[100-i, i, 0],
         )
@@ -41,7 +41,7 @@ def test_portfolio_serialize_batch():
         portfolios.append(portfolio)
 
     serialized = b''.join(p.serialize() for p in portfolios)
-    deserialized_batch = list(data_types.Portfolio.deserialize_iter(serialized, assets=portfolio.assets))
+    deserialized_batch = list(Portfolio.deserialize_iter(serialized, assets=portfolio.assets))
     for i in range(100):
         assert portfolios[i].stat_gain - deserialized_batch[i].stat_gain < epsilon
         assert portfolios[i].stat_stdev - deserialized_batch[i].stat_stdev < epsilon
