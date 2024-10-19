@@ -98,7 +98,7 @@ def main(argv):
     time_start = time.time()
     tickers_to_test, yearly_revenue_multiplier = data_source.read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
 
-    num_errors = report_errors_in_portfolios(portfolios=STATIC_PORTFOLIOS, tickers_to_test=tickers_to_test)
+    num_errors = report_errors_in_portfolios(portfolios=STATIC_PORTFOLIOS, tickers_to_test=tickers_to_test, color_map=RGB_COLOR_MAP)
     if num_errors > 0:
         logger.error(f'Found {num_errors} invalid static portfolios')
         return

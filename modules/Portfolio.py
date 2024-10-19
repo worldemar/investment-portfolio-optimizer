@@ -6,6 +6,11 @@ from statistics import stdev as statistics_stdev
 
 
 class Portfolio:
+    def static_portfolio(allocation: dict[str, int]):
+        assets = list(allocation.keys())
+        weights = list(allocation.values())
+        return Portfolio(assets=assets, weights=weights, plot_always=True, plot_marker='X')
+
     def __init__(self, weights: list[int], assets: list[str], plot_always=False, plot_marker='o'):
         self.plot_marker = plot_marker
         self.plot_always = plot_always

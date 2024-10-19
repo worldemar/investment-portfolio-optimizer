@@ -10,11 +10,11 @@ from modules.Portfolio import Portfolio
 from typing import Any
 
 
-def report_errors_in_portfolios(portfolios: list[Portfolio], tickers_to_test: list[str]):
+def report_errors_in_portfolios(portfolios: list[Portfolio], tickers_to_test: list[str], color_map: dict[str, tuple[int, int, int]]):
     logger = logging.getLogger(__name__)
     num_errors = 0
     for portfolio in portfolios:
-        error = portfolio.asset_allocation_error(tickers_to_test)
+        error = portfolio.asset_allocation_error(market_assets=tickers_to_test, color_map=color_map)
         if error != '':
             num_errors += 1
             logger.error(f'Static portfolio {portfolio}\nhas invalid allocation: {error}')
