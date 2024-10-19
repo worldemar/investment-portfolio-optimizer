@@ -6,10 +6,12 @@ from collections.abc import Iterable
 import concurrent.futures
 import multiprocessing
 import multiprocessing.connection
+from config.asset_colors import RGB_COLOR_MAP
 from modules import data_types
 import pickle
 
 import modules.Portfolio
+import modules.Portfolio as data_types
 import modules.data_source
 
 class PortfolioXYFieldsPoint(tuple):
@@ -68,3 +70,20 @@ def multilayer_convex_hull(point_batch: list, layers: int = 1):
         else:
             hull_layers_points.extend(self_hull_points)
     return hull_layers_points
+
+
+def compose_plot_data(portfolios: Iterable[data_types.Portfolio], field_x: str, field_y: str):
+    return [[{
+            'x': portfolio.get_stat(field_x),
+            'y': portfolio.get_stat(field_y),
+            'text': '\n'.join([
+                portfolio.plot_tooltip_assets(),
+                '—' * max(len(x) for x in portfolio.plot_tooltip_assets().split('\n')),
+                portfolio.plot_tooltip_stats(),
+            ]),
+            'marker': portfolio.plot_marker,
+            'color': portfolio.plot_color(dict(RGB_COLOR_MAP.items())),
+            'size': 100 if portfolio.plot_always else 50 / portfolio.number_of_assets(),
+            'linewidth': 0.5 if portfolio.plot_always else 1 / portfolio.number_of_assets(),
+            }] for portfolio in portfolios
+            ]

@@ -110,10 +110,12 @@ def main(argv):
         functools.partial(Portfolio.simulate, asset_revenue_per_year=yearly_revenue_multiplier),
         STATIC_PORTFOLIOS))
     logger.info(f'{len(static_portfolios_simulated)} static portfolios will be plotted on all graphs')
-    edge_portfolios_simulated = list(map(
-        functools.partial(data_source.allocation_simulate, assets=tickers_to_test, asset_revenue_per_year=yearly_revenue_multiplier),
-        data_source.all_possible_allocations(tickers_to_test, 100)))
-    logger.info(f'{len(edge_portfolios_simulated)} edge portfolios will be plotted on all graphs')
+
+    gen_edge_allocations = data_source.all_possible_allocations(tickers_to_test, 100)
+    gen_edge_portfolios = map(
+        functools.partial(Portfolio, assets=tickers_to_test), gen_edge_allocations)
+    list_edge_simulateds = list(map(functools.partial(Portfolio.simulated, asset_revenue_per_year=yearly_revenue_multiplier), gen_edge_portfolios))
+    logger.info(f'{len(list_edge_simulateds)} edge portfolios will be plotted on all graphs')
 
     logger.info(f'+{time.time() - time_start:.2f}s :: preparing portfolio simulation data pipeline...')
     portfolios_simulated_source, portfolios_simulated_sink = multiprocessing.Pipe(duplex=False)
@@ -142,7 +144,7 @@ def main(argv):
             kwargs={
                 'assets': tickers_to_test,
                 'source': coord_tuple_queues[coord_pair]['source'],
-                'persistent_portfolios': edge_portfolios_simulated + static_portfolios_simulated,
+                'persistent_portfolios': list_edge_simulateds + static_portfolios_simulated,
                 'coord_pair': coord_pair,
                 'hull_layers': cmdline_args.hull,
             }

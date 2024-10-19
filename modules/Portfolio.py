@@ -7,7 +7,7 @@ from statistics import stdev as statistics_stdev
 
 
 class Portfolio:
-    def __init__(self, assets: list[str], weights: list[int], plot_always=False, plot_marker='o'):
+    def __init__(self, weights: list[int], assets: list[str], plot_always=False, plot_marker='o'):
         self.plot_marker = plot_marker
         self.plot_always = plot_always
         self.assets = assets
@@ -84,6 +84,10 @@ class Portfolio:
         self.stat_cagr = self.stat_gain**(1 / len(annual_gains.values())) - 1
         self.stat_var = sum(map(lambda ag: (ag - self.stat_cagr - 1) ** 2, annual_gains.values())) / (len(annual_gains) - 1)
         self.stat_sharpe = self.stat_cagr / self.stat_stdev
+        return self
+
+    def simulated(self, asset_revenue_per_year):
+        self.simulate(asset_revenue_per_year)
         return self
 
     def get_stat(self, stat_name: str):

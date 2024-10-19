@@ -3,38 +3,29 @@
     Helper functions to draw figures using matplotlib.
 """
 
-from collections.abc import Iterable
 from os.path import exists, join as os_path_join
 from os import makedirs
 import logging
 from io import StringIO
 from typing import List
 from config.static_portfolios import STATIC_PORTFOLIOS
-import modules.Portfolio as data_types
 import multiprocessing
 import multiprocessing.connection
-from config.asset_colors import RGB_COLOR_MAP
 import importlib
 import functools
 
 from modules.Portfolio import Portfolio
 
 
-def compose_plot_data(portfolios: Iterable[data_types.Portfolio], field_x: str, field_y: str):
-    return [[{
-            'x': portfolio.get_stat(field_x),
-            'y': portfolio.get_stat(field_y),
-            'text': '\n'.join([
-                portfolio.plot_tooltip_assets(),
-                '—' * max(len(x) for x in portfolio.plot_tooltip_assets().split('\n')),
-                portfolio.plot_tooltip_stats(),
-            ]),
-            'marker': portfolio.plot_marker,
-            'color': portfolio.plot_color(dict(RGB_COLOR_MAP.items())),
-            'size': 100 if portfolio.plot_always else 50 / portfolio.number_of_assets(),
-            'linewidth': 0.5 if portfolio.plot_always else 1 / portfolio.number_of_assets(),
-            }] for portfolio in portfolios
-            ]
+def report_errors_in_static_portfolios(portfolios: List[Portfolio], tickers_to_test: List[str]):
+    logger = logging.getLogger(__name__)
+    num_errors = 0
+    for static_portfolio in STATIC_PORTFOLIOS:
+        error = static_portfolio.asset_allocation_error(tickers_to_test)
+        if error:
+            num_errors += 1
+            logger.error(f'Static portfolio {static_portfolio}\nhas invalid allocation: {error}')
+    return num_errors
 
 
 # pylint: disable=too-many-arguments
@@ -233,14 +224,3 @@ if __name__ == '__main__':
         directory='result',
         filename='plot_demo'
     )
-
-
-def report_errors_in_static_portfolios(portfolios: List[Portfolio], tickers_to_test: List[str]):
-    logger = logging.getLogger(__name__)
-    num_errors = 0
-    for static_portfolio in STATIC_PORTFOLIOS:
-        error = static_portfolio.asset_allocation_error(tickers_to_test)
-        if error:
-            num_errors += 1
-            logger.error(f'Static portfolio {static_portfolio}\nhas invalid allocation: {error}')
-    return num_errors

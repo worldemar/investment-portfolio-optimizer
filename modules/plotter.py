@@ -4,8 +4,8 @@ import modules.Portfolio
 import modules.data_filter as data_filter
 import modules.data_source as data_types
 from config.asset_colors import RGB_COLOR_MAP
-from modules.data_filter import multilayer_convex_hull
-from modules.data_output import compose_plot_data, draw_circles_with_tooltips
+from modules.data_filter import compose_plot_data, multilayer_convex_hull
+from modules.data_output import draw_circles_with_tooltips
 from modules.Portfolio import Portfolio
 
 
