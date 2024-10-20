@@ -29,6 +29,6 @@ def test_all_possible_allocations(assets_n: int, step: int):
 
 
 def _expected_allocations(assets_n: int, step: int):
-    gen_asset_values = filter(lambda x: sum(x) == 100, itertools.product(range(0, 101, step), repeat=assets_n))
-    for asset_values in gen_asset_values:
-        yield asset_values
+    yield from filter(
+        lambda x: sum(x) == 100,
+        itertools.product(range(0, 101, step), repeat=assets_n))
