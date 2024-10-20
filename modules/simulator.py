@@ -17,6 +17,7 @@ def simulator_process_func(
         chunk_size: int = 1):
     possible_allocations_gen = data_source.all_possible_allocations(len(assets), percentage_step)
     possible_allocations = sum(1 for _ in possible_allocations_gen)
+    logging.info('Will simulate %d portfolios', possible_allocations)
     time_start = time.time()
     with ProcessPoolExecutor() as process_pool:
         allocations_per_core = possible_allocations // os.cpu_count() + 1
