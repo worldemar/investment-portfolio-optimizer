@@ -114,19 +114,12 @@ class Portfolio:
                 year_end=years_max
             )
 
-        def root_mean_square(values):
-            mean = 0
-            for val in values:
-                mean += val * val
-            mean /= len(values)
-            return mean**0.5
-
         stats_per_year = list(map(simulate_from_year_to_now, range(years_min, years_max)))
         self.stat_gain, \
             self.stat_stdev, \
             self.stat_cagr, \
             self.stat_var, \
-            self.stat_sharpe = (root_mean_square(stat_values) for stat_values in zip(*stats_per_year))
+            self.stat_sharpe = (sum(stat_values) / len(stats_per_year) for stat_values in zip(*stats_per_year))
 
     def simulated(self, asset_revenue_per_year):
         self.simulate(asset_revenue_per_year)
