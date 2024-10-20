@@ -27,6 +27,15 @@ class Portfolio:
         self._number_of_assets = None
         self._named_stats = None
 
+    def aligned_to_market(self, market_assets: list):
+        assets = self.assets
+        weights = self.weights
+        self.assets = market_assets
+        self.weights = [0] * len(market_assets)
+        for asset_idx, asset_name in enumerate(assets):
+            self.weights[market_assets.index(asset_name)] = weights[asset_idx]
+        return self
+
     @staticmethod
     def deserialize_iter(serialized_data, assets: list[str]):
         for portfolio_unpack in struct.iter_unpack(f'5f{len(assets)}i', serialized_data):

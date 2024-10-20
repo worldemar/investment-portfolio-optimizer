@@ -72,9 +72,12 @@ def main(argv):
                       cmdline_args.asset_returns_csv, set(market_assets) - set(RGB_COLOR_MAP.keys()))
         return
 
+    static_portfolios_aligned_to_market = list(map(
+        partial(Portfolio.aligned_to_market, market_assets=market_assets),
+        STATIC_PORTFOLIOS))
     static_portfolios_simulated = list(map(
         partial(Portfolio.simulated, asset_revenue_per_year=market_yearly_revenue_multiplier),
-        STATIC_PORTFOLIOS))
+        static_portfolios_aligned_to_market))
     logging.info('%d static portfolios will be plotted on all graphs', len(static_portfolios_simulated))
 
     gen_edge_allocations = data_source.all_possible_allocations(len(market_assets), 100)
