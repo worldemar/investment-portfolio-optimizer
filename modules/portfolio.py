@@ -2,8 +2,7 @@
 
 import struct
 from math import prod as math_prod
-from statistics import stdev as statistics_stdev
-from functools import partial
+from math import sumprod as math_sumprod
 
 
 # pylint: disable=too-many-instance-attributes
@@ -89,35 +88,27 @@ class Portfolio:
         return ''
 
     # pylint: disable=too-many-locals
-    def _simulate_y2y(self, asset_revenue_per_year, year_start, year_end):
-        def gain(index_weight, asset_revenue, year):
-            return asset_revenue[year][index_weight[0]] * index_weight[1]
-        annual_gains = {}
+    def _simulate_y2y(self, asset_gain_per_year, year_start, year_end):
+        annual_gains = []
         capital = 1
         for year in range(year_start, year_end + 1):
-            gain_func = partial(gain, asset_revenue=asset_revenue_per_year, year=year)
-            proportional_gains = sum(map(gain_func, enumerate(self.weights)))
-            new_capital = capital * proportional_gains / 100
-            if capital != 0:
-                annual_gains[year] = new_capital / capital
+            new_capital = capital * math_sumprod(asset_gain_per_year[year], self.weights) / 100
+            annual_gains.append(new_capital / capital)
             capital = new_capital
 
-        stat_gain = math_prod(annual_gains.values())
-        stat_stdev = statistics_stdev(annual_gains.values())
-        stat_cagr = stat_gain**(1 / len(annual_gains.values())) - 1
-        stat_var = sum(map(
-            lambda ag: (ag - stat_cagr - 1) ** 2,
-            annual_gains.values()))
-        stat_var /= len(annual_gains) - 1
+        stat_gain = math_prod(annual_gains)
+        stat_cagr = stat_gain ** (1 / len(annual_gains)) - 1
+        stat_var = sum(map(lambda ag: (ag - stat_cagr - 1) ** 2, annual_gains)) / (len(annual_gains) - 1)
+        stat_stdev = stat_var ** 0.5
         return stat_gain, stat_stdev, stat_cagr, stat_var
 
-    def simulate(self, asset_revenue_per_year):
-        years_min = min(asset_revenue_per_year.keys())
-        years_max = max(asset_revenue_per_year.keys())
+    def simulate(self, asset_gain_per_year):
+        years_min = min(asset_gain_per_year.keys())
+        years_max = max(asset_gain_per_year.keys())
 
         def simulate_from_year_to_now(year_start):
             return self._simulate_y2y(
-                asset_revenue_per_year=asset_revenue_per_year,
+                asset_gain_per_year=asset_gain_per_year,
                 year_start=year_start,
                 year_end=years_max
             )
@@ -129,8 +120,8 @@ class Portfolio:
             self.stat_var = (sum(stat_values) / len(stats_per_year) for stat_values in zip(*stats_per_year))
         self.stat_sharpe = self.stat_cagr / self.stat_stdev
 
-    def simulated(self, asset_revenue_per_year):
-        self.simulate(asset_revenue_per_year)
+    def simulated(self, asset_gain_per_year):
+        self.simulate(asset_gain_per_year)
         return self
 
     def get_stat(self, stat_name: str):
