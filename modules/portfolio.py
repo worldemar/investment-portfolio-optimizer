@@ -79,30 +79,50 @@ class Portfolio:
                 f'add them to asset_colors.py: {set(self.assets) - set(color_map.keys())}'
         return ''
 
-    def simulate(self, asset_revenue_per_year):
+    def _simulate_y2y(self, asset_revenue_per_year, year_start, year_end):
         def gain(index_weight, asset_revenue, year):
             return asset_revenue[year][index_weight[0]] * index_weight[1]
         annual_gains = {}
-        annual_capital = {}
         capital = 1
-        annual_capital[list(asset_revenue_per_year.keys())[0] - 1] = 1
-        for year in asset_revenue_per_year.keys():
+        for year in range(year_start, year_end + 1):
             gain_func = partial(gain, asset_revenue=asset_revenue_per_year, year=year)
             proportional_gains = sum(map(gain_func, enumerate(self.weights)))
             new_capital = capital * proportional_gains / 100
             if capital != 0:
                 annual_gains[year] = new_capital / capital
             capital = new_capital
-            annual_capital[year] = new_capital
 
-        self.stat_gain = math_prod(annual_gains.values())
-        self.stat_stdev = statistics_stdev(annual_gains.values())
-        self.stat_cagr = self.stat_gain**(1 / len(annual_gains.values())) - 1
-        self.stat_var = sum(map(
-            lambda ag: (ag - self.stat_cagr - 1) ** 2,
+        stat_gain = math_prod(annual_gains.values())
+        stat_stdev = statistics_stdev(annual_gains.values())
+        stat_cagr = stat_gain**(1 / len(annual_gains.values())) - 1
+        stat_var = sum(map(
+            lambda ag: (ag - stat_cagr - 1) ** 2,
             annual_gains.values()))
-        self.stat_var /= len(annual_gains) - 1
-        self.stat_sharpe = self.stat_cagr / self.stat_stdev
+        stat_var /= len(annual_gains) - 1
+        stat_sharpe = stat_cagr / stat_stdev
+        return stat_gain, stat_stdev, stat_cagr, stat_var, stat_sharpe
+
+    def simulate(self, asset_revenue_per_year):
+        years_min = min(asset_revenue_per_year.keys())
+        years_max = max(asset_revenue_per_year.keys())
+        def simulate_from_year_to_now(year_start):
+            return self._simulate_y2y(
+                asset_revenue_per_year=asset_revenue_per_year,
+                year_start=year_start,
+                year_end=years_max
+            )
+        def root_mean_square(values):
+            mean = 0
+            for val in values:
+                mean += val * val
+            mean /= len(values)
+            return mean**0.5
+        stats_per_year = list(map(simulate_from_year_to_now, range(years_min, years_max)))
+        self.stat_gain, \
+            self.stat_stdev, \
+            self.stat_cagr, \
+            self.stat_var, \
+            self.stat_sharpe = (root_mean_square(stat_values) for stat_values in zip(*stats_per_year))
 
     def simulated(self, asset_revenue_per_year):
         self.simulate(asset_revenue_per_year)
