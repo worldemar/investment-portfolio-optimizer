@@ -58,7 +58,8 @@ def main(argv):
     ]
 
     time_start = time.time()
-    market_assets, market_yearly_revenue_multiplier = \
+
+    market_assets, market_yearly_gain = \
         data_source.read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
 
     num_errors = data_output.report_errors_in_portfolios(
@@ -76,7 +77,7 @@ def main(argv):
         partial(Portfolio.aligned_to_market, market_assets=market_assets),
         STATIC_PORTFOLIOS))
     static_portfolios_simulated = list(map(
-        partial(Portfolio.simulated, asset_revenue_per_year=market_yearly_revenue_multiplier),
+        partial(Portfolio.simulated, asset_gain_per_year=market_yearly_gain),
         static_portfolios_aligned_to_market))
     logging.info('%d static portfolios will be plotted on all graphs', len(static_portfolios_simulated))
 
@@ -84,7 +85,7 @@ def main(argv):
     gen_edge_portfolios = map(
         partial(Portfolio, assets=market_assets), gen_edge_allocations)
     list_edge_simulateds = list(map(
-        partial(Portfolio.simulated, asset_revenue_per_year=market_yearly_revenue_multiplier),
+        partial(Portfolio.simulated, asset_gain_per_year=market_yearly_gain),
         gen_edge_portfolios))
     logging.info('%d edge portfolios will be plotted on all graphs', len(list_edge_simulateds))
 
@@ -97,7 +98,7 @@ def main(argv):
         kwargs={
             'assets': market_assets,
             'percentage_step': cmdline_args.precision,
-            'asset_revenue_per_year': market_yearly_revenue_multiplier,
+            'asset_gain_per_year': market_yearly_gain,
             'sink': simulated_sink,
             'chunk_size': CHUNK_SIZE,
         }

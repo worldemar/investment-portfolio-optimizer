@@ -12,7 +12,7 @@ from modules import data_source
 def simulator_process_func(
         assets: list = None,
         percentage_step: int = None,
-        asset_revenue_per_year: dict[str, dict[str, float]] = None,
+        asset_gain_per_year: dict[str, dict[str, float]] = None,
         sink: multiprocessing.connection.Connection = None,
         chunk_size: int = 1):
     possible_allocations_gen = data_source.all_possible_allocations(len(assets), percentage_step)
@@ -26,7 +26,7 @@ def simulator_process_func(
             slice_size=allocations_per_core,
             assets=assets,
             percentage_step=percentage_step,
-            asset_revenue_per_year=asset_revenue_per_year,
+            asset_gain_per_year=asset_gain_per_year,
             sink=sink,
             chunk_size=chunk_size)
         portfolios_sent_per_core = process_pool.map(slice_sender, range(0, os.cpu_count()))
