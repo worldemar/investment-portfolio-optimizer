@@ -27,6 +27,15 @@ class Portfolio:
         self._number_of_assets = None
         self._named_stats = None
 
+    def aligned_to_market(self, market_assets: list):
+        assets = self.assets
+        weights = self.weights
+        self.assets = market_assets
+        self.weights = [0] * len(market_assets)
+        for asset_idx, asset_name in enumerate(assets):
+            self.weights[market_assets.index(asset_name)] = weights[asset_idx]
+        return self
+
     @staticmethod
     def deserialize_iter(serialized_data, assets: list[str]):
         for portfolio_unpack in struct.iter_unpack(f'5f{len(assets)}i', serialized_data):
@@ -79,31 +88,46 @@ class Portfolio:
                 f'add them to asset_colors.py: {set(self.assets) - set(color_map.keys())}'
         return ''
 
-    def simulate(self, asset_revenue_per_year):
+    # pylint: disable=too-many-locals
+    def _simulate_y2y(self, asset_revenue_per_year, year_start, year_end):
         def gain(index_weight, asset_revenue, year):
             return asset_revenue[year][index_weight[0]] * index_weight[1]
         annual_gains = {}
-        annual_capital = {}
         capital = 1
-        annual_capital[list(asset_revenue_per_year.keys())[0] - 1] = 1
-        for year in asset_revenue_per_year.keys():
+        for year in range(year_start, year_end + 1):
             gain_func = partial(gain, asset_revenue=asset_revenue_per_year, year=year)
             proportional_gains = sum(map(gain_func, enumerate(self.weights)))
             new_capital = capital * proportional_gains / 100
             if capital != 0:
                 annual_gains[year] = new_capital / capital
             capital = new_capital
-            annual_capital[year] = new_capital
 
-        self.stat_gain = math_prod(annual_gains.values())
-        self.stat_stdev = statistics_stdev(annual_gains.values())
-        self.stat_cagr = self.stat_gain**(1 / len(annual_gains.values())) - 1
-        self.stat_var = sum(map(
-            lambda ag: (ag - self.stat_cagr - 1) ** 2,
+        stat_gain = math_prod(annual_gains.values())
+        stat_stdev = statistics_stdev(annual_gains.values())
+        stat_cagr = stat_gain**(1 / len(annual_gains.values())) - 1
+        stat_var = sum(map(
+            lambda ag: (ag - stat_cagr - 1) ** 2,
             annual_gains.values()))
-        self.stat_var /= len(annual_gains) - 1
+        stat_var /= len(annual_gains) - 1
+        return stat_gain, stat_stdev, stat_cagr, stat_var
+
+    def simulate(self, asset_revenue_per_year):
+        years_min = min(asset_revenue_per_year.keys())
+        years_max = max(asset_revenue_per_year.keys())
+
+        def simulate_from_year_to_now(year_start):
+            return self._simulate_y2y(
+                asset_revenue_per_year=asset_revenue_per_year,
+                year_start=year_start,
+                year_end=years_max
+            )
+
+        stats_per_year = list(map(simulate_from_year_to_now, range(years_min, years_max)))
+        self.stat_gain, \
+            self.stat_stdev, \
+            self.stat_cagr, \
+            self.stat_var = (sum(stat_values) / len(stats_per_year) for stat_values in zip(*stats_per_year))
         self.stat_sharpe = self.stat_cagr / self.stat_stdev
-        return self
 
     def simulated(self, asset_revenue_per_year):
         self.simulate(asset_revenue_per_year)
@@ -114,9 +138,9 @@ class Portfolio:
             self._named_stats = {
                 'Gain(x)': self.stat_gain,
                 'CAGR(%)': self.stat_cagr * 100,
-                'Sharpe': self.stat_sharpe,
                 'Variance': self.stat_var,
                 'Stdev': self.stat_stdev,
+                'Sharpe': self.stat_sharpe,
             }
         return self._named_stats[stat_name]
 
@@ -151,7 +175,7 @@ class Portfolio:
             f'CAGR  : {self.stat_cagr * 100:.2f}%',
             f'VAR   : {self.stat_var:.3f}',
             f'STDEV : {self.stat_stdev:.3f}',
-            f'SHARP : {self.stat_sharpe:.3f}'  # nopep8
+            f'SHARP : {self.stat_sharpe:.3f}'
         ])
 
     def plot_circle_tooltip_assets(self):

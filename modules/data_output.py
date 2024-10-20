@@ -47,8 +47,8 @@ def draw_circles_with_tooltips(
     plt.rcParams["font.size"] = 10
     _, axes = plt.subplots(figsize=(12, 9))
 
-    padding_percent_x = 20
-    padding_percent_y = 10
+    padding_percent_x = 25
+    padding_percent_y = 25
     xlim_min = min(circle['x'] for circle in circles)
     xlim_max = max(circle['x'] for circle in circles)
     xlim_min_padded = xlim_min - padding_percent_x * (xlim_max - xlim_min) / 100
