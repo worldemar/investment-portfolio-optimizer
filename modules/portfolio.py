@@ -79,6 +79,7 @@ class Portfolio:
                 f'add them to asset_colors.py: {set(self.assets) - set(color_map.keys())}'
         return ''
 
+    # pylint: disable=too-many-locals
     def _simulate_y2y(self, asset_revenue_per_year, year_start, year_end):
         def gain(index_weight, asset_revenue, year):
             return asset_revenue[year][index_weight[0]] * index_weight[1]
@@ -105,18 +106,21 @@ class Portfolio:
     def simulate(self, asset_revenue_per_year):
         years_min = min(asset_revenue_per_year.keys())
         years_max = max(asset_revenue_per_year.keys())
+
         def simulate_from_year_to_now(year_start):
             return self._simulate_y2y(
                 asset_revenue_per_year=asset_revenue_per_year,
                 year_start=year_start,
                 year_end=years_max
             )
+
         def root_mean_square(values):
             mean = 0
             for val in values:
                 mean += val * val
             mean /= len(values)
             return mean**0.5
+
         stats_per_year = list(map(simulate_from_year_to_now, range(years_min, years_max)))
         self.stat_gain, \
             self.stat_stdev, \
