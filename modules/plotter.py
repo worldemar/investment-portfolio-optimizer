@@ -12,6 +12,7 @@ from config.asset_colors import RGB_COLOR_MAP
 
 
 # pylint: disable=too-many-arguments
+# pylint: disable=too-many-positional-arguments
 def plotter_process_func(
         assets: list[str],
         source: multiprocessing.connection.Connection = None,

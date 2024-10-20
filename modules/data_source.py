@@ -14,6 +14,7 @@ def all_possible_allocations(assets_n: int, step: int):
     but considerably faster
     """
     # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-positional-arguments
     def _allocations_recursive(
             assets_n: int, step: int,
             asset_idx: int = 0, asset_idx_max: int = 0,
@@ -43,6 +44,7 @@ def all_possible_allocations(assets_n: int, step: int):
 
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-locals
+# pylint: disable=too-many-positional-arguments
 def allocation_slice_simulate_and_feed_to_sink(
         slice_idx, slice_size,
         assets, percentage_step, asset_revenue_per_year,
