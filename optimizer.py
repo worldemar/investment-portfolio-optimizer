@@ -1,157 +1,134 @@
 #!/usr/bin/env python3
 
 import sys
-import argparse
-import multiprocessing
-import functools
 import time
+import argparse
+import logging
+from collections import deque
+from functools import partial
+from multiprocessing import Process
+from multiprocessing import Pipe
+from modules import data_output
+from modules import data_source
+from modules import data_filter
 from modules.portfolio import Portfolio
-from modules.capitalgain import read_capitalgain_csv_data
-from modules.plot import draw_portfolios_statistics, draw_portfolios_history
-from asset_colors import RGB_COLOR_MAP
-from static_portfolios import STATIC_PORTFOLIOS
+from modules.plotter import plotter_process_func
+from modules.simulator import simulator_process_func
+from config.asset_colors import RGB_COLOR_MAP
+from config.static_portfolios import STATIC_PORTFOLIOS
+from config.config import CHUNK_SIZE
 
 
-def gen_portfolios(assets: list, percentage_step: int, percentages_ret: list):
-    if percentages_ret and len(percentages_ret) == len(assets) - 1:
-        yield Portfolio(list(zip(assets, percentages_ret + [100 - sum(percentages_ret)])))
-        return
-    for asset_percent in range(0, 101 - sum(percentages_ret), percentage_step):
-        added_percentages = percentages_ret + [asset_percent]
-        yield from gen_portfolios(assets, percentage_step, added_percentages)
-
-
-def _simulate_portfolio(market_data, portfolio):
-    portfolio.simulate(market_data)
-    return portfolio
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s :: %(levelname)s :: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
 
 def _parse_args(argv=None):
     parser = argparse.ArgumentParser(argv)
-    parser.add_argument('--debug', action='store_true')
-    parser.add_argument('--asset-returns-csv', default='asset_returns.csv', help='path to csv with asset returns')
+    parser.add_argument(
+        '--asset-returns-csv', default='config/asset_returns.csv',
+        help='path to csv with asset returns')
     parser.add_argument(
         '--precision', type=int, default=10,
-        help='simulation precision, values less than 5 require A LOT of ram unless --hull is used')
+        help='simulation precision')
     parser.add_argument(
-        '--hull', type=int, default=0,
+        '--hull', type=int, default=1,
         help='use hull algorithm to draw only given layers'
-             ' of edge portfolios, set to 0 to draw all portfolios')
+             ' of portfolios, set to 0 to draw all portfolios'
+             '(not recommended, plots will be VERY heavy)')
     return parser.parse_args()
 
 
 # pylint: disable=too-many-locals
-# pylint: disable=too-many-statements
 def main(argv):
     cmdline_args = _parse_args(argv)
-    tickers_to_test, yearly_revenue_multiplier = read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
-
-    # sanitize static portfolios
-    for portfolio in STATIC_PORTFOLIOS:
-        total_weight = 0
-        for ticker, weight in portfolio.weights:
-            total_weight += weight
-            if ticker not in tickers_to_test:
-                raise ValueError(
-                    f'Static portfolio {portfolio.weights} contain ticker "{ticker}",'
-                    f' that is not in simulation data: {tickers_to_test}')
-        if total_weight != 100:
-            raise ValueError(f'Weight of portfolio {portfolio.weights} is not 100: {total_weight}')
+    coords_tuples = [
+        # Y, X
+        ('CAGR(%)', 'Variance'),
+        ('CAGR(%)', 'Stdev'),
+        ('CAGR(%)', 'Sharpe'),
+        ('Gain(x)', 'Variance'),
+        ('Gain(x)', 'Stdev'),
+        ('Gain(x)', 'Sharpe'),
+        ('Sharpe', 'Stdev'),
+        ('Sharpe', 'Variance'),
+    ]
 
     time_start = time.time()
-    portfolios = STATIC_PORTFOLIOS + list(gen_portfolios(tickers_to_test, cmdline_args.precision, []))
-    time_prepare = time.time()
-    with multiprocessing.Pool() as pool:
-        pool_func = functools.partial(_simulate_portfolio, yearly_revenue_multiplier)
-        portfolios_simulated = list(pool.map(pool_func, portfolios))
-    time_simulate = time.time()
+    market_assets, market_yearly_revenue_multiplier = \
+        data_source.read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
 
-    print(f'DONE :: {len(portfolios_simulated)} portfolios tested')
-    print(f'times: prepare = {time_prepare-time_start:.2f}s, simulate = {time_simulate-time_prepare:.2f}s')
+    num_errors = data_output.report_errors_in_portfolios(
+        portfolios=STATIC_PORTFOLIOS, tickers_to_test=market_assets, color_map=RGB_COLOR_MAP)
+    if num_errors > 0:
+        logging.error('Found %d invalid static portfolios', num_errors)
+        return
+    colored_assets = RGB_COLOR_MAP.keys()
+    if not all(ticker in colored_assets for ticker in market_assets):
+        logging.error('Some tickers in %s are not in RGB_COLOR_MAP: %s',
+                      cmdline_args.asset_returns_csv, set(market_assets) - set(RGB_COLOR_MAP.keys()))
+        return
 
-    used_colors = {ticker: color for ticker, color in RGB_COLOR_MAP.items() if ticker in tickers_to_test}
-    title = ', '.join(
-        [
-            f'{min(yearly_revenue_multiplier.keys())}-{max(yearly_revenue_multiplier.keys())}',
-            'rebalance every row',
-            f'{cmdline_args.precision}% step',
-        ]
-    )
+    static_portfolios_simulated = list(map(
+        partial(Portfolio.simulate, asset_revenue_per_year=market_yearly_revenue_multiplier),
+        STATIC_PORTFOLIOS))
+    logging.info('%d static portfolios will be plotted on all graphs', len(static_portfolios_simulated))
 
-    draw_portfolios_statistics(
-        portfolios_list=portfolios_simulated,
-        f_x=lambda x: x.stat_var, f_y=lambda y: y.stat_cagr * 100,
-        title=title, xlabel='Variance', ylabel='CAGR %', color_map=used_colors, hull_layers=cmdline_args.hull)
-    draw_portfolios_statistics(
-        portfolios_list=portfolios_simulated,
-        f_x=lambda x: x.stat_var, f_y=lambda y: y.stat_sharpe,
-        title=title, xlabel='Variance', ylabel='Sharpe', color_map=used_colors, hull_layers=cmdline_args.hull)
-    draw_portfolios_statistics(
-        portfolios_list=portfolios_simulated,
-        f_x=lambda x: x.stat_stdev, f_y=lambda y: y.stat_cagr * 100,
-        title=title, xlabel='Stdev', ylabel='CAGR %', color_map=used_colors, hull_layers=cmdline_args.hull)
-    draw_portfolios_statistics(
-        portfolios_list=portfolios_simulated,
-        f_x=lambda x: x.stat_stdev, f_y=lambda y: y.stat_sharpe,
-        title=title, xlabel='Stdev', ylabel='Sharpe', color_map=used_colors, hull_layers=cmdline_args.hull)
-    draw_portfolios_statistics(
-        portfolios_list=portfolios_simulated,
-        f_x=lambda x: x.stat_sharpe, f_y=lambda y: y.stat_cagr * 100,
-        title=title, xlabel='Sharpe', ylabel='CAGR %', color_map=used_colors, hull_layers=cmdline_args.hull)
+    gen_edge_allocations = data_source.all_possible_allocations(len(market_assets), 100)
+    gen_edge_portfolios = map(
+        partial(Portfolio, assets=market_assets), gen_edge_allocations)
+    list_edge_simulateds = list(map(
+        partial(Portfolio.simulated, asset_revenue_per_year=market_yearly_revenue_multiplier),
+        gen_edge_portfolios))
+    logging.info('%d edge portfolios will be plotted on all graphs', len(list_edge_simulateds))
 
-    portfolios_for_history = set()
-    portfolios_simulated.sort(key=lambda x: x.stat_cagr)
-    portfolios_simulated[-1].tags.append('MAX CAGR')
-    portfolios_for_history.add(portfolios_simulated[-1])
-    portfolios_simulated[0].tags.append('MIN CAGR')
-    portfolios_for_history.add(portfolios_simulated[0])
-    portfolios_simulated.sort(key=lambda x: x.stat_var)
-    portfolios_simulated[-1].tags.append('MAX VAR')
-    portfolios_for_history.add(portfolios_simulated[-1])
-    portfolios_simulated[0].tags.append('MIN VAR')
-    portfolios_for_history.add(portfolios_simulated[0])
-    portfolios_simulated.sort(key=lambda x: x.stat_sharpe)
-    portfolios_simulated[-1].tags.append('MAX SHARPE')
-    portfolios_for_history.add(portfolios_simulated[-1])
-    portfolios_simulated[0].tags.append('MIN SHARPE')
-    portfolios_for_history.add(portfolios_simulated[0])
-    for portfolio in portfolios_simulated:
-        if portfolio.number_of_assets() == 1:
-            portfolios_for_history.add(portfolio)
-    draw_portfolios_history(
-        portfolios_for_history,
-        title='Edge cases portfolios',
-        xlabel='Year', ylabel='gain %', color_map=RGB_COLOR_MAP)
+    process_wait_list = []
 
-    portfolios_for_history = set()
-    portfolios_simulated.sort(key=lambda x: x.stat_cagr)
-    for i in range(-1, -10, -1):
-        portfolios_simulated[i].tags = [f'MAX CAGR #{abs(i)}']
-        portfolios_for_history.add(portfolios_simulated[i])
-    draw_portfolios_history(
-        portfolios_for_history,
-        title='Max CAGR portfolios',
-        xlabel='Year', ylabel='gain %', color_map=RGB_COLOR_MAP)
+    logging.info('+%.2fs :: preparing portfolio simulation data pipeline...', time.time() - time_start)
+    simulated_source, simulated_sink = Pipe(duplex=False)
+    process_wait_list.append(Process(
+        target=simulator_process_func,
+        kwargs={
+            'assets': market_assets,
+            'percentage_step': cmdline_args.precision,
+            'asset_revenue_per_year': market_yearly_revenue_multiplier,
+            'sink': simulated_sink,
+            'chunk_size': CHUNK_SIZE,
+        }
+    ))
+    coodr_pair_pipes = {
+        coord_pair: dict(zip(('source', 'sink'), Pipe(duplex=False))) for coord_pair in coords_tuples
+    }
+    process_wait_list.append(Process(
+        target=data_filter.queue_multiplexer,
+        kwargs={
+            'source': simulated_source,
+            'sinks': list(pipe['sink'] for pipe in coodr_pair_pipes.values()),
+        }
+    ))
+    for coord_pair in coords_tuples:
+        process_wait_list.append(Process(
+            target=plotter_process_func,
+            kwargs={
+                'assets': market_assets,
+                'source': coodr_pair_pipes[coord_pair]['source'],
+                'persistent_portfolios': list_edge_simulateds + static_portfolios_simulated,
+                'coord_pair': coord_pair,
+                'hull_layers': cmdline_args.hull,
+                'color_map': RGB_COLOR_MAP,
+            }
+        ))
 
-    portfolios_for_history = set()
-    portfolios_simulated.sort(key=lambda x: -x.stat_stdev)
-    for i in range(-1, -10, -1):
-        portfolios_simulated[i].tags = [f'MIN STDEV #{abs(i)}']
-        portfolios_for_history.add(portfolios_simulated[i])
-    draw_portfolios_history(
-        portfolios_for_history,
-        title='Min STDEV portfolios',
-        xlabel='Year', ylabel='gain %', color_map=RGB_COLOR_MAP)
+    logging.info('+%.2fs :: data pipeline prepared', time.time() - time_start)
 
-    portfolios_for_history = set()
-    portfolios_simulated.sort(key=lambda x: x.stat_sharpe)
-    for i in range(-1, -10, -1):
-        portfolios_simulated[i].tags = [f'MAX SHARP #{abs(i)}']
-        portfolios_for_history.add(portfolios_simulated[i])
-    draw_portfolios_history(
-        portfolios_for_history,
-        title='Max Sharp portfolios',
-        xlabel='Year', ylabel='gain %', color_map=RGB_COLOR_MAP)
+    deque(map(Process.start, process_wait_list), 0)
+    logging.info('+%.2fs :: all processes started', time.time() - time_start)
+
+    deque(map(Process.join, process_wait_list), 0)
+    logging.info('+%.2fs :: graphs ready', time.time() - time_start)
 
 
 if __name__ == '__main__':

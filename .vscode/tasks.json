@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+        {
+            "type": "austin",
+            "mode": "Wall time",
+            "file": "optimizer.py",
+            "interval": 10,
+            "label": "Profile optimizer.py with arguments",
+            "args": [
+                "--precision=5",
+                "--hull=3"
+            ],
+            "problemMatcher": []
+        }
+    ]
+}

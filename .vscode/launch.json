@@ -5,15 +5,18 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: Optimizer",
+            "name": "Debug: Optimizer",
             "type": "debugpy",
             "request": "launch",
             "program": "optimizer.py",
             "console": "integratedTerminal",
+            "env": {
+                "PYDEVD_DISABLE_FILE_VALIDATION" : "1",
+            },
             "args": ["--precision=5", "--hull=3"]
         },
         {
-            "name": "Python Debugger: Plot demo",
+            "name": "Debug: Plot demo",
             "type": "debugpy",
             "request": "launch",
             "program": "modules/plot.py",
@@ -21,12 +24,19 @@
             "args": []
         },
         {
-            "name": "Python Debugger: investfunds_converter",
+            "name": "Debug: investfunds_converter",
             "type": "debugpy",
             "request": "launch",
             "program": "investfunds_converter.py",
             "console": "integratedTerminal",
             "args": []
-        }
+        },
+        {
+            "name": "Performance test",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "austin.py",
+            "console": "integratedTerminal",
+        },
     ]
 }
