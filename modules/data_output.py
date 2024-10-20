@@ -27,6 +27,7 @@ def report_errors_in_portfolios(
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-statements
+# pylint: disable=too-many-positional-arguments
 def draw_circles_with_tooltips(
         circles: list[dict[str, dict]],
         xlabel: str = None,
