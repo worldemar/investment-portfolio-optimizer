@@ -109,8 +109,7 @@ class Portfolio:
             lambda ag: (ag - stat_cagr - 1) ** 2,
             annual_gains.values()))
         stat_var /= len(annual_gains) - 1
-        stat_sharpe = stat_cagr / stat_stdev
-        return stat_gain, stat_stdev, stat_cagr, stat_var, stat_sharpe
+        return stat_gain, stat_stdev, stat_cagr, stat_var
 
     def simulate(self, asset_revenue_per_year):
         years_min = min(asset_revenue_per_year.keys())
@@ -127,8 +126,8 @@ class Portfolio:
         self.stat_gain, \
             self.stat_stdev, \
             self.stat_cagr, \
-            self.stat_var, \
-            self.stat_sharpe = (sum(stat_values) / len(stats_per_year) for stat_values in zip(*stats_per_year))
+            self.stat_var = (sum(stat_values) / len(stats_per_year) for stat_values in zip(*stats_per_year))
+        self.stat_sharpe = self.stat_cagr / self.stat_stdev
 
     def simulated(self, asset_revenue_per_year):
         self.simulate(asset_revenue_per_year)
@@ -139,9 +138,9 @@ class Portfolio:
             self._named_stats = {
                 'Gain(x)': self.stat_gain,
                 'CAGR(%)': self.stat_cagr * 100,
-                'Sharpe': self.stat_sharpe,
                 'Variance': self.stat_var,
                 'Stdev': self.stat_stdev,
+                'Sharpe': self.stat_sharpe,
             }
         return self._named_stats[stat_name]
 
