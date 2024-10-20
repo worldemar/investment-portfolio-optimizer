@@ -103,7 +103,6 @@ class Portfolio:
             annual_gains.values()))
         self.stat_var /= len(annual_gains) - 1
         self.stat_sharpe = self.stat_cagr / self.stat_stdev
-        return self
 
     def simulated(self, asset_revenue_per_year):
         self.simulate(asset_revenue_per_year)

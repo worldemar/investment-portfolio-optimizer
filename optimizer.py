@@ -73,7 +73,7 @@ def main(argv):
         return
 
     static_portfolios_simulated = list(map(
-        partial(Portfolio.simulate, asset_revenue_per_year=market_yearly_revenue_multiplier),
+        partial(Portfolio.simulated, asset_revenue_per_year=market_yearly_revenue_multiplier),
         STATIC_PORTFOLIOS))
     logging.info('%d static portfolios will be plotted on all graphs', len(static_portfolios_simulated))
 
