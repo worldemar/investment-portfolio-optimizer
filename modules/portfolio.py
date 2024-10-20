@@ -176,7 +176,7 @@ class Portfolio:
             f'CAGR  : {self.stat_cagr * 100:.2f}%',
             f'VAR   : {self.stat_var:.3f}',
             f'STDEV : {self.stat_stdev:.3f}',
-            f'SHARP : {self.stat_sharpe:.3f}'  # nopep8
+            f'SHARP : {self.stat_sharpe:.3f}'
         ])
 
     def plot_circle_tooltip_assets(self):
