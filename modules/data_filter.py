@@ -12,7 +12,7 @@ from modules.data_source import DataStreamFinished
 
 class PortfolioXYTuplePoint(tuple):
     def __new__(cls, portfolio: Portfolio, coord_pair: tuple[str, str]):
-        return super().__new__(cls, (portfolio.get_stat(coord_pair[0]), portfolio.get_stat(coord_pair[1])))
+        return super().__new__(cls, (portfolio.stat[coord_pair[0]], portfolio.stat[coord_pair[1]]))
 
     def __init__(self, portfolio: Portfolio, coord_pair: tuple[str, str]):
         self._portfolio = portfolio

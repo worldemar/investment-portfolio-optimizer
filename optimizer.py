@@ -47,14 +47,14 @@ def main(argv):
     cmdline_args = _parse_args(argv)
     coords_tuples = [
         # Y, X
-        ('CAGR(%)', 'Variance'),
-        ('CAGR(%)', 'Stdev'),
-        ('CAGR(%)', 'Sharpe'),
-        ('Gain(x)', 'Variance'),
-        ('Gain(x)', 'Stdev'),
-        ('Gain(x)', 'Sharpe'),
-        ('Sharpe', 'Stdev'),
-        ('Sharpe', 'Variance'),
+        (Portfolio.STAT_CAGR_PERCENT, Portfolio.STAT_VARIANCE),
+        (Portfolio.STAT_CAGR_PERCENT, Portfolio.STAT_STDDEV),
+        (Portfolio.STAT_CAGR_PERCENT, Portfolio.STAT_SHARPE),
+        (Portfolio.STAT_GAIN, Portfolio.STAT_VARIANCE),
+        (Portfolio.STAT_GAIN, Portfolio.STAT_STDDEV),
+        (Portfolio.STAT_GAIN, Portfolio.STAT_SHARPE),
+        (Portfolio.STAT_SHARPE, Portfolio.STAT_STDDEV),
+        (Portfolio.STAT_SHARPE, Portfolio.STAT_VARIANCE),
     ]
 
     time_start = time.time()
