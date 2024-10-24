@@ -177,3 +177,32 @@ class Portfolio:
             'size': 100 if self.plot_always else 50 / self.number_of_assets(),
             'linewidth': 0.5 if self.plot_always else 1 / self.number_of_assets(),
         }
+
+if __name__ == '__main__':
+    import itertools
+    import random
+    import time
+
+    assets = ['AAPL', 'MSFT', 'GOOG', 'FB', 'AMZN']
+    gen_allocations = itertools.product(range(0, 101, 2), repeat=len(assets))
+    gen_allocations_sum_100 = filter(lambda x: sum(x) == 100, gen_allocations)
+    allocations = list(itertools.islice(gen_allocations_sum_100, 100000))
+    market_yearly_gain = {
+        year : [(1 + random.uniform(0.01, 0.05)) for _ in range(len(assets))] for year in range(2000, 2020)
+    }
+    print(f'PERFORMANCE: {len(allocations):d} allocations ready')
+    time_start = time.time()
+    total = 0
+    while True:
+        portfolio = Portfolio(weights=allocations[total], assets=assets)
+        portfolio.simulate(asset_gain_per_year=market_yearly_gain)
+        serialized = portfolio.serialize()
+        Portfolio.deserialize(serialized, assets)
+        total += 1
+        time_now = time.time()
+        if time_now - time_start > 10:
+            break
+    total_time = time.time() - time_start
+    total_rate = int(total / (time_now - time_start))
+    total_single_time = total_time / total
+    print(f'PERFORMANCE: {total_rate:d} portfolio/sec, {total_single_time*1000:.3f} msec/portfolio')
