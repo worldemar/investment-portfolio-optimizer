@@ -22,24 +22,31 @@ class PortfolioXYTuplePoint(tuple):
         return self._portfolio
 
 
-def multilayer_convex_hull(point_batch: list[PortfolioXYTuplePoint] = None, layers: int = 1):
+def multilayer_convex_hull(point_batch: list[PortfolioXYTuplePoint] = None, hull_layers: int = 1, edge_layers: int = 0):
     pyhull_convex_hull = import_module('pyhull.convex_hull').ConvexHull
     hull_layers_points = []
     self_hull_points = list(point_batch)
-    for _ in range(layers):
-        if len(self_hull_points) <= 3:
-            hull_layers_points.extend(self_hull_points)
-            break
-        hull = pyhull_convex_hull(self_hull_points)
-        hull_vertexes = set(vertex for hull_vertex in hull.vertices for vertex in hull_vertex)
-        hull_points = list(self_hull_points[vertex] for vertex in hull_vertexes)
-        if len(hull_points) > 0:
-            for hull_point in hull_points:
-                self_hull_points.remove(hull_point)
-                hull_layers_points.append(hull_point)
-        else:
-            hull_layers_points.extend(self_hull_points)
-    return hull_layers_points
+    if hull_layers > 0:
+        for _ in range(hull_layers):
+            if len(self_hull_points) <= 3:
+                hull_layers_points.extend(self_hull_points)
+                break
+            hull = pyhull_convex_hull(self_hull_points)
+            hull_vertexes = set(vertex for hull_vertex in hull.vertices for vertex in hull_vertex)
+            hull_points = list(self_hull_points[vertex] for vertex in hull_vertexes)
+            if len(hull_points) > 0:
+                for hull_point in hull_points:
+                    self_hull_points.remove(hull_point)
+                    hull_layers_points.append(hull_point)
+            else:
+                hull_layers_points.extend(self_hull_points)
+    else:
+        hull_layers_points = self_hull_points
+    if edge_layers > 0:
+        points_on_edge = [point for point in self_hull_points if point.portfolio().number_of_assets() <= edge_layers]
+    else:
+        points_on_edge = []
+    return hull_layers_points + points_on_edge
 
 
 def queue_multiplexer(

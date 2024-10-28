@@ -177,7 +177,7 @@ def mod_sort_reverse(_list: list) -> list:
 def test_multilayer_hull(points, hull_layers, modifier):
     points_shuffled = modifier(points)
     expected_points = [point for layer in hull_layers for point in layer]
-    hull_points = multilayer_convex_hull(points_shuffled, layers=len(hull_layers))
+    hull_points = multilayer_convex_hull(points_shuffled, hull_layers=len(hull_layers))
     expected_points.sort()
     hull_points.sort()
     assert hull_points == expected_points
