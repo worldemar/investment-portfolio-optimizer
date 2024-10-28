@@ -81,14 +81,6 @@ def main(argv):
         static_portfolios_aligned_to_market))
     logging.info('%d static portfolios will be plotted on all graphs', len(static_portfolios_simulated))
 
-    gen_edge_allocations = data_source.all_possible_allocations(len(market_assets), 100)
-    gen_edge_portfolios = map(
-        partial(Portfolio, assets=market_assets), gen_edge_allocations)
-    list_edge_simulateds = list(map(
-        partial(Portfolio.simulated, asset_gain_per_year=market_yearly_gain),
-        gen_edge_portfolios))
-    logging.info('%d edge portfolios will be plotted on all graphs', len(list_edge_simulateds))
-
     process_wait_list = []
 
     logging.info('+%.2fs :: preparing portfolio simulation data pipeline...', time.time() - time_start)
@@ -119,9 +111,10 @@ def main(argv):
             kwargs={
                 'assets': market_assets,
                 'source': coodr_pair_pipes[coord_pair]['source'],
-                'persistent_portfolios': list_edge_simulateds + static_portfolios_simulated,
+                'persistent_portfolios': static_portfolios_simulated,
                 'coord_pair': coord_pair,
                 'hull_layers': cmdline_args.hull,
+                'edge_layers': cmdline_args.edge,
                 'color_map': RGB_COLOR_MAP,
             }
         ))
