@@ -33,12 +33,19 @@ def _parse_args(argv=None):
         help='path to csv with asset returns')
     parser.add_argument(
         '--precision', type=int, default=10,
-        help='simulation precision')
+        help='simulation precision: plot portfolios that have assets allocated\n'
+             'to multiple of this percentage')
     parser.add_argument(
-        '--hull', type=int, default=1,
-        help='use hull algorithm to draw only given layers'
-             ' of portfolios, set to 0 to draw all portfolios'
-             '(not recommended, plots will be VERY heavy)')
+        '--hull', type=int, default=0,
+        help='filter portfolios: use hull algorithm to plot only given ConvexHull layers '
+             'of portfolios in coordinate space. Set to 0 (default) to disable filter.')
+    parser.add_argument(
+        '--edge', type=int, default=0,
+        help='filter portfolios: show edges of portfolio space '
+             'by adding all portfolios that have up to N assets to plots. '
+             'Set to 0 to disable filter (default). '
+             'Set to 1 to see pure portfolios (100%% of one asset). '
+             'Set to 2 to see edge lines connecting pure portfolios. ')
     return parser.parse_args()
 
 
@@ -47,14 +54,14 @@ def main(argv):
     cmdline_args = _parse_args(argv)
     coords_tuples = [
         # Y, X
-        ('CAGR(%)', 'Variance'),
-        ('CAGR(%)', 'Stdev'),
-        ('CAGR(%)', 'Sharpe'),
-        ('Gain(x)', 'Variance'),
-        ('Gain(x)', 'Stdev'),
-        ('Gain(x)', 'Sharpe'),
-        ('Sharpe', 'Stdev'),
-        ('Sharpe', 'Variance'),
+        (Portfolio.STAT_CAGR_PERCENT, Portfolio.STAT_VARIANCE),
+        (Portfolio.STAT_CAGR_PERCENT, Portfolio.STAT_STDDEV),
+        (Portfolio.STAT_CAGR_PERCENT, Portfolio.STAT_SHARPE),
+        (Portfolio.STAT_GAIN, Portfolio.STAT_VARIANCE),
+        (Portfolio.STAT_GAIN, Portfolio.STAT_STDDEV),
+        (Portfolio.STAT_GAIN, Portfolio.STAT_SHARPE),
+        (Portfolio.STAT_SHARPE, Portfolio.STAT_STDDEV),
+        (Portfolio.STAT_SHARPE, Portfolio.STAT_VARIANCE),
     ]
 
     time_start = time.time()
@@ -80,14 +87,6 @@ def main(argv):
         partial(Portfolio.simulated, asset_gain_per_year=market_yearly_gain),
         static_portfolios_aligned_to_market))
     logging.info('%d static portfolios will be plotted on all graphs', len(static_portfolios_simulated))
-
-    gen_edge_allocations = data_source.all_possible_allocations(len(market_assets), 100)
-    gen_edge_portfolios = map(
-        partial(Portfolio, assets=market_assets), gen_edge_allocations)
-    list_edge_simulateds = list(map(
-        partial(Portfolio.simulated, asset_gain_per_year=market_yearly_gain),
-        gen_edge_portfolios))
-    logging.info('%d edge portfolios will be plotted on all graphs', len(list_edge_simulateds))
 
     process_wait_list = []
 
@@ -119,9 +118,10 @@ def main(argv):
             kwargs={
                 'assets': market_assets,
                 'source': coodr_pair_pipes[coord_pair]['source'],
-                'persistent_portfolios': list_edge_simulateds + static_portfolios_simulated,
+                'persistent_portfolios': static_portfolios_simulated,
                 'coord_pair': coord_pair,
                 'hull_layers': cmdline_args.hull,
+                'edge_layers': cmdline_args.edge,
                 'color_map': RGB_COLOR_MAP,
             }
         ))

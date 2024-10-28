@@ -7,6 +7,12 @@ from math import sumprod as math_sumprod
 
 # pylint: disable=too-many-instance-attributes
 class Portfolio:
+    STAT_GAIN = 'Gain(x)'
+    STAT_CAGR_PERCENT = 'CAGR(%)'
+    STAT_VARIANCE = 'Variance'
+    STAT_STDDEV = 'Stddev'
+    STAT_SHARPE = 'Sharpe'
+
     @staticmethod
     def static_portfolio(allocation: dict[str, int]):
         assets = list(allocation.keys())
@@ -18,13 +24,8 @@ class Portfolio:
         self.plot_always = plot_always
         self.assets = assets
         self.weights = weights
-        self.stat_gain = -1
-        self.stat_stdev = -1
-        self.stat_cagr = -1
-        self.stat_var = -1
-        self.stat_sharpe = -1
+        self.stat = {}
         self._number_of_assets = None
-        self._named_stats = None
 
     def aligned_to_market(self, market_assets: list):
         assets = self.assets
@@ -39,33 +40,33 @@ class Portfolio:
     def deserialize_iter(serialized_data, assets: list[str]):
         for portfolio_unpack in struct.iter_unpack(f'5f{len(assets)}i', serialized_data):
             portfolio = Portfolio(assets=assets, weights=[])
-            portfolio.stat_gain, \
-                portfolio.stat_stdev, \
-                portfolio.stat_cagr, \
-                portfolio.stat_var, \
-                portfolio.stat_sharpe, \
+            portfolio.stat[Portfolio.STAT_GAIN], \
+                portfolio.stat[Portfolio.STAT_CAGR_PERCENT], \
+                portfolio.stat[Portfolio.STAT_VARIANCE], \
+                portfolio.stat[Portfolio.STAT_STDDEV], \
+                portfolio.stat[Portfolio.STAT_SHARPE], \
                 *portfolio.weights = portfolio_unpack
             yield portfolio
 
     @staticmethod
     def deserialize(serialized_data, assets: list[str]):
         portfolio = Portfolio(assets=assets, weights=[])
-        portfolio.stat_gain, \
-            portfolio.stat_stdev, \
-            portfolio.stat_cagr, \
-            portfolio.stat_var, \
-            portfolio.stat_sharpe, \
+        portfolio.stat[Portfolio.STAT_GAIN], \
+            portfolio.stat[Portfolio.STAT_CAGR_PERCENT], \
+            portfolio.stat[Portfolio.STAT_VARIANCE], \
+            portfolio.stat[Portfolio.STAT_STDDEV], \
+            portfolio.stat[Portfolio.STAT_SHARPE], \
             *portfolio.weights = struct.unpack(f'5f{len(assets)}i', serialized_data)
         return portfolio
 
     def serialize(self):
         return struct.pack(
             f'5f{len(self.assets)}i',
-            self.stat_gain,
-            self.stat_stdev,
-            self.stat_cagr,
-            self.stat_var,
-            self.stat_sharpe,
+            self.stat[Portfolio.STAT_GAIN],
+            self.stat[Portfolio.STAT_CAGR_PERCENT],
+            self.stat[Portfolio.STAT_VARIANCE],
+            self.stat[Portfolio.STAT_STDDEV],
+            self.stat[Portfolio.STAT_SHARPE],
             *self.weights,
         )
 
@@ -88,11 +89,12 @@ class Portfolio:
         return ''
 
     # pylint: disable=too-many-locals
-    def _simulate_y2y(self, asset_gain_per_year, year_start, year_end):
+    @staticmethod
+    def _simulate_y2y(allocation, asset_gain_per_year, year_start, year_end):
         annual_gains = []
         capital = 1
         for year in range(year_start, year_end + 1):
-            new_capital = capital * math_sumprod(asset_gain_per_year[year], self.weights) / 100
+            new_capital = capital * math_sumprod(asset_gain_per_year[year], allocation) / 100
             annual_gains.append(new_capital / capital)
             capital = new_capital
 
@@ -107,33 +109,25 @@ class Portfolio:
         years_max = max(asset_gain_per_year.keys())
 
         def simulate_from_year_to_now(year_start):
-            return self._simulate_y2y(
+            return Portfolio._simulate_y2y(
+                self.weights,
                 asset_gain_per_year=asset_gain_per_year,
                 year_start=year_start,
                 year_end=years_max
             )
 
         stats_per_year = list(map(simulate_from_year_to_now, range(years_min, years_max)))
-        self.stat_gain, \
-            self.stat_stdev, \
-            self.stat_cagr, \
-            self.stat_var = (sum(stat_values) / len(stats_per_year) for stat_values in zip(*stats_per_year))
-        self.stat_sharpe = self.stat_cagr / self.stat_stdev
+        self.stat[Portfolio.STAT_GAIN], \
+            self.stat[Portfolio.STAT_STDDEV], \
+            stat_cagr, \
+            self.stat[Portfolio.STAT_VARIANCE], \
+            = (sum(stat_values) / len(stats_per_year) for stat_values in zip(*stats_per_year))
+        self.stat[Portfolio.STAT_SHARPE] = stat_cagr / self.stat[Portfolio.STAT_STDDEV]
+        self.stat[Portfolio.STAT_CAGR_PERCENT] = stat_cagr * 100
 
     def simulated(self, asset_gain_per_year):
         self.simulate(asset_gain_per_year)
         return self
-
-    def get_stat(self, stat_name: str):
-        if self._named_stats is None:
-            self._named_stats = {
-                'Gain(x)': self.stat_gain,
-                'CAGR(%)': self.stat_cagr * 100,
-                'Variance': self.stat_var,
-                'Stdev': self.stat_stdev,
-                'Sharpe': self.stat_sharpe,
-            }
-        return self._named_stats[stat_name]
 
     def __repr__(self):
         weights_without_zeros = []
@@ -142,15 +136,7 @@ class Portfolio:
                 continue
             weights_without_zeros.append(f'{ticker}: {weight}%')
         str_weights = ' - '.join(weights_without_zeros)
-        return ' '.join([
-            f'GAIN={self.stat_gain:.3f}',
-            f'CAGR={self.stat_cagr * 100:.2f}%',
-            f'VAR={self.stat_var:.3f}',
-            f'STDEV={self.stat_stdev:.3f}',
-            f'SHARP={self.stat_sharpe:.3f}',
-            '::',
-            f'{str_weights}'
-        ])
+        return f'{self.stat} :: {str_weights}'
 
     def __weights_without_zeros(self):
         weights_without_zeros = []
@@ -161,13 +147,7 @@ class Portfolio:
         return weights_without_zeros
 
     def plot_circle_tooltip_stats(self):
-        return '\n'.join([
-            f'GAIN  : {self.stat_gain:.3f}',
-            f'CAGR  : {self.stat_cagr * 100:.2f}%',
-            f'VAR   : {self.stat_var:.3f}',
-            f'STDEV : {self.stat_stdev:.3f}',
-            f'SHARP : {self.stat_sharpe:.3f}'
-        ])
+        return '\n'.join([f'{key:8s}: {value:.3f}' for key, value in self.stat.items()])
 
     def plot_circle_tooltip_assets(self):
         return '\n'.join(self.__weights_without_zeros())
@@ -185,8 +165,8 @@ class Portfolio:
 
     def plot_circle_data(self, coord_pair: tuple[str, str], color_map: dict[str, tuple[int, int, int]]):
         return {
-            'x': self.get_stat(coord_pair[1]),
-            'y': self.get_stat(coord_pair[0]),
+            'x': self.stat[coord_pair[1]],
+            'y': self.stat[coord_pair[0]],
             'text': '\n'.join([
                 self.plot_circle_tooltip_assets(),
                 '—' * max(len(x) for x in self.plot_circle_tooltip_assets().split('\n')),

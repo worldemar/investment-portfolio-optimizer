@@ -18,6 +18,7 @@ def plotter_process_func(
         source: multiprocessing.connection.Connection = None,
         coord_pair: tuple[str, str] = None,
         hull_layers: int = None,
+        edge_layers: int = None,
         persistent_portfolios: list[Portfolio] = None,
         color_map: dict[str, tuple[int, int, int]] = None):
     batches_hulls_points = []
@@ -30,8 +31,8 @@ def plotter_process_func(
         batch_xy_points = map(
             functools.partial(data_filter.PortfolioXYTuplePoint, coord_pair=coord_pair), deserialized_portfolios)
         batches_hulls_points.extend(
-            data_filter.multilayer_convex_hull(batch_xy_points, hull_layers))
-    convex_hull_points = multilayer_convex_hull(batches_hulls_points, hull_layers)
+            data_filter.multilayer_convex_hull(batch_xy_points, hull_layers, edge_layers))
+    convex_hull_points = multilayer_convex_hull(batches_hulls_points, hull_layers, edge_layers)
 
     portfolios_for_plot = list(map(data_filter.PortfolioXYTuplePoint.portfolio, convex_hull_points))
     portfolios_for_plot.extend(persistent_portfolios)
