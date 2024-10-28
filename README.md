@@ -9,8 +9,8 @@ This simple script will simulate rebalancing portfolios with given set of assets
 
 - Install requirements via `python3 -m pip install -r requirements.txt`
 
-- Save market data into [asset_returns.csv](asset_returns.csv) file. Each row is one rebalancing period, each column is revenue from corresponding asset. Look at example file for details.
-- Open [asset_colors.py](asset_colors.py) and edit asset colors to your taste.
+- Save market data into [asset_returns.csv](config/asset_returns.csv) file. Each row is one rebalancing period, each column is revenue from corresponding asset. Look at example file for details.
+- Open [asset_colors.py](config/asset_colors.py) and edit asset colors to your taste.
 - Run `optimizer.py` with parameters:
   - `--precision=10` - Precision is specified in percent. Asset allocation will be stepped according to this value, i.e. each asset will be allocated by multiple of 10%.
   - `--hull=3` - Use ConvexHull algorithm to select only edge-case portfolios. This considerably speeds up plotting.
