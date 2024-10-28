@@ -33,12 +33,19 @@ def _parse_args(argv=None):
         help='path to csv with asset returns')
     parser.add_argument(
         '--precision', type=int, default=10,
-        help='simulation precision')
+        help='simulation precision: plot portfolios that have assets allocated\n'
+             'to multiple of this percentage')
     parser.add_argument(
-        '--hull', type=int, default=1,
-        help='use hull algorithm to draw only given layers'
-             ' of portfolios, set to 0 to draw all portfolios'
-             '(not recommended, plots will be VERY heavy)')
+        '--hull', type=int, default=0,
+        help='filter portfolios: use hull algorithm to plot only given ConvexHull layers '
+             'of portfolios in coordinate space. Set to 0 (default) to disable filter.')
+    parser.add_argument(
+        '--edge', type=int, default=0,
+        help='filter portfolios: show edges of portfolio space '
+             'by adding all portfolios that have up to N assets to plots. '
+             'Set to 0 to disable filter (default). '
+             'Set to 1 to see pure portfolios (100%% of one asset). '
+             'Set to 2 to see edge lines connecting pure portfolios. ')
     return parser.parse_args()
 
 
