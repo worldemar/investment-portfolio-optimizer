@@ -37,7 +37,7 @@ Then every portfolio is simulated through market history, rebalancing at every s
 If `--hull` is specified and is not zero, script will use ConvexHull algorithm to select only edge-case portfolios for each plot. Edge cases are calculated separately for each plot.
 
 ### Demo SVGs
-(You need to download them to enable interactivity)
+You need to download these SVGs to enable interactivity. Generated using `--precision=5 --hull=1 --edge=2`.
 
 <img src="./image-demos/cagr_variance.svg" width="50%"><img src="./image-demos/cagr_stdev.svg" width="50%">
 <img src="./image-demos/gain_sharpe.svg" width="50%"><img src="./image-demos/sharpe_variance.svg" width="50%">
