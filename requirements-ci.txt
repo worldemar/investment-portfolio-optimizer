@@ -1,6 +1,6 @@
 # these are not required to run the program
 # but required to run tests and ci checks
 pytest==8.3.3
-pytest-cov==5.0.0
+pytest-cov==6.0.0
 codecov==2.1.13
 prospector==1.12.1
