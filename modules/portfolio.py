@@ -91,13 +91,9 @@ class Portfolio:
     # pylint: disable=too-many-locals
     @staticmethod
     def _simulate_y2y(allocation, asset_gain_per_year, year_start, year_end):
-        annual_gains = []
-        capital = 1
-        for year in range(year_start, year_end + 1):
-            new_capital = capital * math_sumprod(asset_gain_per_year[year], allocation) / 100
-            annual_gains.append(new_capital / capital)
-            capital = new_capital
-
+        annual_gains = [
+            math_sumprod(asset_gain_per_year[year], allocation) / 100 for year in range(year_start, year_end + 1)
+        ]
         stat_gain = math_prod(annual_gains)
         stat_cagr = stat_gain ** (1 / len(annual_gains)) - 1
         stat_var = sum(map(lambda ag: (ag - stat_cagr - 1) ** 2, annual_gains)) / (len(annual_gains) - 1)
