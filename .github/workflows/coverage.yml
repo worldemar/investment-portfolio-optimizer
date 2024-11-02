@@ -26,7 +26,7 @@ jobs:
           pip install setuptools
       - name: Pytest
         run: |
-          pytest -vv --cov-report xml:coverage.xml
+          pytest -vv --cov=./ --cov-report xml:coverage.xml
       - name: Get Cover
         uses: orgoro/coverage@v3.2
         with:
