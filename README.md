@@ -1,5 +1,6 @@
 [![Prospector](https://github.com/worldemar/investment-portfolio-optimizer/actions/workflows/linter.yml/badge.svg)](https://github.com/worldemar/investment-portfolio-optimizer/actions/workflows/linter.yml)
 [![Code QL](https://github.com/worldemar/investment-portfolio-optimizer/actions/workflows/codeql.yml/badge.svg)](https://github.com/worldemar/investment-portfolio-optimizer/actions/workflows/codeql.yml)
+[![Coverage](https://github.com/worldemar/investment-portfolio-optimizer/actions/workflows/coverage.yml/badge.svg)](https://github.com/worldemar/investment-portfolio-optimizer/actions/workflows/coverage.yml)
 
 ### Investment portfolio optimizer
 
