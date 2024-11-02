@@ -9,6 +9,8 @@ on:
 
 jobs:
   coverage:
+    permissions:
+      pull-requests: write
     runs-on: windows-latest
     steps:
       - name: Checkout code
