@@ -28,8 +28,4 @@ jobs:
         pip install setuptools
     - name: Pytest
       run: |
-        pytest -vv --cov=./ --cov-report=xml
-    - name: Report code coverage
-      run: |
-        codecov
-  
+        pytest -vv
