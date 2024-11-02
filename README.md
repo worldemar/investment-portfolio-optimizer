@@ -9,16 +9,17 @@ This simple script will simulate rebalancing portfolios with given set of assets
 
 - Install requirements via `python3 -m pip install -r requirements.txt`
 
-- Save market data into [asset_returns.csv](config/asset_returns.csv) file. Each row is one rebalancing period, each column is revenue from corresponding asset. Look at example file for details.
-- Open [asset_colors.py](config/asset_colors.py) and edit asset colors to your taste.
+- Save market data into [config_returns.csv](config_returns.csv) file. Each row is one rebalancing period, each column is revenue from corresponding asset. Look at example file for details.
+- Open [config_colors.json](config_colors.json) and edit asset colors to your taste. Colors are defined by floating-point RGB values in range [0, 1].
+- Open [config_portfolios.json](config_portfolios.json) and add portfolios that you'd like to plot at all times, they will be marked with `X` on plots.
 - Run `optimizer.py` with parameters:
   - `--precision=10` - Precision is specified in percent. Asset allocation will be stepped according to this value, i.e. each asset will be allocated by multiple of 10%.
   - `--hull=3` - Use ConvexHull algorithm to select only edge-case portfolios. This considerably speeds up plotting.
-     In most cases these portfolios are most interesting anyway. This setting is 1 by default,
+     In most cases these portfolios are most interesting anyway.
      which is fastest, but does not plot too deep into portfolio cloud.
   - `--edge=2` - Use number of assets to select edge-case portfolios. 1 will plot only pure portfolios. 2 will plot portfolios having up to 2 assets and so on.
 
-Check SVG graphs in `result` folder for all portfolios performances.
+Check PNG and SVG graphs in `result` folder for all portfolios performances.
 
 ### What does it actually do?
 
@@ -37,6 +38,7 @@ Then every portfolio is simulated through market history, rebalancing at every s
 If `--hull` is specified and is not zero, script will use ConvexHull algorithm to select only edge-case portfolios for each plot. Edge cases are calculated separately for each plot.
 
 ### Demo SVGs
+
 You need to download these SVGs to enable interactivity. Generated using `--precision=5 --hull=1 --edge=2`.
 
 <img src="./image-demos/cagr_variance.svg" width="50%"><img src="./image-demos/cagr_stdev.svg" width="50%">

@@ -2,8 +2,9 @@
 
 import sys
 import time
-import argparse
+import json
 import logging
+import argparse
 from collections import deque
 from functools import partial
 from multiprocessing import Process
@@ -14,9 +15,6 @@ from modules import data_filter
 from modules.portfolio import Portfolio
 from modules.plotter import plotter_process_func
 from modules.simulator import simulator_process_func
-from config.asset_colors import RGB_COLOR_MAP
-from config.static_portfolios import STATIC_PORTFOLIOS
-from config.config import CHUNK_SIZE
 
 
 logging.basicConfig(
@@ -27,10 +25,8 @@ logging.basicConfig(
 
 
 def _parse_args(argv=None):
-    parser = argparse.ArgumentParser(argv)
-    parser.add_argument(
-        '--asset-returns-csv', default='config/asset_returns.csv',
-        help='path to csv with asset returns')
+    parser = argparse.ArgumentParser(
+        argv, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument(
         '--precision', type=int, default=10,
         help='simulation precision: plot portfolios that have assets allocated\n'
@@ -38,14 +34,26 @@ def _parse_args(argv=None):
     parser.add_argument(
         '--hull', type=int, default=0,
         help='filter portfolios: use hull algorithm to plot only given ConvexHull layers '
-             'of portfolios in coordinate space. Set to 0 (default) to disable filter.')
+             'of portfolios in coordinate space. Set to 0 to disable filter.')
     parser.add_argument(
         '--edge', type=int, default=0,
         help='filter portfolios: show edges of portfolio space '
              'by adding all portfolios that have up to N assets to plots. '
-             'Set to 0 to disable filter (default). '
+             'Set to 0 to disable filter. '
              'Set to 1 to see pure portfolios (100%% of one asset). '
              'Set to 2 to see edge lines connecting pure portfolios. ')
+    parser.add_argument(
+        '--config-colors', default='config_colors.json',
+        help='path to json with color map for assets')
+    parser.add_argument(
+        '--config-portfolios', default='config_portfolios.json',
+        help='path to json with static portfolios')
+    parser.add_argument(
+        '--config-returns', default='config_returns.csv',
+        help='path to csv with yearly returns for assets')
+    parser.add_argument(
+        '--chunk', type=int, default=2**16,
+        help='chunk size for data pipeline')
     return parser.parse_args()
 
 
@@ -67,22 +75,28 @@ def main(argv):
     time_start = time.time()
 
     market_assets, market_yearly_gain = \
-        data_source.read_capitalgain_csv_data(cmdline_args.asset_returns_csv)
+        data_source.read_capitalgain_csv_data(cmdline_args.config_returns)
+    with open(cmdline_args.config_colors, 'r', encoding='utf-8') as json_file:
+        config_colors = json.load(json_file)
+    with open(cmdline_args.config_portfolios, 'r', encoding='utf-8') as json_file:
+        config_portfolios = [
+            Portfolio.static_portfolio(portfolio) for portfolio in json.load(json_file)
+        ]
 
     num_errors = data_output.report_errors_in_portfolios(
-        portfolios=STATIC_PORTFOLIOS, tickers_to_test=market_assets, color_map=RGB_COLOR_MAP)
+        portfolios=config_portfolios, tickers_to_test=market_assets, color_map=config_colors)
     if num_errors > 0:
         logging.error('Found %d invalid static portfolios', num_errors)
         return
-    colored_assets = RGB_COLOR_MAP.keys()
+    colored_assets = config_colors.keys()
     if not all(ticker in colored_assets for ticker in market_assets):
-        logging.error('Some tickers in %s are not in RGB_COLOR_MAP: %s',
-                      cmdline_args.asset_returns_csv, set(market_assets) - set(RGB_COLOR_MAP.keys()))
+        logging.error('Some tickers in %s are not in config_colors: %s',
+                      cmdline_args.asset_returns_csv, set(market_assets) - set(config_colors.keys()))
         return
 
     static_portfolios_aligned_to_market = list(map(
         partial(Portfolio.aligned_to_market, market_assets=market_assets),
-        STATIC_PORTFOLIOS))
+        config_portfolios))
     static_portfolios_simulated = list(map(
         partial(Portfolio.simulated, asset_gain_per_year=market_yearly_gain),
         static_portfolios_aligned_to_market))
@@ -99,7 +113,7 @@ def main(argv):
             'percentage_step': cmdline_args.precision,
             'asset_gain_per_year': market_yearly_gain,
             'sink': simulated_sink,
-            'chunk_size': CHUNK_SIZE,
+            'chunk_size': cmdline_args.chunk,
         }
     ))
     coodr_pair_pipes = {
@@ -122,7 +136,7 @@ def main(argv):
                 'coord_pair': coord_pair,
                 'hull_layers': cmdline_args.hull,
                 'edge_layers': cmdline_args.edge,
-                'color_map': RGB_COLOR_MAP,
+                'color_map': config_colors,
             }
         ))
 

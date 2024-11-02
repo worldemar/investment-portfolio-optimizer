@@ -1,8 +1,0 @@
-{
-    "python.linting.prospectorArgs": [
-        "--profile=prospector.yaml"
-    ],
-    "cSpell.enableFiletypes": [
-        "!python"
-    ]
-}
