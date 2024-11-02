@@ -136,4 +136,7 @@ def main(argv):
 
 
 if __name__ == '__main__':
+    if sys.version_info <= (3, 12):
+        logging.error('Python 3.12 or higher required')
+        sys.exit(1)
     main(sys.argv)
