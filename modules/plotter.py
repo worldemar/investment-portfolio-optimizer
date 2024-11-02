@@ -8,7 +8,6 @@ from modules import data_source
 from modules.data_filter import multilayer_convex_hull
 from modules.data_output import draw_circles_with_tooltips
 from modules.portfolio import Portfolio
-from config.asset_colors import RGB_COLOR_MAP
 
 
 # pylint: disable=too-many-arguments
@@ -50,5 +49,5 @@ def plotter_process_func(
         title=f'{coord_pair[0]} vs {coord_pair[1]}',
         directory='result',
         filename=f'{coord_pair[0]} - {coord_pair[1]}',
-        asset_color_map=dict(RGB_COLOR_MAP),
+        asset_color_map=color_map,
     )
