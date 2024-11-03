@@ -12,13 +12,15 @@ This simple script will simulate rebalancing portfolios with given set of assets
 
 - Save market data into [config_returns.csv](config_returns.csv) file. Each row is one rebalancing period, each column is revenue from corresponding asset. Look at example file for details.
 - Open [config_colors.json](config_colors.json) and edit asset colors to your taste. Colors are defined by floating-point RGB values in range [0, 1].
-- Open [config_portfolios.json](config_portfolios.json) and add portfolios that you'd like to plot at all times, they will be marked with `X` on plots.
+- Open [config_portfolios.json](config_portfolios.json) and add portfolios that you'd like to plot at all times, they will be marked with an `X` on plots.
 - Run `optimizer.py` with parameters:
   - `--precision=10` - Precision is specified in percent. Asset allocation will be stepped according to this value, i.e. each asset will be allocated by multiple of 10%.
-  - `--hull=3` - Use ConvexHull algorithm to select only edge-case portfolios. This considerably speeds up plotting.
-     In most cases these portfolios are most interesting anyway.
-     which is fastest, but does not plot too deep into portfolio cloud.
-  - `--edge=2` - Use number of assets to select edge-case portfolios. 1 will plot only pure portfolios. 2 will plot portfolios having up to 2 assets and so on.
+  - `--hull=1` - Use ConvexHull algorithm to select only edge-case portfolios. This considerably speeds up plotting.
+     In most cases edge portfolios are most interesting anyway. `1` is the fastest, but does not plot too deep into portfolio cloud.
+    If cloud edge is not very well resolved, try higher values. More portfolios will be plotted at the cost of plotting speed.
+    Values higher than `3` are not very useful.
+  - `--edge=2` - Use number of assets to select edge-case portfolios. `1` will plot only pure portfolios, i.e. havnig only 1 asset. `2` will plot portfolios having up to 2 assets and so on.
+    Values higher than `3` are not very useful.
 
 Check PNG and SVG graphs in `result` folder for all portfolios performances.
 
@@ -36,7 +38,8 @@ Then every portfolio is simulated through market history, rebalancing at every s
 |  15%    |  -5%    | 0.236 + 15% = 0.2714   | 0.944 - 5% = 0.8968    | 0.2714 + 0.8968 = 1.1682   |
 |         |         | 1.1682 * 20% = 0.23364 | 1.1682 * 80% = 0.93456 | 1.1682 = 0.23364 + 0.93456 |
 
-If `--hull` is specified and is not zero, script will use ConvexHull algorithm to select only edge-case portfolios for each plot. Edge cases are calculated separately for each plot.
+If `--hull` is specified and is not zero, script will use ConvexHull algorithm to select only edge-case portfolios. Edge cases are calculated separately for each plot.
+If `--edge` is specified and is not zero, script will filter portfolios by number of assets, plotting only those that have specified number of them or less.
 
 ### Demo SVGs
 
