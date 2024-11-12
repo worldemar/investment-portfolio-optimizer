@@ -20,8 +20,6 @@ import itertools
 import pytest
 from modules import data_source
 
-_divizors_of_100 = [1, 2, 4, 5, 10, 20, 25, 50, 100]
-
 
 @pytest.mark.parametrize('assets_n, step',
     itertools.chain(
@@ -34,6 +32,11 @@ _divizors_of_100 = [1, 2, 4, 5, 10, 20, 25, 50, 100]
     )
 )
 def test_all_possible_allocations(assets_n: int, step: int):
+    def _expected_allocations(assets_n: int, step: int):
+        yield from filter(
+            lambda x: sum(x) == 100,
+            itertools.product(range(0, 101, step), repeat=assets_n))
+
     expected_allocations_gen = _expected_allocations(assets_n, step)
     expected_allocations = list(tuple(a) for a in expected_allocations_gen)
     expected_allocations.sort()
@@ -42,9 +45,3 @@ def test_all_possible_allocations(assets_n: int, step: int):
     test_allocations.sort()
     # must be strictly equivalent to filtered product
     assert test_allocations == expected_allocations
-
-
-def _expected_allocations(assets_n: int, step: int):
-    yield from filter(
-        lambda x: sum(x) == 100,
-        itertools.product(range(0, 101, step), repeat=assets_n))
