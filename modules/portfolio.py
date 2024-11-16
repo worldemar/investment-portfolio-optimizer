@@ -17,8 +17,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import struct
-import itertools
-import functools
+from functools import partial
 from math import prod as math_prod
 from math import sumprod as math_sumprod
 
@@ -119,21 +118,10 @@ class Portfolio:
         return stat_gain, stat_cagr, stat_var
 
     def simulate(self, year_range_selector_func, asset_gain_per_year):
-        def simulate_year_range(year_start, year_end):
-            return Portfolio._simulate_y2y(
-                self.weights,
-                asset_gain_per_year=asset_gain_per_year,
-                year_start=year_start,
-                year_end=year_end
-            )
-
         stats_per_year_range = list(map(
-            functools.partial(Portfolio._simulate_y2y,
+            partial(Portfolio._simulate_y2y,
                 allocation=self.weights,
-                asset_gain_per_year=asset_gain_per_year
-                # year_start=year_start,
-                # year_end=year_end
-            ),
+                asset_gain_per_year=asset_gain_per_year),
             year_range_selector_func(sorted(asset_gain_per_year.keys()))
         ))
         stat_gain, stat_cagr, stat_var = \

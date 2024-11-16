@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import functools
+import pytest
 from modules.portfolio import Portfolio
 from modules import data_filter
-import pytest
-import functools
 
 
 def test_portfolio_serialize():

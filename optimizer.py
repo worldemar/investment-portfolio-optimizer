@@ -80,7 +80,7 @@ def _parse_args(argv=None):
     parser.add_argument(
         '--years', choices=year_selectors.keys(),
         default=list(year_selectors.keys())[0],
-        help=', '.join(['Select year ranges to average simulation data from'] + \
+        help=', '.join(['Select year ranges to average simulation data from'] +
             [f'{opt} - {func.__doc__}' for opt, func in year_selectors.items()])
     )
 
