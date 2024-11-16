@@ -21,6 +21,15 @@ This simple script will simulate rebalancing portfolios with given set of assets
     Values higher than `3` are not very useful.
   - `--edge=2` - Use number of assets to select edge-case portfolios. `1` will plot only pure portfolios, i.e. havnig only 1 asset. `2` will plot portfolios having up to 2 assets and so on.
     Values higher than `3` are not very useful.
+  - `--years=...` - specify year selection algorithm:
+    - `first-to-last` - simulate single investment from first to last year in data
+    - `first-to-all` - average of investments from starting year to all later years
+    - `window-3` - average of all possible 3-year-long investment ranges
+    - `window-5` - average of all possible 5-year-long investment ranges
+    - `window-10` - average of all possible 10-year-long investment ranges
+    - `window-20` - average of all possible 20-year-long investment ranges
+    - `all-to-last` - average of investments from all years to last year
+    - `all-to-all` - average of all possible investment ranges regardless of length
 
 Check PNG and SVG graphs in `result` folder for all portfolios performances.
 
