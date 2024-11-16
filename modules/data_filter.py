@@ -82,3 +82,33 @@ def queue_multiplexer(
             futures_wait(send_tasks)
     for sink in sinks:
         sink.send_bytes(bytes_from_pipe)
+
+
+def years_first_to_last(years: list):
+    '''Simulate from first year to last'''
+    yield years[0], years[-1]
+
+
+def years_first_to_all(years: list):
+    '''Simulate from first year to all years after'''
+    for i in range(1, len(years)):
+        yield years[0], years[i]
+
+
+def years_sliding_window(years: list, window_size: int):
+    '''Simulate all possible periods of N years'''
+    for i in range(len(years) - window_size):
+        yield years[i],years[i + window_size]
+
+
+def years_all_to_last(years: list):
+    '''Simulate from all years to last'''
+    for i in range(len(years) - 1):
+        yield years[i], years[-1]
+
+
+def years_all_to_all(years: list):
+    '''Simulate from all to all years'''
+    for idx_from in range(len(years) - 1):
+        for idx_to in range(idx_from + 1, len(years)):
+            yield years[idx_from], years[idx_to]
