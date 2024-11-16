@@ -22,7 +22,7 @@ import json
 import logging
 import argparse
 from collections import deque
-from functools import partial
+from functools import partial, update_wrapper
 from multiprocessing import Process
 from multiprocessing import Pipe
 from modules import data_output
@@ -41,6 +41,20 @@ logging.basicConfig(
 
 
 def _parse_args(argv=None):
+    year_selectors = {
+        'first-to-last': data_filter.years_first_to_last,
+        'first-to-all': data_filter.years_first_to_all,
+        'window-3': partial(data_filter.years_sliding_window, window_size=3),
+        'window-5': partial(data_filter.years_sliding_window, window_size=5),
+        'window-10': partial(data_filter.years_sliding_window, window_size=10),
+        'window-20': partial(data_filter.years_sliding_window, window_size=20),
+        'all-to-last': data_filter.years_all_to_last,
+        'all-to-all': data_filter.years_all_to_all,
+    }
+    update_wrapper(year_selectors['window-3'], data_filter.years_sliding_window)
+    update_wrapper(year_selectors['window-5'], data_filter.years_sliding_window)
+    update_wrapper(year_selectors['window-10'], data_filter.years_sliding_window)
+    update_wrapper(year_selectors['window-20'], data_filter.years_sliding_window)
     parser = argparse.ArgumentParser(
         argv,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -64,6 +78,13 @@ def _parse_args(argv=None):
              'Set to 1 to see pure portfolios (100%% of one asset). '
              'Set to 2 to see edge lines connecting pure portfolios. ')
     parser.add_argument(
+        '--years', choices=year_selectors.keys(),
+        default=list(year_selectors.keys())[0],
+        help=', '.join(['Select year ranges to average simulation data from'] +
+            [f'{opt} - {func.__doc__}' for opt, func in year_selectors.items()])
+    )
+
+    parser.add_argument(
         '--config-colors', default='config_colors.json',
         help='path to json with color map for assets')
     parser.add_argument(
@@ -75,7 +96,9 @@ def _parse_args(argv=None):
     parser.add_argument(
         '--chunk', type=int, default=2**16,
         help='chunk size for data pipeline')
-    return parser.parse_args()
+    args = parser.parse_args()
+    args.years = year_selectors[args.years]
+    return args
 
 
 # pylint: disable=too-many-locals
@@ -119,7 +142,9 @@ def main(argv):
         partial(Portfolio.aligned_to_market, market_assets=market_assets),
         config_portfolios))
     static_portfolios_simulated = list(map(
-        partial(Portfolio.simulated, asset_gain_per_year=market_yearly_gain),
+        partial(Portfolio.simulated,
+                year_range_selector_func=cmdline_args.years,
+                asset_gain_per_year=market_yearly_gain),
         static_portfolios_aligned_to_market))
     logging.info('%d static portfolios will be plotted on all graphs', len(static_portfolios_simulated))
 
@@ -132,6 +157,7 @@ def main(argv):
         kwargs={
             'assets': market_assets,
             'percentage_step': cmdline_args.precision,
+            'year_range_selector_func': cmdline_args.years,
             'asset_gain_per_year': market_yearly_gain,
             'sink': simulated_sink,
             'chunk_size': cmdline_args.chunk,

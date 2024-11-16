@@ -22,12 +22,16 @@ import logging
 from functools import partial
 import multiprocessing.connection
 from concurrent.futures import ProcessPoolExecutor
+from collections.abc import Callable
 from modules import data_source
 
 
+# pylint: disable=too-many-arguments
+# pylint: disable=too-many-positional-arguments
 def simulator_process_func(
         assets: list = None,
         percentage_step: int = None,
+        year_range_selector_func: Callable = None,
         asset_gain_per_year: dict[str, dict[str, float]] = None,
         sink: multiprocessing.connection.Connection = None,
         chunk_size: int = 1):
@@ -42,6 +46,7 @@ def simulator_process_func(
             slice_size=allocations_per_core,
             assets=assets,
             percentage_step=percentage_step,
+            year_range_selector_func=year_range_selector_func,
             asset_gain_per_year=asset_gain_per_year,
             sink=sink,
             chunk_size=chunk_size)

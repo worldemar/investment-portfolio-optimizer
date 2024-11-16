@@ -63,7 +63,8 @@ def all_possible_allocations(assets_n: int, step: int):
 # pylint: disable=too-many-positional-arguments
 def allocation_slice_simulate_and_feed_to_sink(
         slice_idx, slice_size,
-        assets, percentage_step, asset_gain_per_year,
+        assets, percentage_step,
+        year_range_selector_func, asset_gain_per_year,
         sink, chunk_size):
     portfolios_sent = 0
     with ThreadPoolExecutor() as thread_executor:
@@ -73,7 +74,9 @@ def allocation_slice_simulate_and_feed_to_sink(
             partial(Portfolio, assets=assets),
             gen_slice_allocations)
         gen_simulateds = map(
-            partial(Portfolio.simulated, asset_gain_per_year=asset_gain_per_year),
+            partial(Portfolio.simulated,
+                    year_range_selector_func=year_range_selector_func,
+                    asset_gain_per_year=asset_gain_per_year),
             gen_portfolios)
         gen_serializations = map(Portfolio.serialize, gen_simulateds)
         send_task = None
