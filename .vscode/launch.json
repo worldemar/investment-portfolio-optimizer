@@ -13,30 +13,13 @@
             "env": {
                 "PYDEVD_DISABLE_FILE_VALIDATION" : "1",
             },
-            "args": ["--precision=5", "--hull=1", "--edge=2", "--years=all-to-last"]
-        },
-        {
-            "name": "Debug: Plot demo",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "modules/plot.py",
-            "console": "integratedTerminal",
-            "args": []
-        },
-        {
-            "name": "Debug: investfunds_converter",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "investfunds_converter.py",
-            "console": "integratedTerminal",
-            "args": []
-        },
-        {
-            "name": "Performance test",
-            "type": "debugpy",
-            "request": "launch",
-            "program": "austin.py",
-            "console": "integratedTerminal",
+            "args": [
+                "--precision=5",
+                "--hull=1",
+                "--edge=2",
+                "--years=all-to-last",
+                "--plot-dir=result"
+            ]
         },
     ]
 }
