@@ -28,6 +28,7 @@ from modules.portfolio import Portfolio
 
 # pylint: disable=too-many-arguments
 # pylint: disable=too-many-positional-arguments
+# pylint: disable=too-many-locals
 def plotter_process_func(
         assets: list[str],
         source: multiprocessing.connection.Connection = None,
