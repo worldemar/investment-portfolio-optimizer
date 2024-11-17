@@ -94,6 +94,9 @@ def _parse_args(argv=None):
         '--config-returns', default='config_returns.csv',
         help='path to csv with yearly returns for assets')
     parser.add_argument(
+        '--plot-dir', default='result',
+        help='path to directory ta save plots')
+    parser.add_argument(
         '--chunk', type=int, default=2**16,
         help='chunk size for data pipeline')
     args = parser.parse_args()
@@ -184,6 +187,7 @@ def main(argv):
                 'hull_layers': cmdline_args.hull,
                 'edge_layers': cmdline_args.edge,
                 'color_map': config_colors,
+                'plots_directory': cmdline_args.plot_dir,
             }
         ))
 

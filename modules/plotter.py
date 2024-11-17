@@ -35,7 +35,8 @@ def plotter_process_func(
         hull_layers: int = None,
         edge_layers: int = None,
         persistent_portfolios: list[Portfolio] = None,
-        color_map: dict[str, tuple[int, int, int]] = None):
+        color_map: dict[str, tuple[int, int, int]] = None,
+        plots_directory: str = None):
     batches_hulls_points = []
     data_stream_end_pickle = pickle.dumps(data_source.DataStreamFinished())
     while True:
@@ -63,7 +64,7 @@ def plotter_process_func(
         xlabel=coord_pair[1],
         ylabel=coord_pair[0],
         title=f'{coord_pair[0]} vs {coord_pair[1]}',
-        directory='result',
+        directory=plots_directory,
         filename=f'{coord_pair[0]} - {coord_pair[1]}',
         asset_color_map=color_map,
     )
