@@ -58,7 +58,7 @@ def _parse_args(argv=None):
     parser = argparse.ArgumentParser(
         argv,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        epilog=''.join([
+        epilog=', '.join([
             'Investment Portfolio Optimizer',
             'Copyright (C) 2024  Vladimir Looze'
         ]))
@@ -73,14 +73,14 @@ def _parse_args(argv=None):
     parser.add_argument(
         '--edge', type=int, default=0,
         help='filter portfolios: show edges of portfolio space '
-             'by adding all portfolios that have up to N assets to plots. '
-             'Set to 0 to disable filter. '
-             'Set to 1 to see pure portfolios (100%% of one asset). '
-             'Set to 2 to see edge lines connecting pure portfolios. ')
+             'by plotting portfolios having up to N assets allocated, '
+             '-- Set to 0 to disable filter (will plot a lot, slow). '
+             '-- Set to 1 to see pure portfolios (one asset = 100%%). '
+             '-- Set to 2 to see lines connecting pure portfolios. ')
     parser.add_argument(
         '--years', choices=year_selectors.keys(),
         default=list(year_selectors.keys())[0],
-        help=', '.join(['Select year ranges to average simulation data from'] +
+        help=' '.join(['Select year ranges to average simulation data from'] +
             [f'{opt} - {func.__doc__}' for opt, func in year_selectors.items()])
     )
 

@@ -85,30 +85,30 @@ def queue_multiplexer(
 
 
 def years_first_to_last(years: list):
-    '''Simulate from first year to last'''
+    '''single range, first year to last year'''
     yield years[0], years[-1]
 
 
 def years_first_to_all(years: list):
-    '''Simulate from first year to all years after'''
+    '''from first year to all later years'''
     for i in range(1, len(years)):
         yield years[0], years[i]
 
 
 def years_sliding_window(years: list, window_size: int):
-    '''Simulate all possible periods of N years'''
+    '''all possible ranges of specified N years'''
     for i in range(len(years) - window_size):
         yield years[i],years[i + window_size]
 
 
 def years_all_to_last(years: list):
-    '''Simulate from all years to last'''
+    '''all possible ranges ending at last year'''
     for i in range(len(years) - 1):
         yield years[i], years[-1]
 
 
 def years_all_to_all(years: list):
-    '''Simulate from all to all years'''
+    '''all possible year ranges (min 2 years)'''
     for idx_from in range(len(years) - 1):
         for idx_to in range(idx_from + 1, len(years)):
             yield years[idx_from], years[idx_to]
