@@ -129,7 +129,8 @@ class Portfolio:
         self.stat[Portfolio.STAT_GAIN] = stat_gain
         self.stat[Portfolio.STAT_VARIANCE] = stat_var
         self.stat[Portfolio.STAT_STDDEV] = stat_var ** 0.5
-        self.stat[Portfolio.STAT_SHARPE] = stat_cagr / self.stat[Portfolio.STAT_STDDEV] if self.stat[Portfolio.STAT_STDDEV] else 0
+        self.stat[Portfolio.STAT_SHARPE] = \
+            stat_cagr / self.stat[Portfolio.STAT_STDDEV] if self.stat[Portfolio.STAT_STDDEV] else 0
         self.stat[Portfolio.STAT_CAGR_PERCENT] = stat_cagr * 100
 
     def simulated(self, year_range_selector_func, asset_gain_per_year):
