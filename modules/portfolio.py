@@ -138,7 +138,7 @@ class Portfolio:
 
     def __repr__(self):
         weights_without_zeros = []
-        for ticker, weight in self.weights.items():
+        for ticker, weight in zip(self.assets, self.weights):
             if weight == 0:
                 continue
             weights_without_zeros.append(f'{ticker}: {weight}%')
