@@ -3,4 +3,4 @@
 pytest==8.3.4
 pytest-cov==6.0.0
 codecov==2.1.13
-prospector==1.14.1
+prospector==1.15.0
