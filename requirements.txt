@@ -1,2 +1,2 @@
-matplotlib==3.10.0
+matplotlib==3.10.1
 pyhull==2015.2.1
