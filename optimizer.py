@@ -151,9 +151,11 @@ def main(argv):
 
     static_portfolios = config_portfolios
     if cmdline_args.min:
-        static_portfolios.append(Portfolio.autoallocation_portfolio(allocation_func=min, color=[1,0,0,1], label='Minimum gain'))
+        static_portfolios.append(
+            Portfolio.autoallocation_portfolio(allocation_func=min, color=[1,0,0,1], label='Minimum gain'))
     if cmdline_args.max:
-        static_portfolios.append(Portfolio.autoallocation_portfolio(allocation_func=max, color=[0,1,0,1], label='Maximum gain'))
+        static_portfolios.append(
+            Portfolio.autoallocation_portfolio(allocation_func=max, color=[0,1,0,1], label='Maximum gain'))
 
     static_portfolios_aligned_to_market = list(map(
         partial(Portfolio.aligned_to_market, market_assets=market_assets),
