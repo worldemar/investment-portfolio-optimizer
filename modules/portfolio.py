@@ -37,12 +37,14 @@ class Portfolio:
         return Portfolio(assets=assets, weights=weights, plot_always=True, plot_marker='X')
 
     @staticmethod
-    def autoallocation_portfolio(plot_marker='s', allocation_func=None, color=[0, 0, 0, 1], label=''):
+    def autoallocation_portfolio(plot_marker='s', allocation_func=None, color=None, label=''):
         return Portfolio(
             weights=[], assets=[],
             plot_always=True, plot_marker=plot_marker, color=color, label=label,
             allocation_func=allocation_func)
 
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-positional-arguments
     def __init__(self,
                  weights: list[int], assets: list[str],
                  plot_always=False, plot_marker='o', color=None, label='',
@@ -124,9 +126,6 @@ class Portfolio:
         year_start, year_end = year_range
         annual_gains = [
             math_sumprod(asset_gain_per_year[year], allocation) / 100 for year in range(year_start, year_end + 1)
-        ]
-        annual_max_gains = [
-            max(asset_gain_per_year[year]) for year in range(year_start, year_end + 1)
         ]
         stat_gain = math_prod(annual_gains)
         stat_cagr = stat_gain ** (1 / len(annual_gains)) - 1
