@@ -18,7 +18,9 @@
                 "--hull=1",
                 "--edge=2",
                 "--years=all-to-last",
-                "--plot-dir=result"
+                "--plot-dir=result",
+                // "--min",
+                // "--max",
             ]
         },
     ]

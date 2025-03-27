@@ -78,6 +78,14 @@ def _parse_args(argv=None):
              '-- Set to 1 to see pure portfolios (one asset = 100%%). '
              '-- Set to 2 to see lines connecting pure portfolios. ')
     parser.add_argument(
+        '--min', action='store_true',
+        help='plot theoretical portfolio that uses asset with minimum CAGR '
+             'every year. Plotted as red square. ')
+    parser.add_argument(
+        '--max', action='store_true',
+        help='plot theoretical portfolio that uses asset with maximum CAGR '
+             'every year. Plotted as green square. ')
+    parser.add_argument(
         '--years', choices=year_selectors.keys(),
         default=list(year_selectors.keys())[0],
         help=' '.join(['Select year ranges to average simulation data from'] +
@@ -141,9 +149,15 @@ def main(argv):
                       cmdline_args.asset_returns_csv, set(market_assets) - set(config_colors.keys()))
         return
 
+    static_portfolios = config_portfolios
+    if cmdline_args.min:
+        static_portfolios.append(Portfolio.autoallocation_portfolio(allocation_func=min, color=[1,0,0,1], label='Minimum gain'))
+    if cmdline_args.max:
+        static_portfolios.append(Portfolio.autoallocation_portfolio(allocation_func=max, color=[0,1,0,1], label='Maximum gain'))
+
     static_portfolios_aligned_to_market = list(map(
         partial(Portfolio.aligned_to_market, market_assets=market_assets),
-        config_portfolios))
+        static_portfolios))
     static_portfolios_simulated = list(map(
         partial(Portfolio.simulated,
                 year_range_selector_func=cmdline_args.years,

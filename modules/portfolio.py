@@ -36,13 +36,26 @@ class Portfolio:
         weights = list(allocation.values())
         return Portfolio(assets=assets, weights=weights, plot_always=True, plot_marker='X')
 
-    def __init__(self, weights: list[int], assets: list[str], plot_always=False, plot_marker='o'):
+    @staticmethod
+    def autoallocation_portfolio(plot_marker='s', allocation_func=None, color=[0, 0, 0, 1], label=''):
+        return Portfolio(
+            weights=[], assets=[],
+            plot_always=True, plot_marker=plot_marker, color=color, label=label,
+            allocation_func=allocation_func)
+
+    def __init__(self,
+                 weights: list[int], assets: list[str],
+                 plot_always=False, plot_marker='o', color=None, label='',
+                 allocation_func=None):
         self.plot_marker = plot_marker
         self.plot_always = plot_always
         self.assets = assets
         self.weights = weights
         self.stat = {}
         self._number_of_assets = None
+        self._allocation_func = allocation_func
+        self._base_color = color
+        self._label = label
 
     def aligned_to_market(self, market_assets: list):
         assets = self.assets
@@ -112,18 +125,41 @@ class Portfolio:
         annual_gains = [
             math_sumprod(asset_gain_per_year[year], allocation) / 100 for year in range(year_start, year_end + 1)
         ]
+        annual_max_gains = [
+            max(asset_gain_per_year[year]) for year in range(year_start, year_end + 1)
+        ]
+        stat_gain = math_prod(annual_gains)
+        stat_cagr = stat_gain ** (1 / len(annual_gains)) - 1
+        stat_var = sum(map(lambda ag: (ag - stat_cagr - 1) ** 2, annual_gains)) / (len(annual_gains) - 1)
+        return stat_gain, stat_cagr, stat_var
+
+    # pylint: disable=too-many-locals
+    @staticmethod
+    def _simulate_y2y_allocation_func(year_range, allocation_func, asset_gain_per_year):
+        year_start, year_end = year_range
+        annual_gains = [
+            allocation_func(asset_gain_per_year[year]) for year in range(year_start, year_end + 1)
+        ]
         stat_gain = math_prod(annual_gains)
         stat_cagr = stat_gain ** (1 / len(annual_gains)) - 1
         stat_var = sum(map(lambda ag: (ag - stat_cagr - 1) ** 2, annual_gains)) / (len(annual_gains) - 1)
         return stat_gain, stat_cagr, stat_var
 
     def simulate(self, year_range_selector_func, asset_gain_per_year):
-        stats_per_year_range = list(map(
-            partial(Portfolio._simulate_y2y,
-                allocation=self.weights,
-                asset_gain_per_year=asset_gain_per_year),
-            year_range_selector_func(sorted(asset_gain_per_year.keys()))
-        ))
+        if self._allocation_func:
+            stats_per_year_range = list(map(
+                partial(Portfolio._simulate_y2y_allocation_func,
+                    allocation_func=self._allocation_func,
+                    asset_gain_per_year=asset_gain_per_year),
+                year_range_selector_func(sorted(asset_gain_per_year.keys()))
+            ))
+        else:
+            stats_per_year_range = list(map(
+                partial(Portfolio._simulate_y2y,
+                    allocation=self.weights,
+                    asset_gain_per_year=asset_gain_per_year),
+                year_range_selector_func(sorted(asset_gain_per_year.keys()))
+            ))
         stat_gain, stat_cagr, stat_var = \
             (sum(stat_values) / len(stats_per_year_range) for stat_values in zip(*stats_per_year_range))
         self.stat[Portfolio.STAT_GAIN] = stat_gain
@@ -161,7 +197,9 @@ class Portfolio:
         return '\n'.join(self.__weights_without_zeros())
 
     def plot_circle_color(self, color_map):
-        color = [0, 0, 0, 1]
+        color = self._base_color
+        if color is None:
+            color = [0, 0, 0, 1]
         for ticker, weight in zip(self.assets, self.weights):
             if ticker in color_map:
                 color[0] = color[0] + color_map[ticker][0] * weight / 100
@@ -172,14 +210,22 @@ class Portfolio:
         return (color[0] / max(color), color[1] / max(color), color[2] / max(color))
 
     def plot_circle_data(self, coord_pair: tuple[str, str], color_map: dict[str, tuple[int, int, int]]):
+        if self._label:
+            text = '\n'.join([
+                self._label,
+                '—' * len(self._label),
+                self.plot_circle_tooltip_stats()
+            ])
+        else:
+            text = '\n'.join([
+                self.plot_circle_tooltip_assets(),
+                '—' * max(len(x) for x in self.plot_circle_tooltip_assets().split('\n')),
+                self.plot_circle_tooltip_stats()
+            ])
         return {
             'x': self.stat[coord_pair[1]],
             'y': self.stat[coord_pair[0]],
-            'text': '\n'.join([
-                self.plot_circle_tooltip_assets(),
-                '—' * max(len(x) for x in self.plot_circle_tooltip_assets().split('\n')),
-                self.plot_circle_tooltip_stats(),
-            ]),
+            'text': text,
             'marker': self.plot_marker,
             'color': self.plot_circle_color(color_map),
             'size': 100 if self.plot_always else 50 / self.number_of_assets(),

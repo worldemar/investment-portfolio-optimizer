@@ -30,6 +30,8 @@ This simple script will simulate rebalancing portfolios with given set of assets
     - `window-20` - average of all possible 20-year-long investment ranges
     - `all-to-last` - average of investments from all years to last year
     - `all-to-all` - average of all possible investment ranges regardless of length
+  - `--min` - Plot theoretical portfolio that allocates only one asset with worst GAGR every year
+  - `--max` - Plot theoretical portfolio that allocates only one asset with best GAGR every year
 
 Check PNG and SVG graphs in `result` folder for all portfolios performances.
 
