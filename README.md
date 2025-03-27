@@ -16,7 +16,7 @@ This simple script will simulate rebalancing portfolios with given set of assets
 - Run `optimizer.py` with parameters:
   - `--precision=10` - Precision is specified in percent. Asset allocation will be stepped according to this value, i.e. each asset will be allocated by multiple of 10%.
   - `--hull=1` - Use ConvexHull algorithm to select only edge-case portfolios. This considerably speeds up plotting.
-     In most cases edge portfolios are most interesting anyway. `1` is the fastest, but does not plot too deep into portfolio cloud.
+    In most cases edge portfolios are most interesting anyway. `1` is the fastest, but does not plot too deep into portfolio cloud.
     If cloud edge is not very well resolved, try higher values. More portfolios will be plotted at the cost of plotting speed.
     Values higher than `3` are not very useful.
   - `--edge=2` - Use number of assets to select edge-case portfolios. `1` will plot only pure portfolios, i.e. havnig only 1 asset. `2` will plot portfolios having up to 2 assets and so on.
