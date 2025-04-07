@@ -25,6 +25,8 @@ from math import sumprod as math_sumprod
 # pylint: disable=too-many-instance-attributes
 class Portfolio:
     STAT_GAIN = 'Gain(x)'
+    STAT_POP_PERCENT = 'Pop(%)'
+    STAT_DIP_PERCENT = 'Dip(%)'
     STAT_CAGR_PERCENT = 'CAGR(%)'
     STAT_VARIANCE = 'Variance'
     STAT_STDDEV = 'Stddev'
@@ -70,9 +72,11 @@ class Portfolio:
 
     @staticmethod
     def deserialize_iter(serialized_data, assets: list[str]):
-        for portfolio_unpack in struct.iter_unpack(f'5f{len(assets)}i', serialized_data):
+        for portfolio_unpack in struct.iter_unpack(f'7f{len(assets)}i', serialized_data):
             portfolio = Portfolio(assets=assets, weights=[])
             portfolio.stat[Portfolio.STAT_GAIN], \
+                portfolio.stat[Portfolio.STAT_POP_PERCENT], \
+                portfolio.stat[Portfolio.STAT_DIP_PERCENT], \
                 portfolio.stat[Portfolio.STAT_CAGR_PERCENT], \
                 portfolio.stat[Portfolio.STAT_VARIANCE], \
                 portfolio.stat[Portfolio.STAT_STDDEV], \
@@ -84,17 +88,21 @@ class Portfolio:
     def deserialize(serialized_data, assets: list[str]):
         portfolio = Portfolio(assets=assets, weights=[])
         portfolio.stat[Portfolio.STAT_GAIN], \
+            portfolio.stat[Portfolio.STAT_POP_PERCENT], \
+            portfolio.stat[Portfolio.STAT_DIP_PERCENT], \
             portfolio.stat[Portfolio.STAT_CAGR_PERCENT], \
             portfolio.stat[Portfolio.STAT_VARIANCE], \
             portfolio.stat[Portfolio.STAT_STDDEV], \
             portfolio.stat[Portfolio.STAT_SHARPE], \
-            *portfolio.weights = struct.unpack(f'5f{len(assets)}i', serialized_data)
+            *portfolio.weights = struct.unpack(f'7f{len(assets)}i', serialized_data)
         return portfolio
 
     def serialize(self):
         return struct.pack(
-            f'5f{len(self.assets)}i',
+            f'7f{len(self.assets)}i',
             self.stat[Portfolio.STAT_GAIN],
+            self.stat[Portfolio.STAT_POP_PERCENT],
+            self.stat[Portfolio.STAT_DIP_PERCENT],
             self.stat[Portfolio.STAT_CAGR_PERCENT],
             self.stat[Portfolio.STAT_VARIANCE],
             self.stat[Portfolio.STAT_STDDEV],
@@ -128,9 +136,13 @@ class Portfolio:
             math_sumprod(asset_gain_per_year[year], allocation) / 100 for year in range(year_start, year_end + 1)
         ]
         stat_gain = math_prod(annual_gains)
+        stat_pop = max(annual_gains)
+        stat_pop = stat_pop - 1 if stat_pop > 1 else 0
+        stat_dip = min(annual_gains)
+        stat_dip = stat_dip - 1 if stat_dip < 1 else 0
         stat_cagr = stat_gain ** (1 / len(annual_gains)) - 1
         stat_var = sum(map(lambda ag: (ag - stat_cagr - 1) ** 2, annual_gains)) / (len(annual_gains) - 1)
-        return stat_gain, stat_cagr, stat_var
+        return stat_gain, stat_pop, stat_dip, stat_cagr, stat_var
 
     # pylint: disable=too-many-locals
     @staticmethod
@@ -140,9 +152,13 @@ class Portfolio:
             allocation_func(asset_gain_per_year[year]) for year in range(year_start, year_end + 1)
         ]
         stat_gain = math_prod(annual_gains)
+        stat_pop = max(annual_gains)
+        stat_pop = stat_pop - 1 if stat_pop > 1 else 0
+        stat_dip = min(annual_gains)
+        stat_dip = stat_dip - 1 if stat_dip < 1 else 0
         stat_cagr = stat_gain ** (1 / len(annual_gains)) - 1
         stat_var = sum(map(lambda ag: (ag - stat_cagr - 1) ** 2, annual_gains)) / (len(annual_gains) - 1)
-        return stat_gain, stat_cagr, stat_var
+        return stat_gain, stat_pop, stat_dip, stat_cagr, stat_var
 
     def simulate(self, year_range_selector_func, asset_gain_per_year):
         if self._allocation_func:
@@ -159,9 +175,11 @@ class Portfolio:
                     asset_gain_per_year=asset_gain_per_year),
                 year_range_selector_func(sorted(asset_gain_per_year.keys()))
             ))
-        stat_gain, stat_cagr, stat_var = \
+        stat_gain, stat_pop, stat_dip, stat_cagr, stat_var = \
             (sum(stat_values) / len(stats_per_year_range) for stat_values in zip(*stats_per_year_range))
         self.stat[Portfolio.STAT_GAIN] = stat_gain
+        self.stat[Portfolio.STAT_POP_PERCENT] = stat_pop * 100
+        self.stat[Portfolio.STAT_DIP_PERCENT] = stat_dip * 100
         self.stat[Portfolio.STAT_VARIANCE] = stat_var
         self.stat[Portfolio.STAT_STDDEV] = stat_var ** 0.5
         self.stat[Portfolio.STAT_SHARPE] = \
