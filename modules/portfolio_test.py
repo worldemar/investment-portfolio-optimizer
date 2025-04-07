@@ -29,6 +29,8 @@ def test_portfolio_serialize():
         weights=[10, 40, 50],
     )
     portfolio.stat[Portfolio.STAT_GAIN] = 0.12345
+    portfolio.stat[Portfolio.STAT_POP_PERCENT] = 0.54321
+    portfolio.stat[Portfolio.STAT_DIP_PERCENT] = 0.67890
     portfolio.stat[Portfolio.STAT_STDDEV] = 0.23456
     portfolio.stat[Portfolio.STAT_CAGR_PERCENT] = 0.34567
     portfolio.stat[Portfolio.STAT_VARIANCE] = 0.45678
@@ -38,6 +40,10 @@ def test_portfolio_serialize():
     deserialized = Portfolio.deserialize(serialized, assets=portfolio.assets)
     assert portfolio.stat[Portfolio.STAT_GAIN] - \
         deserialized.stat[Portfolio.STAT_GAIN] < epsilon
+    assert portfolio.stat[Portfolio.STAT_POP_PERCENT] - \
+        deserialized.stat[Portfolio.STAT_POP_PERCENT] < epsilon
+    assert portfolio.stat[Portfolio.STAT_DIP_PERCENT] - \
+        deserialized.stat[Portfolio.STAT_DIP_PERCENT] < epsilon
     assert portfolio.stat[Portfolio.STAT_STDDEV] - \
         deserialized.stat[Portfolio.STAT_STDDEV] < epsilon
     assert portfolio.stat[Portfolio.STAT_CAGR_PERCENT] - \
@@ -58,6 +64,8 @@ def test_portfolio_serialize_batch():
             weights=[100 - i, i, 0],
         )
         portfolio.stat[Portfolio.STAT_GAIN] = 0.12345 * i
+        portfolio.stat[Portfolio.STAT_POP_PERCENT] = 0.54321 * i
+        portfolio.stat[Portfolio.STAT_DIP_PERCENT] = 0.67890 * i
         portfolio.stat[Portfolio.STAT_STDDEV] = 0.23456 * i
         portfolio.stat[Portfolio.STAT_CAGR_PERCENT] = 0.34567 * i
         portfolio.stat[Portfolio.STAT_VARIANCE] = 0.45678 * i
@@ -69,6 +77,10 @@ def test_portfolio_serialize_batch():
     for i in range(100):
         assert portfolios[i].stat[Portfolio.STAT_GAIN] - \
             deserialized[i].stat[Portfolio.STAT_GAIN] < epsilon
+        assert portfolios[i].stat[Portfolio.STAT_POP_PERCENT] - \
+            deserialized[i].stat[Portfolio.STAT_POP_PERCENT] < epsilon
+        assert portfolios[i].stat[Portfolio.STAT_DIP_PERCENT] - \
+            deserialized[i].stat[Portfolio.STAT_DIP_PERCENT] < epsilon
         assert portfolios[i].stat[Portfolio.STAT_STDDEV] - \
             deserialized[i].stat[Portfolio.STAT_STDDEV] < epsilon
         assert portfolios[i].stat[Portfolio.STAT_CAGR_PERCENT] - \

@@ -52,6 +52,26 @@ Then every portfolio is simulated through market history, rebalancing at every s
 If `--hull` is specified and is not zero, script will use ConvexHull algorithm to select only edge-case portfolios. Edge cases are calculated separately for each plot.
 If `--edge` is specified and is not zero, script will filter portfolios by number of assets, plotting only those that have specified number of them or less.
 
+### Notes on averaging
+
+Some graphs display `Pop` and `Dip` values for portfolios, meaning largest yearly gain and largest yearly loss.
+Since year selection algorithm could select more than one year, these values are averaged among all investment periods.
+For example, consider two 3-year investment periods for asset within 4-year market data:
+| Year | Asset1 | 3y-period 1 | 3y-period 2 |
+| ---- | ------ | ----------- | ----------- |
+| 2000 |  -10%  | ✅ | |
+| 2001 | 10%    | ✅ | ✅ |
+| 2002 | 10%    | ✅ | ✅ |
+| 2003 | -5%    | | ✅ |
+
+Two periods have largest dip of `-10%` and `-5%` respectively. If there were no dips (all gains are positive), largest dip is considered equal to `0%`.
+|             | 3y-period 1 | 3y-period 2 |
+| ----------- | ----------- | ----------- |
+| Largest Dip | -10%        | -5%         |
+
+Since there are two periods, **average largest dip** is `(-10% + -5%)/2 = -7.5%`
+That is not the same as `10%` which is the largest dip overall, but expected largest dip in a random 3-year period within this year range.
+
 ### Demo SVGs
 
 You need to download these SVGs to enable interactivity. Generated using `--precision=5 --hull=1 --edge=2`.
