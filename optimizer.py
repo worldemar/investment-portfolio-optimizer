@@ -158,7 +158,7 @@ def main(argv):
     colored_assets = config_colors.keys()
     if not all(ticker in colored_assets for ticker in market_assets):
         logging.error('Some tickers in %s are not in config_colors: %s',
-                      cmdline_args.asset_returns_csv, set(market_assets) - set(config_colors.keys()))
+                      cmdline_args.config_returns, set(market_assets) - set(config_colors.keys()))
         return
 
     static_portfolios = config_portfolios

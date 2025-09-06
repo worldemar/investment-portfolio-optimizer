@@ -132,8 +132,10 @@ class Portfolio:
     @staticmethod
     def _simulate_y2y(year_range, allocation, asset_gain_per_year):
         year_start, year_end = year_range
+        years_list = list(asset_gain_per_year.keys())
+        years_range = years_list[years_list.index(year_start):years_list.index(year_end) + 1]
         annual_gains = [
-            math_sumprod(asset_gain_per_year[year], allocation) / 100 for year in range(year_start, year_end + 1)
+            math_sumprod(asset_gain_per_year[year], allocation) / 100 for year in years_range
         ]
         stat_gain = math_prod(annual_gains)
         stat_pop = max(annual_gains)
@@ -148,8 +150,10 @@ class Portfolio:
     @staticmethod
     def _simulate_y2y_allocation_func(year_range, allocation_func, asset_gain_per_year):
         year_start, year_end = year_range
+        years_list = list(asset_gain_per_year.keys())
+        years_range = years_list[years_list.index(year_start):years_list.index(year_end) + 1]
         annual_gains = [
-            allocation_func(asset_gain_per_year[year]) for year in range(year_start, year_end + 1)
+            allocation_func(asset_gain_per_year[year]) for year in years_range
         ]
         stat_gain = math_prod(annual_gains)
         stat_pop = max(annual_gains)

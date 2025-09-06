@@ -100,9 +100,9 @@ def read_capitalgain_csv_data(filename):
     assets = rows[0][1:]
     for row in rows[1:]:
         if row[0] not in yearly_gain:
-            yearly_gain[int(row[0])] = [0] * len(assets)
+            yearly_gain[str(row[0])] = [0] * len(assets)
         for i in range(1, len(row)):
-            yearly_gain[int(row[0])][i - 1] = \
+            yearly_gain[str(row[0])][i - 1] = \
                 float(row[i].replace('%', '')) / 100 + 1
     return assets, yearly_gain
 
