@@ -1,0 +1,16 @@
+[
+    ["stock", "shares", "TQTF", "AKME"],
+    ["stock", "shares", "TQTF", "TMOS"],
+    ["stock", "shares", "TQTF", "SBMX"],
+    ["stock", "shares", "TQTF", "EQMX"],
+    ["stock", "shares", "TQTF", "LQDT"],
+    ["stock", "shares", "TQTF", "GOLD"],
+    ["currency", "selt", "CETS", "GLDRUB_TOM"],
+    ["currency", "selt", "CETS", "SLVRUB_TOM"],
+    ["stock", "bonds", "TQOB", "SU52002RMFS1"],
+    ["stock", "bonds", "TQOB", "SU52003RMFS9"],
+    ["stock", "bonds", "TQOB", "SU52004RMFS7"],
+    ["stock", "bonds", "TQOB", "SU52005RMFS4"],
+    ["stock", "index", "SNDX", "IMOEX"],
+    ["stock", "index", "MMIX", "RUSFAR"]
+]
