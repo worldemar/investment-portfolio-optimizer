@@ -160,3 +160,5 @@ cython_debug/
 #.idea/
 
 result/*
+config_colors.json
+config_portfolios.json
