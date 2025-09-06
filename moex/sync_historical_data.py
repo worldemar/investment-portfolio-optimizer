@@ -97,8 +97,9 @@ def main(argv):
                 if ticker in monthly_returns[month]:
                     row.append(monthly_returns[month][ticker])
                 else:
-                    row.append('None')
-            f.write(",".join(row) + "\n")
+                    row.append(None)
+            if None not in row:
+                f.write(",".join(row) + "\n")
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
