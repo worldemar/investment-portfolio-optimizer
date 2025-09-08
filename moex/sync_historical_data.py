@@ -64,16 +64,7 @@ def parse_args(argv):
     return parser.parse_args(argv[1:])
 
 
-# pylint: disable=too-many-locals
-# pylint: disable=too-many-branches
-def main(argv):
-    args = parse_args(argv)
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s :: %(levelname)s :: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S")
-    tickers_settings = load_ticker_settings()
-    # sync all tickers
+def sync_all_tickers(args, tickers_settings):
     for ticker_setting in tickers_settings:
         logging.info("Processing ticker: %s", ticker_setting["security"])
         # pylint: disable=consider-using-f-string
@@ -81,17 +72,18 @@ def main(argv):
         if not args.sync and os.path.exists(filename):
             candles = candles_load(filename, ticker_setting["market"] != "index")
             last_candle_date = sorted(candles, key=lambda x: x["end_datetime"])[-1]["end_datetime"].date()
-            logging.info("- Last candle date for %s is %s", ticker_setting["security"], last_candle_date)
             if last_candle_date >= datetime.now().date():
                 logging.info("- Data for %s is up to date: %s", ticker_setting["security"], last_candle_date)
                 continue
-        logging.info("- Syncing data for %s", ticker_setting["security"])
+            logging.info("- Data for %s is outdated: %s", ticker_setting["security"], last_candle_date)
+        logging.info("- Syncing data from MOEX for %s", ticker_setting["security"])
         ticker_data_str = sync_ticker_data(ticker_setting)
         with open(filename, "w", encoding="utf-8", newline="") as f:
             f.write(ticker_data_str)
         logging.info("- Saved to File: %s", filename)
-    # generate csv with returns per month
-    ticker_list = [ticker_setting["security"] for ticker_setting in tickers_settings]
+
+
+def compute_monthly_returns(tickers_settings: list[dict[str, str]]):
     monthly_returns = {}
     for ticker_setting in tickers_settings:
         # pylint: disable=consider-using-f-string
@@ -110,8 +102,13 @@ def main(argv):
                 if month_str not in monthly_returns:
                     monthly_returns[month_str] = {}
                 monthly_returns[month_str][ticker_setting["security"]] = f"{returns_percent:.2f}%"
-    with open("monthly_returns.csv", "w", encoding="utf-8", newline="") as f:
+    return monthly_returns
+
+
+def write_csv(filename: str, ticker_list: list[str], monthly_returns: dict[str, dict[str, str]]):
+    with open(filename, "w", encoding="utf-8", newline="") as f:
         f.write("month," + ",".join(ticker_list) + "\n")
+        history_limited_by = None
         for month in sorted(monthly_returns.keys()):
             row = [month]
             for ticker in ticker_list:
@@ -119,8 +116,24 @@ def main(argv):
                     row.append(monthly_returns[month][ticker])
                 else:
                     row.append(None)
+                    history_limited_by = ticker
             if None not in row:
                 f.write(",".join(row) + "\n")
+    if history_limited_by is not None:
+        logging.info("Returns history limited by ticker: %s", history_limited_by)
+
+
+def main(argv):
+    args = parse_args(argv)
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s :: %(levelname)s :: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S")
+    tickers_settings = load_ticker_settings()
+    ticker_list = [ticker_setting["security"] for ticker_setting in tickers_settings]
+    sync_all_tickers(args, tickers_settings)
+    monthly_returns = compute_monthly_returns(tickers_settings)
+    write_csv("monthly_returns.csv", ticker_list, monthly_returns)
 
 
 if __name__ == "__main__":
