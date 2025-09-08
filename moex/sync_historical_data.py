@@ -112,6 +112,7 @@ def main(argv):
                 monthly_returns[month_str][ticker_setting["security"]] = f"{returns_percent:.2f}%"
     with open("monthly_returns.csv", "w", encoding="utf-8", newline="") as f:
         f.write("month," + ",".join(ticker_list) + "\n")
+        history_limited_by = None
         for month in sorted(monthly_returns.keys()):
             row = [month]
             for ticker in ticker_list:
@@ -119,8 +120,11 @@ def main(argv):
                     row.append(monthly_returns[month][ticker])
                 else:
                     row.append(None)
+                    history_limited_by = ticker
             if None not in row:
                 f.write(",".join(row) + "\n")
+    if history_limited_by is not None:
+        logging.info("Returns history limited by ticker: %s", history_limited_by)
 
 
 if __name__ == "__main__":
