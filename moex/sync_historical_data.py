@@ -101,7 +101,7 @@ def compute_monthly_returns(tickers_settings: list[dict[str, str]]):
             if returns_percent is not None:
                 if month_str not in monthly_returns:
                     monthly_returns[month_str] = {}
-                monthly_returns[month_str][ticker_setting["security"]] = f"{returns_percent:.2f}%"
+                monthly_returns[month_str][ticker_setting["security"]] = f"{returns_percent:.4f}%"
     return monthly_returns
 
 
