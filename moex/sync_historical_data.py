@@ -72,10 +72,10 @@ def sync_all_tickers(args, tickers_settings):
         if not args.sync and os.path.exists(filename):
             candles = candles_load(filename, ticker_setting["market"] != "index")
             last_candle_date = sorted(candles, key=lambda x: x["end_datetime"])[-1]["end_datetime"].date()
-            logging.info("- Last candle date for %s is %s", ticker_setting["security"], last_candle_date)
             if last_candle_date >= datetime.now().date():
                 logging.info("- Data for %s is up to date: %s", ticker_setting["security"], last_candle_date)
                 continue
+            logging.info("- Data for %s is outdated: %s", ticker_setting["security"], last_candle_date)
         logging.info("- Syncing data from MOEX for %s", ticker_setting["security"])
         ticker_data_str = sync_ticker_data(ticker_setting)
         with open(filename, "w", encoding="utf-8", newline="") as f:
