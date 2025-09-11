@@ -31,6 +31,7 @@ from modules import data_filter
 from modules.portfolio import Portfolio
 from modules.plotter import plotter_process_func
 from modules.simulator import simulator_process_func
+from modules.colors import ticker_color
 
 
 logging.basicConfig(
@@ -150,15 +151,14 @@ def main(argv):
             Portfolio.static_portfolio(portfolio) for portfolio in json.load(json_file)
         ]
 
+    colored_assets = {}
+    for ticker in market_assets:
+        colored_assets[ticker] = config_colors.get(ticker, ticker_color(ticker))
+
     num_errors = data_output.report_errors_in_portfolios(
-        portfolios=config_portfolios, tickers_to_test=market_assets, color_map=config_colors)
+        portfolios=config_portfolios, tickers_to_test=market_assets, color_map=colored_assets)
     if num_errors > 0:
         logging.error('Found %d invalid static portfolios', num_errors)
-        return
-    colored_assets = config_colors.keys()
-    if not all(ticker in colored_assets for ticker in market_assets):
-        logging.error('Some tickers in %s are not in config_colors: %s',
-                      cmdline_args.config_returns, set(market_assets) - set(config_colors.keys()))
         return
 
     static_portfolios = config_portfolios
@@ -214,7 +214,7 @@ def main(argv):
                 'coord_pair': coord_pair,
                 'hull_layers': cmdline_args.hull,
                 'edge_layers': cmdline_args.edge,
-                'color_map': config_colors,
+                'color_map': colored_assets,
                 'plots_directory': cmdline_args.plot_dir,
             }
         ))
