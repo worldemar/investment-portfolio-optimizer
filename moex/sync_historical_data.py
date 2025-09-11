@@ -51,6 +51,7 @@ def sync_ticker_data(ticker_settings: dict[str, str]):
     request_settings["till_date"] = "2050-12-31"
     request_settings["interval"] = MOEX_API_INTERVALS["month"]
     formatted_url = MOEX_API_URL_TEMPLATE.format(**request_settings)
+    logging.info("- retrieving URL: %s", formatted_url)
     response = requests.get(url=formatted_url, timeout=15)
     return response.text
 
@@ -109,6 +110,7 @@ def write_csv(filename: str, ticker_list: list[str], monthly_returns: dict[str, 
     with open(filename, "w", encoding="utf-8", newline="") as f:
         f.write("month," + ",".join(ticker_list) + "\n")
         history_limited_by = None
+        history_limited_at = None
         for month in sorted(monthly_returns.keys()):
             row = [month]
             for ticker in ticker_list:
@@ -117,10 +119,11 @@ def write_csv(filename: str, ticker_list: list[str], monthly_returns: dict[str, 
                 else:
                     row.append(None)
                     history_limited_by = ticker
+                    history_limited_at = month
             if None not in row:
                 f.write(",".join(row) + "\n")
     if history_limited_by is not None:
-        logging.info("Returns history limited by ticker: %s", history_limited_by)
+        logging.info("Returns history limited by ticker %s to %s", history_limited_by, history_limited_at)
 
 
 def main(argv):

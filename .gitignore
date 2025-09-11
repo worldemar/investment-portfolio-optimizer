@@ -159,7 +159,15 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+# backtest result images
 result/*
-config_colors.json
-config_portfolios.json
+
+# configs
+config_*.json
+# YoY returns data
 config_returns.csv
+
+# configs
+moex/*.json
+# import result
+moex/*.csv
