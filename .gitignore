@@ -163,3 +163,4 @@ result/*
 config_colors.json
 config_portfolios.json
 config_returns.csv
+moex/*.json
