@@ -21,6 +21,7 @@
                 // "--years=all-to-all",
                 "--plot-dir=result",
                 "--config-returns=config_returns.csv"
+                // "--config-returns=moex/monthly_returns.csv",
                 // "--min",
                 // "--max",
             ]
