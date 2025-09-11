@@ -51,6 +51,7 @@ def sync_ticker_data(ticker_settings: dict[str, str]):
     request_settings["till_date"] = "2050-12-31"
     request_settings["interval"] = MOEX_API_INTERVALS["month"]
     formatted_url = MOEX_API_URL_TEMPLATE.format(**request_settings)
+    logging.info("- retrieving URL: %s", formatted_url)
     response = requests.get(url=formatted_url, timeout=15)
     return response.text
 
