@@ -1,0 +1,69 @@
+# JSON не поддерживает комментарии, не копируйте строки с комментариями в вашу конфигурацию
+[
+    # Фонды, список тут https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/
+    # Тут выбраны торгуемые, у которых СЧА более 100кк и комиссия не выше 1%
+    # с помощью https://rusetfs.com/screener?assetsUnderManagement.min=100000000&commisionPercent.max=1.0&tradingStatus=Torguetsya
+    ["stock", "shares", "TQTF", "LQDT"],
+    ["stock", "shares", "TQTF", "SBMM"],
+    ["stock", "shares", "TQTF", "AKMM"],
+    ["stock", "shares", "TQTF", "BCSD"],
+    ["stock", "shares", "TQTF", "TPAY"],
+    ["stock", "shares", "TQTF", "SBMX"],
+    ["stock", "shares", "TQTF", "GOLD"],
+    ["stock", "shares", "TQTF", "TMOS"],
+    ["stock", "shares", "TQTF", "EQMX"],
+    ["stock", "shares", "TQTF", "TLCB"],
+    ["stock", "shares", "TQTF", "SBRB"],
+    ["stock", "shares", "TQTF", "CASH"],
+    ["stock", "shares", "TQTF", "OBLG"],
+    ["stock", "shares", "TQTF", "CNYM"],
+    ["stock", "shares", "TQTF", "AMNY"],
+    ["stock", "shares", "TQTF", "SBLB"],
+    ["stock", "shares", "TQTF", "FMMM"],
+    ["stock", "shares", "TQTF", "SBGB"],
+    ["stock", "shares", "TQTF", "INGO"],
+    ["stock", "shares", "TQTF", "PSMM"],
+    ["stock", "shares", "TQTF", "SBFR"],
+    ["stock", "shares", "TQTF", "SBCS"],
+    ["stock", "shares", "TQTF", "SBCN"],
+    ["stock", "shares", "TQTF", "AMGB"],
+    ["stock", "shares", "TQTF", "AMFL"],
+    ["stock", "shares", "TQTF", "TUSD"],
+    ["stock", "shares", "TQTF", "DIVD"],
+    ["stock", "shares", "TQTF", "INFL"],
+    ["stock", "shares", "TQTF", "BOND"],
+    ["stock", "shares", "TQTF", "TEUR"],
+    ["stock", "shares", "TQTF", "RSHU"],
+    ["stock", "shares", "TQTF", "SUGB"],
+    ["stock", "shares", "TQTF", "AMRE"],
+    ["stock", "shares", "TQTF", "SCLI"],
+    ["stock", "shares", "TQTF", "YUAN"],
+    ["stock", "shares", "TQTF", "GROD"],
+    ["stock", "shares", "TQTF", "SBRI"],
+    ["stock", "shares", "TQTF", "MKBD"],
+    ["stock", "shares", "TQTF", "ESGE"],
+    ["stock", "shares", "TQTF", "BCSR"],
+    ["stock", "shares", "TQTF", "GOOD"],
+
+    # Валюта, список тут https://iss.moex.com/iss/engines/currency/markets/selt/boards/CETS/securities/
+    ["currency", "selt", "CETS", "GLDRUB_TOM"],
+    ["currency", "selt", "CETS", "SLVRUB_TOM"],
+    ["currency", "selt", "CETS", "USDRUB_TMS"],
+    ["currency", "selt", "CETS", "CNYRUB_TOM"],
+
+    # Облигации, список тут https://iss.moex.com/iss/engines/stock/markets/bonds/boards/TQOB/securities/
+    ["stock", "bonds", "TQOB", "SU52002RMFS1"],
+    ["stock", "bonds", "TQOB", "SU52003RMFS9"],
+    ["stock", "bonds", "TQOB", "SU52004RMFS7"],
+    ["stock", "bonds", "TQOB", "SU52005RMFS4"],
+
+    # Индексы, список досок тут https://iss.moex.com/iss/engines/stock/markets/index/boards/
+    # индексы на досках:
+    # https://iss.moex.com/iss/engines/stock/markets/index/boards/SNDX/securities/
+    # https://iss.moex.com/iss/engines/stock/markets/index/boards/RTSI/securities/
+    # https://iss.moex.com/iss/engines/stock/markets/index/boards/MMIX/securities/
+    ["stock", "index", "SNDX", "IMOEX"],
+    ["stock", "index", "SNDX", "RGBITR"],
+    ["stock", "index", "RTSI", "MCFTRR"],
+    ["stock", "index", "MMIX", "RUSFAR"]
+]
