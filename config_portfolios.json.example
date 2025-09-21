@@ -4,8 +4,20 @@
     { "Серебро": 50, "Золото": 50 },
     { "Акции РФ": 34, "ОПИФ российских облигаций": 33, "Золото": 33 },
     { "Акции РФ": 34, "ОПИФ российских облигаций": 34, "Золото": 16, "Серебро": 16 },
+
     { "TMOS": 33, "EQMX": 34, "SBMX": 33 },
     { "TMOS": 25, "EQMX": 25, "SBMX": 25, "GOLD": 25 },
     { "TMOS": 20, "EQMX": 20, "SBMX": 20, "GLDRUB_TOM": 20, "SLVRUB_TOM": 20 },
     { "TMOS": 12, "EQMX": 12, "SBMX": 12, "SU52002RMFS1": 8, "SU52003RMFS9": 8, "SU52004RMFS7": 8, "SU52005RMFS4": 8, "GOLD": 32 }
+    {"TMOS": 60, "TGLD": 40},
+    {"TMOS": 60, "AKME": 20, "TGLD": 20},
+
+    # index portfolios
+    { "IMOEX": 34, "GLDRUB_TOM": 33, "RGBITR": 33 },
+    { "IMOEX": 33, "GLDRUB_TOM": 34, "RGBITR": 33 },
+    { "IMOEX": 33, "GLDRUB_TOM": 33, "RGBITR": 34 },
+    { "IMOEX": 60, "GLDRUB_TOM": 40, "RGBITR": 0 },
+    { "IMOEX": 55, "GLDRUB_TOM": 35, "RGBITR": 10 },
+    { "IMOEX": 50, "GLDRUB_TOM": 40, "RGBITR": 10 },
+    { "IMOEX": 60, "GLDRUB_TOM": 30, "RGBITR": 10 }
 ]
