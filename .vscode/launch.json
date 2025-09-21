@@ -17,11 +17,13 @@
                 "--precision=5",
                 "--hull=1",
                 "--edge=2",
-                "--years=all-to-last",
+                // "--years=all-to-last",
                 // "--years=all-to-all",
+                "--years=window-10",
                 "--plot-dir=result",
-                "--config-returns=config_returns.csv"
+                // "--config-returns=config_returns.csv"
                 // "--config-returns=moex/monthly_returns.csv",
+                "--config-returns=simulated/yearly_returns.csv",
                 // "--min",
                 // "--max",
             ]
@@ -40,5 +42,19 @@
                 // "--sync",
             ]
         },
+        {
+            "name": "Debug: Simulated market",
+            "type": "debugpy",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/simulated",
+            "program": "simulate_data.py",
+            "console": "integratedTerminal",
+            "env": {
+                "PYDEVD_DISABLE_FILE_VALIDATION" : "1",
+            },
+            "args": [
+                // "--sync",
+            ]
+        }
     ]
 }
