@@ -64,6 +64,10 @@
     # https://iss.moex.com/iss/engines/stock/markets/index/boards/MMIX/securities/
     ["stock", "index", "SNDX", "IMOEX"],
     ["stock", "index", "SNDX", "RGBITR"],
+    ["stock", "index", "SNDX", "MESMTR"],
+    ["stock", "index", "SNDX", "RUCBITR"],
     ["stock", "index", "RTSI", "MCFTRR"],
+    ["stock", "index", "RTSI", "MEBCTR"],
+    ["stock", "index", "RTSI", "RUGBINFTR"],
     ["stock", "index", "MMIX", "RUSFAR"]
 ]
