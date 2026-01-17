@@ -17,8 +17,8 @@
                 "--precision=5",
                 "--hull=1",
                 "--edge=2",
-                "--years=all-to-last",
-                // "--years=all-to-all",
+                // "--years=all-to-last",
+                "--years=all-to-all",
                 "--plot-dir=result",
                 "--config-returns=config_returns.csv"
                 // "--config-returns=moex/monthly_returns.csv",
