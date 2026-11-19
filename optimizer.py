@@ -138,6 +138,13 @@ def main(argv):
         (Portfolio.STAT_DIP_PERCENT, Portfolio.STAT_VARIANCE),
         (Portfolio.STAT_DIP_PERCENT, Portfolio.STAT_STDDEV),
         (Portfolio.STAT_DIP_PERCENT, Portfolio.STAT_SHARPE),
+        (Portfolio.STAT_CAGR_PERCENT, Portfolio.STAT_ULCER_PERCENT),
+        (Portfolio.STAT_GAIN, Portfolio.STAT_ULCER_PERCENT),
+        (Portfolio.STAT_SHARPE, Portfolio.STAT_ULCER_PERCENT),
+        (Portfolio.STAT_POP_PERCENT, Portfolio.STAT_ULCER_PERCENT),
+        (Portfolio.STAT_ULCER_PERCENT, Portfolio.STAT_VARIANCE),
+        (Portfolio.STAT_ULCER_PERCENT, Portfolio.STAT_STDDEV),
+        (Portfolio.STAT_ULCER_PERCENT, Portfolio.STAT_SHARPE),
     ]
 
     time_start = time.time()

@@ -31,6 +31,7 @@ class Portfolio:
     STAT_VARIANCE = 'Variance'
     STAT_STDDEV = 'Stddev'
     STAT_SHARPE = 'Sharpe'
+    STAT_ULCER_PERCENT = 'Ulcer(%)'
 
     @staticmethod
     def static_portfolio(allocation: dict[str, int]):
@@ -72,7 +73,7 @@ class Portfolio:
 
     @staticmethod
     def deserialize_iter(serialized_data, assets: list[str]):
-        for portfolio_unpack in struct.iter_unpack(f'7f{len(assets)}i', serialized_data):
+        for portfolio_unpack in struct.iter_unpack(f'8f{len(assets)}i', serialized_data):
             portfolio = Portfolio(assets=assets, weights=[])
             portfolio.stat[Portfolio.STAT_GAIN], \
                 portfolio.stat[Portfolio.STAT_POP_PERCENT], \
@@ -81,6 +82,7 @@ class Portfolio:
                 portfolio.stat[Portfolio.STAT_VARIANCE], \
                 portfolio.stat[Portfolio.STAT_STDDEV], \
                 portfolio.stat[Portfolio.STAT_SHARPE], \
+                portfolio.stat[Portfolio.STAT_ULCER_PERCENT], \
                 *portfolio.weights = portfolio_unpack
             yield portfolio
 
@@ -94,12 +96,13 @@ class Portfolio:
             portfolio.stat[Portfolio.STAT_VARIANCE], \
             portfolio.stat[Portfolio.STAT_STDDEV], \
             portfolio.stat[Portfolio.STAT_SHARPE], \
-            *portfolio.weights = struct.unpack(f'7f{len(assets)}i', serialized_data)
+            portfolio.stat[Portfolio.STAT_ULCER_PERCENT], \
+            *portfolio.weights = struct.unpack(f'8f{len(assets)}i', serialized_data)
         return portfolio
 
     def serialize(self):
         return struct.pack(
-            f'7f{len(self.assets)}i',
+            f'8f{len(self.assets)}i',
             self.stat[Portfolio.STAT_GAIN],
             self.stat[Portfolio.STAT_POP_PERCENT],
             self.stat[Portfolio.STAT_DIP_PERCENT],
@@ -107,6 +110,7 @@ class Portfolio:
             self.stat[Portfolio.STAT_VARIANCE],
             self.stat[Portfolio.STAT_STDDEV],
             self.stat[Portfolio.STAT_SHARPE],
+            self.stat[Portfolio.STAT_ULCER_PERCENT],
             *self.weights,
         )
 
@@ -128,6 +132,19 @@ class Portfolio:
                 f'add them to asset_colors.py: {set(self.assets) - set(color_map.keys())}'
         return ''
 
+    @staticmethod
+    def _ulcer_percent(annual_gains):
+        '''Ulcer index: root-mean-square drawdown of portfolio value from its running peak'''
+        value = 1.0
+        peak = 1.0
+        sum_sq_drawdown = 0.0
+        for gain in annual_gains:
+            value = value * gain
+            peak = max(peak, value)
+            drawdown = value / peak - 1
+            sum_sq_drawdown = sum_sq_drawdown + drawdown * drawdown
+        return (sum_sq_drawdown / len(annual_gains)) ** 0.5
+
     # pylint: disable=too-many-locals
     @staticmethod
     def _simulate_y2y(year_range, allocation, asset_gain_per_year):
@@ -144,7 +161,8 @@ class Portfolio:
         stat_dip = stat_dip - 1 if stat_dip < 1 else 0
         stat_cagr = stat_gain ** (1 / len(annual_gains)) - 1
         stat_var = sum(map(lambda ag: (ag - stat_cagr - 1) ** 2, annual_gains)) / (len(annual_gains) - 1)
-        return stat_gain, stat_pop, stat_dip, stat_cagr, stat_var
+        stat_ulcer = Portfolio._ulcer_percent(annual_gains)
+        return stat_gain, stat_pop, stat_dip, stat_cagr, stat_var, stat_ulcer
 
     # pylint: disable=too-many-locals
     @staticmethod
@@ -162,7 +180,8 @@ class Portfolio:
         stat_dip = stat_dip - 1 if stat_dip < 1 else 0
         stat_cagr = stat_gain ** (1 / len(annual_gains)) - 1
         stat_var = sum(map(lambda ag: (ag - stat_cagr - 1) ** 2, annual_gains)) / (len(annual_gains) - 1)
-        return stat_gain, stat_pop, stat_dip, stat_cagr, stat_var
+        stat_ulcer = Portfolio._ulcer_percent(annual_gains)
+        return stat_gain, stat_pop, stat_dip, stat_cagr, stat_var, stat_ulcer
 
     def simulate(self, year_range_selector_func, asset_gain_per_year):
         if self._allocation_func:
@@ -179,7 +198,7 @@ class Portfolio:
                     asset_gain_per_year=asset_gain_per_year),
                 year_range_selector_func(sorted(asset_gain_per_year.keys()))
             ))
-        stat_gain, stat_pop, stat_dip, stat_cagr, stat_var = \
+        stat_gain, stat_pop, stat_dip, stat_cagr, stat_var, stat_ulcer = \
             (sum(stat_values) / len(stats_per_year_range) for stat_values in zip(*stats_per_year_range))
         self.stat[Portfolio.STAT_GAIN] = stat_gain
         self.stat[Portfolio.STAT_POP_PERCENT] = stat_pop * 100
@@ -189,6 +208,7 @@ class Portfolio:
         self.stat[Portfolio.STAT_SHARPE] = \
             stat_cagr / self.stat[Portfolio.STAT_STDDEV] if self.stat[Portfolio.STAT_STDDEV] else 0
         self.stat[Portfolio.STAT_CAGR_PERCENT] = stat_cagr * 100
+        self.stat[Portfolio.STAT_ULCER_PERCENT] = stat_ulcer * 100
 
     def simulated(self, year_range_selector_func, asset_gain_per_year):
         self.simulate(year_range_selector_func=year_range_selector_func, asset_gain_per_year=asset_gain_per_year)

@@ -52,9 +52,47 @@ Then every portfolio is simulated through market history, rebalancing at every s
 If `--hull` is specified and is not zero, script will use ConvexHull algorithm to select only edge-case portfolios. Edge cases are calculated separately for each plot.
 If `--edge` is specified and is not zero, script will filter portfolios by number of assets, plotting only those that have specified number of them or less.
 
+### Metrics
+
+Every simulated portfolio gets scored with these values. They are used as graph axes
+and are all listed in the tooltip of every plotted point.
+
+Given the portfolio's value multiplier for every year of an investment range:
+
+| Metric | Meaning |
+| ------ | ------- |
+| `Gain(x)` | Final portfolio value after the whole range, starting from `1`. `2.5` means the capital grew 2.5x. |
+| `CAGR(%)` | Compound annual growth rate: constant yearly return that would produce the same `Gain`. |
+| `Pop(%)` | Largest single-year gain in the range. `0` if every year was flat or negative. |
+| `Dip(%)` | Largest single-year loss in the range (negative). `0` if no year was negative. |
+| `Variance` | Sample variance of yearly returns around `CAGR`. |
+| `Stddev` | Square root of `Variance` - the classic volatility number. |
+| `Sharpe` | `CAGR / Stddev`. Return per unit of volatility. No risk-free rate is subtracted, so treat it as a relative ranking between portfolios, not an absolute quality score. |
+| `Ulcer(%)` | Ulcer index: root-mean-square drawdown of the portfolio value from its own running peak over the range. See below. |
+
+`Stddev` (and therefore `Sharpe` and `Variance`) treats an upswing exactly like a crash,
+because a square does not care about the sign. `Dip` only sees the single worst year and
+does not care whether the portfolio recovered in the next year or stayed at the bottom
+for years. `Ulcer` is designed to fill that gap - it measures how deep **and** how long
+the portfolio stayed under its previous peak:
+
+```
+Ulcer = sqrt( mean( Di^2 ) )         Di = value(i) / max(value(0)..value(i)) - 1
+```
+
+`value(0)` is the initial investment, so falling below the entry price counts as a
+drawdown too. A sharp V-shaped crash that fully recovers gets a small `Ulcer`; a slow
+grinding decline that ends at the same place gets a much larger one. `Ulcer` is expressed
+in percent, like `Dip`.
+
+Dividing `CAGR(%)` by `Ulcer(%)` gives a Sharpe-like ranking that penalizes actual pain
+instead of symmetric volatility; on the `CAGR vs Ulcer` and `Sharpe vs Ulcer` graphs the
+best portfolios are the ones closest to the top-left corner.
+
 ### Notes on averaging
 
-Some graphs display `Pop` and `Dip` values for portfolios, meaning largest yearly gain and largest yearly loss.
+Some graphs display `Pop`, `Dip` and `Ulcer` values for portfolios, meaning largest
+yearly gain, largest yearly loss and average drawdown pain.
 Since year selection algorithm could select more than one year, these values are averaged among all investment periods.
 For example, consider two 3-year investment periods for asset within 4-year market data:
 | Year | Asset1 | 3y-period 1 | 3y-period 2 |

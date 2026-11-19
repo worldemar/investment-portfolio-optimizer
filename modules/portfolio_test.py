@@ -17,6 +17,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import functools
+from itertools import accumulate
 import pytest
 from modules.portfolio import Portfolio
 from modules import data_filter
@@ -35,6 +36,7 @@ def test_portfolio_serialize():
     portfolio.stat[Portfolio.STAT_CAGR_PERCENT] = 0.34567
     portfolio.stat[Portfolio.STAT_VARIANCE] = 0.45678
     portfolio.stat[Portfolio.STAT_SHARPE] = 0.56789
+    portfolio.stat[Portfolio.STAT_ULCER_PERCENT] = 0.65432
 
     serialized = portfolio.serialize()
     deserialized = Portfolio.deserialize(serialized, assets=portfolio.assets)
@@ -52,6 +54,8 @@ def test_portfolio_serialize():
         deserialized.stat[Portfolio.STAT_VARIANCE] < epsilon
     assert portfolio.stat[Portfolio.STAT_SHARPE] - \
         deserialized.stat[Portfolio.STAT_SHARPE] < epsilon
+    assert portfolio.stat[Portfolio.STAT_ULCER_PERCENT] - \
+        deserialized.stat[Portfolio.STAT_ULCER_PERCENT] < epsilon
     assert portfolio.weights == deserialized.weights
 
 
@@ -70,6 +74,7 @@ def test_portfolio_serialize_batch():
         portfolio.stat[Portfolio.STAT_CAGR_PERCENT] = 0.34567 * i
         portfolio.stat[Portfolio.STAT_VARIANCE] = 0.45678 * i
         portfolio.stat[Portfolio.STAT_SHARPE] = 0.56789 * i
+        portfolio.stat[Portfolio.STAT_ULCER_PERCENT] = 0.11111 * i
         portfolios.append(portfolio)
 
     serialized = b''.join(p.serialize() for p in portfolios)
@@ -89,6 +94,8 @@ def test_portfolio_serialize_batch():
             deserialized[i].stat[Portfolio.STAT_VARIANCE] < epsilon
         assert portfolios[i].stat[Portfolio.STAT_SHARPE] - \
             deserialized[i].stat[Portfolio.STAT_SHARPE] < epsilon
+        assert portfolios[i].stat[Portfolio.STAT_ULCER_PERCENT] - \
+            deserialized[i].stat[Portfolio.STAT_ULCER_PERCENT] < epsilon
         assert portfolios[i].weights == deserialized[i].weights
 
 
@@ -197,3 +204,69 @@ def test_portfolio_simulate(year_selector_func, expected_stats):
     portfolio.simulate(year_selector_func, asset_gain_per_year)
     for stat, expected_stat in expected_stats.items():
         assert stat and abs(portfolio.stat[stat] - expected_stat) < epsilon
+
+
+# ---------------------------------------------------------------------------
+# Ulcer index tests
+# ---------------------------------------------------------------------------
+
+def _ulcer_reference(annual_gains):
+    """independent re-implementation for cross-checking: pure functional style"""
+    values = list(accumulate(annual_gains, lambda v, gain: v * gain, initial=1.0))[1:]
+    # running peak includes the initial capital 1.0: falling below start counts as drawdown
+    peaks = list(accumulate([1.0] + values, max))[1:]
+    drawdowns = [v / p - 1 for v, p in zip(values, peaks)]
+    return (sum(d * d for d in drawdowns) / len(drawdowns)) ** 0.5
+
+
+def test_ulcer_percent_manually_verified():
+    # gains: 1.10, 0.90, 1.20, 0.95
+    # portfolio values: 1.10, 0.99, 1.188, 1.1286; peaks: 1.10, 1.10, 1.188, 1.188
+    # drawdowns:        0,     -10%,  0,       -5%
+    # UI = sqrt((0 + 0.01 + 0 + 0.0025) / 4) = sqrt(0.003125)  (manually verified)
+    epsilon = 1e-12
+    portfolio = Portfolio(assets=['ASSET'], weights=[100])
+    portfolio.simulate(
+        year_range_selector_func=data_filter.years_first_to_last,
+        asset_gain_per_year={2000: [1.10], 2001: [0.90], 2002: [1.20], 2003: [0.95]})
+    assert abs(portfolio.stat[Portfolio.STAT_ULCER_PERCENT] - 5.590169943749474) < epsilon
+
+
+def test_ulcer_percent_zero_when_never_below_peak():
+    portfolio = Portfolio(assets=['ASSET'], weights=[100])
+    portfolio.simulate(
+        year_range_selector_func=data_filter.years_first_to_last,
+        asset_gain_per_year={2000: [1.10], 2001: [1.20], 2002: [1.05], 2003: [1.00]})
+    assert portfolio.stat[Portfolio.STAT_ULCER_PERCENT] == 0.0
+
+
+def test_ulcer_percent_average_of_all_ranges():
+    # multiple year ranges: ulcer must be averaged across ranges, same way as Dip
+    epsilon = 1e-12
+    asset_gain_per_year = {
+        2000: [1.10], 2001: [0.90], 2002: [1.20], 2003: [0.95], 2004: [1.07],
+    }
+    years_sorted = sorted(asset_gain_per_year)
+    portfolio = Portfolio(assets=['ASSET'], weights=[100])
+    portfolio.simulate(
+        year_range_selector_func=data_filter.years_all_to_last,
+        asset_gain_per_year=asset_gain_per_year)
+    year_ranges = list(data_filter.years_all_to_last(years_sorted))
+    expected = sum(_ulcer_reference(
+        [asset_gain_per_year[year][0]
+         for year in years_sorted[years_sorted.index(start):years_sorted.index(end) + 1]])
+        for start, end in year_ranges) / len(year_ranges) * 100
+    assert abs(portfolio.stat[Portfolio.STAT_ULCER_PERCENT] - expected) < epsilon
+
+
+def test_ulcer_percent_for_allocation_func():
+    epsilon = 1e-12
+    asset_gain_per_year = {
+        2000: [1.10, 0.80], 2001: [0.90, 1.30], 2002: [1.20, 0.95], 2003: [0.95, 1.10],
+    }
+    portfolio = Portfolio(assets=['A', 'B'], weights=[], allocation_func=max)
+    portfolio.simulate(
+        year_range_selector_func=data_filter.years_first_to_last,
+        asset_gain_per_year=asset_gain_per_year)
+    best_gain_per_year = [max(asset_gain_per_year[year]) for year in sorted(asset_gain_per_year)]
+    assert abs(portfolio.stat[Portfolio.STAT_ULCER_PERCENT] - _ulcer_reference(best_gain_per_year) * 100) < epsilon
